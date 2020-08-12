@@ -38,13 +38,13 @@ end
 """
     write_block(f::IOStream, data,
                 blockname::String="";
-                snap_format::Int64=2)
+                snap_format::Integer=2)
 
 Write `data` to a block to an opened file `f`.
 """
 function write_block(f::IOStream, data,
                      blockname::String="";
-                     snap_format::Int64=2)
+                     snap_format::Integer=2)
 
 
     # turn array of arrays d into one large array
@@ -89,11 +89,11 @@ end
 
 
 """
-    write_header(f::IOStream, h::Header; snap_format::Int64=2)
+    write_header(f::IOStream, h::Header; snap_format::Integer=2)
 
 Writes the header block to an opened file `f`.
 """
-function write_header(f::IOStream, h::Header; snap_format::Int64=2)
+function write_header(f::IOStream, h::Header; snap_format::Integer=2)
 
     if snap_format == 2
         f = write_format2_block_header(f, "HEAD")
