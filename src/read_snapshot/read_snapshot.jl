@@ -43,7 +43,7 @@ end
 
 
 """
-    read_snap(filename::String [, blockname::String="", parttype::Int64=-1] )
+    read_snap(filename::String [, blockname::String="", parttype::Integer=-1] )
 
 Wrapper function to read snapshot in various ways:
 filename only: returns the entire snapshot as a dictionary.
@@ -57,7 +57,7 @@ julia> gas_pos = read_block_by_name(filename, "POS", 0)
 ```
 
 """
-function read_snap(filename::String, blockname::String="", parttype::Int64=-1)
+function read_snap(filename::String, blockname::String="", parttype::Integer=-1)
 
     # default: return entire snapshot as dictionary
     if (parttype == -1) & (blockname == "")
