@@ -2,7 +2,7 @@
 """
     read_block_by_name(filename::String, blockname::String;
                                 info::Info_Line=Info_Line(),
-                                parttype::Int64=-1)
+                                parttype::Integer=-1)
 
 Reads a block in a snapshot with given name. Names are case sensitive.
 
@@ -16,7 +16,7 @@ julia> gas_pos = read_block_by_name(filename, "POS", info=pos_info, parttype=0)
 """
 function read_block_by_name(filename::String, blockname::String;
                             info::Info_Line=Info_Line(),
-                            parttype::Int64=-1)
+                            parttype::Integer=-1)
 
 
     # read header - super fast and needed for flexibility
@@ -269,8 +269,8 @@ function read_block_with_info(f::IOStream, d::Dict{Any,Any}, info::Info_Line)
 
 end
 
-function read_block(p::Int64, data::Dict{Any,Any}, dtype::DataType, blockname::String,
-                    f::IOStream, bit_size::Int64)
+function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname::String,
+                    f::IOStream, bit_size::Integer)
 
 
 
