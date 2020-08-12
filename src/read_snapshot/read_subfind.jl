@@ -196,7 +196,7 @@ end
 
 
 """
-    filter_subfind(filebase::String, blockname::String, filter_function [, nfiles::Integer=1])
+    filter_subfind(filebase::String, blockname::String, filter_function::Function [, nfiles::Integer=1])
 
 Selects entries in subfind block that fulfill the 'filter_funcion' requirements and
 returns a 'SubfindFilter' object.
@@ -210,7 +210,7 @@ julia> filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
 ```
 
 """
-function filter_subfind(filebase::String, blockname::String, filter_function, nfiles::Integer=1)
+function filter_subfind(filebase::String, blockname::String, filter_function::Function, nfiles::Integer=1)
 
     # allocate empty array for SubfindFilter objects
     A = Vector{SubfindFilter}(undef, 0)
@@ -258,62 +258,3 @@ function read_particles_in_halo(sub_file::String, snap_filebase::String,
                                       info = sub_info[getfield.(sub_info, :block_name) .== "PID"][1],
                                       parttype = 0)
 end
-
-"""
-            Sandbox
-"""
-
-"""
-using GadJet
-import GadJet.Info_Line
-import GadJet.read_info_line
-import GadJet.read_info
-import GadJet.read_particles_in_volume
-import GadJet.read_subfind
-
-
-
-
-snap_filebase = "/HydroSims/Magneticum/Box2/hr_bao/snapdir_140/snap_140"
-sub_input  = "/HydroSims/Magneticum/Box2/hr_bao/groups_140/sub_140.50"
-halo_id    = UInt64(1)
-pos        = read_subfind(sub_input, "SPOS")[halo_id,:]
-rhalf      = read_subfind(sub_input, "RHMS")[halo_id]
-ids_offset = read_subfind(sub_input, "SOFF")[halo_id]
-n_ids      = read_subfind(sub_input, "SLEN")[halo_id]
-
-Int64(n_ids)
-
-tot_ids      = read_subfind(sub_input, "PID")
-
-int_ids    = Int64.(tot_ids)
-
-sub_info = read_info(sub_input)
-
-ids_info = sub_info[getfield.(sub_info, :block_name) .== "PID"][1]
-
-ids_info.data_type = UInt64
-
-ids_pos = get_block_positions(sub_input)["PID"]
-ids = Array{ids_info.data_type, 1}(undef, 0)
-
-tot_offset = ids_pos# + ids_offset
-ids = read_block_with_offset(sub_input, ids, ids_pos, ids_info, ids_offset, [0], n_ids, [n_ids])
-
-typeof(pos) <: DenseArray{Float32,1}
-
-supertype(supertype(supertype(typeof(pos))))
-
-read_particles_in_volume(snap_filebase, "ID", pos, 5rhalf)
-
-2^63 - 1
-
-a = 1:100
-
-b = [3, 1, 17, 22, 12]
-
-
-selected = [a .== b[i] for i = 1:length(b)]
-
-c = reduce(+, selected)
-"""
