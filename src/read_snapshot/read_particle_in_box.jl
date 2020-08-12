@@ -6,7 +6,6 @@
 
 using Dates
 using Base.Threads
-#using ThreadsX
 
 """
     Functionality to read the header of the key files
@@ -868,79 +867,3 @@ function read_particles_in_volume(filename::String, blocks::String,
     return d[blocks]
 end
 
-
-
-"""
-    Test stuff -- Sandbox
-"""
-
-"""
-
-using GadJet
-using BenchmarkTools
-
-
-filebase = "/HydroSims/Magneticum/Box2/hr_bao/snapdir_140/snap_140"
-file_key = filebase * ".0.key"
-
-
-corner_lowerleft  = [-1000.0, -1000.0, -1000.0]
-corner_upperright = [ 1000.0,  1000.0,  1000.0]
-
-typeof(corner_lowerleft)
-
-# first read the header
-h_key = read_keyheader(file_key)
-
-# get a list of the required peano-hilbert keys
-@benchmark keylist = get_keylist(h_key, corner_lowerleft, corner_upperright)
-keylist = get_keylist(h_key, corner_lowerleft, corner_upperright)
-
-files_ref = find_files_for_keys(filebase, 512, keylist)
-println(files_ref)
-
-@benchmark files = find_files_for_keys_old(filebase, 512, keylist)
-files = find_files_for_keys_old(filebase, 512, keylist)
-println(files)
-
-filename = filebase * ".324"
-filename_keyfile = filename * ".key"
-
-# read key file data
-h_key = read_keyheader(filename_keyfile)
-key_info = read_info(filename_keyfile)
-keys_in_file = read_block_by_name(filename_keyfile, "KEY",
-                                  info = key_info[getfield.(key_info, :block_name) .== "KEY"][1],
-                                  parttype = 0)
-
-@benchmark get_index_list_serial(keylist, keys_in_file)
-@benchmark get_index_list_parallel(keylist, keys_in_file)
-
-idx_serial   = get_index_list_serial(keylist, keys_in_file)
-idx_parallel = get_index_list_parallel(keylist, keys_in_file)
-
-sort!(idx_serial)
-
-idx_serial == idx_parallel
-
-@benchmark get_index_list_old(keylist, keys_in_file)
-
-
-typeof(1) <: Integer
-
-typeof(Array{Float32,2}(undef, 10, 1)) <: AbstractArray
-
-typeof(Array{Integer,2})
-
-typeof(UInt32) <: Int
-
-subtypes(Integer)
-
-supertype(Signed)
-
-typeof(Vector{AbstractFloat}(undef,2)) <: Array{AbstractFloat,1}
-
-typeof(Vector{AbstractFloat}(undef,2))
-
-
-"""
