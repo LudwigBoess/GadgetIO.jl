@@ -9,10 +9,7 @@ This package is a subproject of [GadJet.jl](https://github.com/LudwigBoess/GadJe
 
 Documentation can be found [here](https://gadjetjl.readthedocs.io/en/latest/index.html).
 
-Please note that I am not affiliated with Volker Springel. This project was started because I needed to work with Gadget for university and couldn't find any Julia implementations to work with the data.
-I'm now working with Klaus Dolag and others on a development version of Gadget3, so you will find some functionality in this project that won't be useful for you if you don't have access to that version. Sorry!
-
-Any help and contribution is greatly appreciated, as this is still a work in progress. Please see the section on contributing.
+Any help and contribution is greatly appreciated, as this is still a work in progress.
 
 Quickstart
 ==========
