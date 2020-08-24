@@ -14,7 +14,7 @@ Contains the data of the `HEAD` block of a Gadget snapshot.
 
 # Fields
 | Name                                 | Meaning                                                                                |
-|: ------------------------------------|:---------------------------------------------------------------------------------------|
+| :-------------------------------     | :------------------------------------------------------------------------------------- |
 | `npart::Vector{Int32}`               | an array of particle numbers per type in this snapshot                                 |
 | `massarr::Vector{Float64}`           | an array of particle masses per type in this snapshot - if zero: MASS block present    |
 | `time::Float64`                      | time / scale factor of the simulation                                                  |
@@ -116,7 +116,7 @@ Contains the data of a single entry in the `INFO` block of a Gadget snapshot.
 
 # Fields
 | Name                                 | Meaning                                                                                |
-|: ------------------------------------|:---------------------------------------------------------------------------------------|
+| :----------------------------------  | :------------------------------------------------------------------------------------- |
 | `block_name::String`                 | name of the data block, e.g. "POS"                                                     |
 | `data_type::DataType`                | datatype of the block, e.g. Float32 for single precision, Float64 for double           |
 | `n_dim::Int32`                       | number of dimensions of the block, usually 1 or 3                                      |
