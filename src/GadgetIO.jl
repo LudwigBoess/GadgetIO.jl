@@ -27,6 +27,7 @@ module GadgetIO
            read_header,
            read_particles_in_box,
            read_particles_in_volume,
+           get_index_list,
 
            # subfind read
            read_subfind_header,

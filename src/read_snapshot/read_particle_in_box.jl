@@ -522,6 +522,30 @@ end
     return resize!(result, len)
 end
 
+
+@inline function get_index_list_sorted(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+
+    sorted_list = sort(keylist)
+    sorted_file_idx = sortperm(keys_in_file)
+    sorted_file = keys_in_file[sorted_file_idx]
+
+    result = Vector{Int}(undef, length(keylist))
+    len = 0
+    i = 1
+
+    for entry = 1:length(sorted_list)
+
+        k = findnext( sorted_file .== sorted_list[entry], i)
+        
+        if k !== nothing
+            len += 1
+            i   += entry
+            @inbounds result[len] = sorted_file_idx[k]
+        end
+    end
+    return resize!(result, len)
+end
+
 @inline function get_index_list_serial(keylist::Vector{Int}, keys_in_file)
 
     dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
