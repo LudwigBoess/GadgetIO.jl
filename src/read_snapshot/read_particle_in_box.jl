@@ -506,7 +506,7 @@ function get_keylist(h_key::KeyHeader, x0, x1)
     return keylist
 end
 
-@inline function get_index_list(keylist::Vector{Int}, keys_in_file)
+@inline function get_index_list(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
 
     dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
     result = Vector{Int}(undef, length(keylist))
