@@ -108,11 +108,11 @@ function read_subfind(filename::String, blockname::String)
 
     info = read_info(filename)
 
-    info = info[getfield.(info, :block_name) .== blockname][1]
+    info_selected = info[getfield.(info, :block_name) .== blockname][1]
 
-    parttype = findall(info.is_present .== 1)[1] - 1
+    parttype = findall(info_selected.is_present .== 1)[1] - 1
 
-    return read_snap(filename, blockname, parttype)
+    return read_block_by_name(filename, blockname, info = info_selected, parttype = parttype)
 end
 
 
@@ -124,7 +124,7 @@ struct SubfindID
     id::Int64
 end
 
-@inline function select_file(filebase::String, i::Int, nfiles::Int)
+@inline function select_file(filebase::String, i::Integer, nfiles::Integer)
 
     if nfiles > 1
         sub_input = filebase * ".$i"

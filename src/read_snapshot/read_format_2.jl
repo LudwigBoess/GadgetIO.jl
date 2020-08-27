@@ -422,3 +422,41 @@ function read_block_with_offset(filename::String, data_old, pos0::Integer, info:
 
     return [data_old; data]
 end
+
+
+function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::Info_Line,
+                                offset::Integer, offset_key::Array{<:Integer}, 
+                                part_per_key::Array{<:Integer} )
+
+    # open the file
+    f = open(filename)
+
+    # number of bits in data_type
+    len = sizeof(info.data_type) * info.n_dim
+
+    # jump to position of particle type in relevant block
+    seek(f, pos0+offset*len)
+
+    # store position in file
+    p = position(f)
+
+    n_this_key = n_read - 1
+
+    for i = 1:length(offset_key)
+
+        # jump to start of key
+        seek(f, p + len*offset_key[i])
+        n_this_key += part_per_key[i]
+
+        data[n_read:n_this_key, :] = copy(transpose(read!(f,
+                    Array{info.data_type,2}(undef,(info.n_dim,part_per_key[i])))))
+
+        n_read += part_per_key[i]
+
+    end # for
+
+    # close the file
+    close(f)
+
+    data
+end
