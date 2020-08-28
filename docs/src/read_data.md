@@ -1,5 +1,5 @@
-Read Snapshot Data
-=========
+# Read Snapshot Data
+
 
 ```@meta
 CurrentModule = GadgetIO
@@ -8,8 +8,8 @@ DocTestSetup = quote
 end
 ```
 
-Reading the header
-------------------
+## Reading the header
+
 
 Reading the header block of the simulation can be done by using:
 
@@ -57,8 +57,8 @@ If you want to read the header information into a dictionary you can use:
  h = head_to_dict(filename::String)
 ```
 
-Reading a snapshot
-------------------
+## Reading a snapshot
+
 
 ### Full snapshot
 If you want to read a simulation snapshot into memory with GadgetIO.jl, it's as easy as this:
@@ -134,8 +134,25 @@ If your simulation contains an INFO block you can read the info lines into [`Inf
 This will return an Array of [`Info_Line`](@ref) objects. The optional keyword `verbose` additionally gives the same functionality as [`print_blocks`](@ref) and prints the names to the console.
 
 
-Large Simulations
------------------
+### Reading particles by referenced ID
+
+If you want to select specific particles to read from an array if `IDs` you can do this with [`read_particles_by_id`](@ref):
+
+```julia
+read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
+                     blocks::Array{String}; 
+                     parttype::Integer=0, verbose::Bool=true,
+                     pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
+                     r0::Real=0.0)
+```
+
+`snap_base` defines the target snapshot, or the snapshot directory, `selected_ids` contains the list of IDs of the particles you want to read and `blocks` containes the blocksnames of the blocks you want to read.
+If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Large Simulations](@ref) for details on this.
+
+This will return a dictionary with all requested blocks.
+
+## Large Simulations
+
 
 For large simulations Gadget distributes snapshots over multiple files. These files contain particles associated with specific Peano-Hilbert keys.
 
@@ -204,16 +221,12 @@ data["RHO"]  # array of densities
 (...)
 ```
 
-### Upcoming
 
-One of the next steps will be to finish the reading function for particles in a specific halo. Since this is a bit of a pain I postponed this to when I will actually need it.
+# Read Subfind Data
 
 
-Read Subfind Data
-=========
+## Reading the header
 
-Reading the header
-------------------
 
 Similarly to the normal snapshot you can read the header of the subfind output into a [`SubfindHeader`](@ref) object
 
@@ -245,8 +258,8 @@ using
 h = read_subfind_header(filename::String)
 ```
 
-Reading the subfind files
--------------------------
+## Reading the subfind files
+
 
 If you compiled Gadget with `WRITE_SUB_IN_SNAP_FORMAT` you can read the subfind output like you would a normal snapshot, with any of the above methods. For convenience you can also use a helper function provided by GadgetIO. Since each of the blocks is only relevant for either halos, subhalos, Fof or large groups you don't need to define a particly type, aka halo type in this case.
 
@@ -256,7 +269,7 @@ So in order to read the virial radius of the halos in a file you can simply use
 R_vir = read_subfind(filename, "RVIR")
 ```
 
-## Filtered readin
+## Filtered read-in
 
 If you want to read specific halos from the subfind output you can use the function
 
@@ -264,10 +277,10 @@ If you want to read specific halos from the subfind output you can use the funct
 filter_subfind(filebase::String, blockname::String, filter_function::Function, nfiles::Integer=1)
 ```
 
-This will return an array of [SubfindID](@ref)s 
+This will return an array of [HaloID](@ref)s 
 
 ```julia
-struct SubfindID
+struct HaloID
     file::Int64
     id::Int64
 end
@@ -286,3 +299,19 @@ filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
 ```
 
 This will search all subfind files in the directory and check if they fulfill the filter. Since halos in subfind files are sorted by mass you can also supply a number of files to search with the argument `nfiles`. That way, if you are looking for a very massive halo you can constrian the reading and filtering to only the first `N` files to save time.
+
+
+## Reading particles in a halo
+
+
+If you want to read all particles associated with a FoF halo you can do this with the function [`read_particles_in_halo`](@ref)
+
+```julia
+read_particles_in_halo( snap_base::String, blocks::Array{String},
+                        sub_base::String, halo::HaloID; 
+                        rad_scale::Real=1.0, halo_type::Integer=1,
+                        parttype::Integer=0, verbose::Bool=true)
+```
+
+This reads all blocks defined in `blocks` for the `halo` into a dictionary. `snap_base` and `sub_base` should point to the snap and subfind directories, or the files if you only have one file. The `HaloID` point to the selected halo. `halo_type` should be set to `1` for halos and `2` for subhalos. 
+If you didn't get all the particles you were looking for it might be that the search radius for the read-in was too small. `rad_scale` defines the multiplication factor for the search radius. For halos the default search radius is ``r_{200}`` and for subhalos it's the half-mass radius.

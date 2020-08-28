@@ -11,7 +11,22 @@ using Base.Threads
     Functionality to read the header of the key files
 """
 
+"""
+    struct KeyHeader
 
+Helper struct to store header information of .key files.
+
+# Fields
+
+| Name                   | Meaning                                        | 
+| :---                   | :------                                        |
+| `nkeys_file`           | Number of keys in this .key file               |
+| `domain_corners`       | Corners of the domains defined by these keys   |
+| `domain_fac`           | Factor needed for reconstructung int positions |
+| `bits`                 | Size of PH keys it bits                        |
+| `nkeys_total`          | Total number of keys in all files              |
+| `nkeys_total_highword` | Total number of keys in all files              |
+"""
 struct KeyHeader
     nkeys_file::Vector{Int32}
     domain_corners::Vector{Float64}
@@ -21,6 +36,11 @@ struct KeyHeader
     nkeys_total_highword::Vector{UInt32}
 end
 
+"""
+    read_keyheader(filename::String)
+
+Reads the header of a .key file.
+"""
 function read_keyheader(filename::String)
 
     f = open(filename)
@@ -83,8 +103,14 @@ end
 """
     Helper function for Peano Hilbert stuff
 """
-@inline function get_int_pos(pos::AbstractFloat, domain_corner::Float64, domain_fac::Float64 )
-    return Int64( floor(( pos - domain_corner ) * domain_fac) )
+
+"""
+    get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real )
+
+Computes the integer position along the PH line.
+"""
+@inline function get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real )
+    return floor(Int64, ( pos - domain_corner ) * domain_fac) 
 end
 
 """
@@ -188,8 +214,12 @@ const global subpix3 = [0  7  1  6  3  4  2  5 ;
                         3  2  0  1  4  5  7  6 ;
                         2  5  1  6  3  4  0  7 ]
 
-# ; This function computes a Peano-Hilbert key for an integer triplet (x,y,z),
-# ; with x,y,z in the range between 0 and 2^bits-1.
+
+"""
+    peano_hilbert_key(bits::Integer, x::Integer, y::Integer, z::Integer)
+
+Computes a Peano-Hilbert key for an integer triplet (x,y,z) with x,y,z in the range between 0 and 2^bits-1.
+"""
 function peano_hilbert_key(bits::Integer, x::Integer, y::Integer, z::Integer)
 
     rotation = 1
@@ -217,6 +247,11 @@ function peano_hilbert_key(bits::Integer, x::Integer, y::Integer, z::Integer)
     return key
 end
 
+"""
+    read_key_index(file_key_index::String)
+
+Reads the .key.index file.
+"""
 function read_key_index(file_key_index::String)
 
     finfo = stat(file_key_index)
@@ -376,7 +411,7 @@ end
 """
 This should be fixed! It's A LOT faster than the simpler version!
 """
-function find_files_for_keys_old(filebase::String, nfiles::Integer, keylist::Vector{UInt})
+function find_files_for_keys_old(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
 
     file_key_index = filebase * ".key.index"
 
@@ -400,7 +435,7 @@ function find_files_for_keys_old(filebase::String, nfiles::Integer, keylist::Vec
     return Int64.(unique!(files))
 end
 
-function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{Int})
+function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
 
     file_key_index = filebase * ".key.index"
 
@@ -489,17 +524,17 @@ function get_keylist(h_key::KeyHeader, x0, x1)
     nkeys = 1
 
     @inbounds for i = 1:3
-        @inbounds ix0[i] = get_int_pos( x0[i], h_key.domain_corners[i], h_key.domain_fac )
-        @inbounds ix1[i] = get_int_pos( x1[i], h_key.domain_corners[i], h_key.domain_fac )
-        @inbounds dix[i] = ix1[i] - ix0[i] + 1
-        @inbounds nkeys *= dix[i]
+        ix0[i] = get_int_pos( x0[i], h_key.domain_corners[i], h_key.domain_fac )
+        ix1[i] = get_int_pos( x1[i], h_key.domain_corners[i], h_key.domain_fac )
+        dix[i] = ix1[i] - ix0[i] + 1
+        nkeys *= dix[i]
     end
 
     keylist = zeros(Int, nkeys)
 
     i = 1
-    for ix = ix0[1]:ix1[1], iy = ix0[2]:ix1[2], iz = ix0[3]:ix1[3]
-        @inbounds keylist[i] = peano_hilbert_key(h_key.bits, ix, iy, iz)
+    @inbounds for ix = ix0[1]:ix1[1], iy = ix0[2]:ix1[2], iz = ix0[3]:ix1[3]
+        keylist[i] = peano_hilbert_key(h_key.bits, ix, iy, iz)
         i += 1
     end
 
@@ -525,60 +560,28 @@ end
 
 @inline function get_index_list_sorted(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
 
-    sorted_list = sort(keylist)
-    sorted_file_idx = sortperm(keys_in_file)
+    #sorted_list = sort(keylist)
+    sorted_file_idx = sortperm(keys_in_file[:,1])
     sorted_file = keys_in_file[sorted_file_idx]
 
     result = Vector{Int}(undef, length(keylist))
     len = 0
     i = 1
 
-    for entry = 1:length(sorted_list)
+    @inbounds for entry = 1:length(keylist)
 
-        k = findnext( sorted_file .== sorted_list[entry], i)
+        k = findnext( sorted_file .== keylist[entry], i)
         
         if k !== nothing
             len += 1
             i   += entry
-            @inbounds result[len] = sorted_file_idx[k]
+            result[len] = sorted_file_idx[k]
         end
     end
     return resize!(result, len)
 end
 
-@inline function get_index_list_serial(keylist::Vector{Int}, keys_in_file)
 
-    dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
-    result = Vector{Int}(undef, length(keylist))
-    len = 0
-
-    for k in keylist
-        i = get(dict, k, nothing)
-        if i !== nothing
-            len += 1
-            @inbounds result[len] = i
-        end
-    end
-    return resize!(result, len)
-end
-
-@inline function get_index_list_parallel(keylist::Vector{Int}, keys_in_file)
-
-    dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
-    result = Vector{Int}(undef, length(keylist))
-    #len = 0
-    len = Threads.Atomic{Int}(0)
-
-    @threads for k = 1:length(keylist)
-        i = get(dict, keylist[k], nothing)
-        if i !== nothing
-            #len += 1
-            Threads.atomic_add!(len, 1)
-            @inbounds result[len[]] = i
-        end
-    end
-    return resize!(result, len[])
-end
 
 function join_blocks(offset_key, part_per_key)
 
@@ -600,9 +603,108 @@ function join_blocks(offset_key, part_per_key)
     return use_block, part_per_key
 end
 
+
+"""
+    find_read_positions(files::Array{<:Integer}, filebase::String, 
+                             blocks::Array{String}, parttype::Integer)
+
+Helper function to get positions and length of particle blocks in files.
+"""
+function find_read_positions(files::Array{<:Integer}, filebase::String, 
+                             blocks::Array{String}, parttype::Integer,
+                             keylist::Array{<:Integer}, key_info::Array{Info_Line},
+                             verbose::Bool)
+
+    # store number of file
+    N_files = length(files)
+
+    # allocate arrys to store reading information
+    file_offset_key      = Array{Array{<:Integer}}(undef, N_files)
+    file_part_per_key    = Array{Array{<:Integer}}(undef, N_files)
+    file_block_positions = Array{Dict{String,Integer}}(undef, N_files)
+
+    @inbounds for i = 1:N_files
+
+        filename = select_file(filebase, files[i])
+
+        # read header of the file
+        h = head_to_obj(filename)
+
+        if h.npart[parttype+1] == 0
+            error("No particles of type $parttype in file!")
+        end
+
+        filename_keyfile = filename * ".key"
+
+        # read key file data
+        h_key = read_keyheader(filename_keyfile)
+        keys_in_file = read_block_by_name(filename_keyfile, "KEY",
+                                          info = key_info[getfield.(key_info, :block_name) .== "KEY"][1],
+                                          parttype = parttype)
+
+        if verbose
+            @info "Calculating index list..."
+            t1 = Dates.now()
+        end
+
+        index_list = get_index_list(keylist, keys_in_file)
+
+        if verbose
+            t2 = Dates.now()
+            @info "Index list done. Took: $(t2 - t1)"
+            @info "Reading $(length(index_list)) key segments..."
+        end
+
+        # number of particles associated with PH key
+        part_per_key = read_block_by_name(filename_keyfile, "NKEY",
+                                          info = key_info[getfield.(key_info, :block_name) .== "NKEY"][1],
+                                          parttype = parttype)
+
+
+        # offsets in the blocks to get to the relevant particles
+        offset_key = read_block_by_name(filename_keyfile, "OKEY",
+                                          info = key_info[getfield.(key_info, :block_name) .== "OKEY"][1],
+                                          parttype = parttype)
+
+        # sort the offset arrays for simplification step
+        sorted_offset = sortperm(offset_key[index_list])
+
+        # save sorted arrays
+        offset_key   = offset_key[index_list[sorted_offset]]
+        part_per_key = part_per_key[index_list[sorted_offset]]
+
+        # check if blocks can be joined
+        use_block, part_per_key = join_blocks(offset_key, part_per_key)
+
+        if verbose
+            @info "Reduced independent blocks from $(length(offset_key)) to $(length(use_block[use_block]))"
+        end
+
+        # store the arrays for later reading
+        file_offset_key[i]   = offset_key[use_block]
+        file_part_per_key[i] = part_per_key[use_block]
+
+        file_block_positions[i] = get_block_positions(filename)
+
+        # double-check if blocks are present
+        blocks_in_file = String.(keys(file_block_positions[i]))
+        for blockname in blocks
+            if !block_present(filename, blockname, blocks_in_file)
+                error("Block $blockname not present in file $filename !")
+            end
+        end
+
+    end # for i = 1:length(files)
+
+    return file_offset_key, file_part_per_key, file_block_positions
+end
+
+
 """
     Read particles in box main
 """
+
+
 
 """
     read_particles_in_box(filename::String, blocks::Vector{String},
@@ -633,12 +735,7 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         end
 
         # try reading the first of the distributed snapshots
-        filename = filebase * ".0"
-
-        # throw error if file does not exist
-        if !isfile(filename)
-            error("File: $filename not found!")
-        end
+        filename = select_file(filebase, 0)
 
         h = head_to_obj(filename)
 
@@ -651,37 +748,14 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         nfiles = 1
     end
 
-    no_mass_block = false
-
-    # check if requested blocks are present
-    blocks_in_file = print_blocks(filename, verbose=false)
-    for blockname in blocks
-        if !block_present(filename, blockname, blocks_in_file)
-            if blockname == "MASS"
-
-                no_mass_block = true
-                deleteat!(blocks, "MASS")
-            else
-                error("Block $blockname not present!")
-            end
-        end
-    end
+    blocks, no_mass_block = check_blocks(filename, blocks)
 
     # read info blocks once here
     snap_info = read_info(filename)
     key_info  = read_info(filename * ".key")
 
-    # prepare dictionary for particle storage, this looks super ugly...
-    d = Dict(blocks[i] => Array{snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].data_type,2}(undef, 0,
-            snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].n_dim) for i = 1:length(blocks))
-
-    # allocate mass array, if it's not in a block
-    if no_mass_block
-        d["MASS"] = Array{Float32,2}(undef, 0, 1)
-    end
-
     if verbose
-        @info "All requested blocks present and dictionary allocated!"
+        @info "All requested blocks present!"
         @info "Checking for .key files..."
     end
 
@@ -710,93 +784,54 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         t1 = Dates.now()
     end
 
+    # find relevant files
     files = find_files_for_keys(filebase, nfiles, keylist)
+    
+    N_files = length(files)
+    if verbose
+        t2 = Dates.now()
+        @info "$N_files files found. Took: $(t2 - t1)"
+
+        @info "Searching read positions..."
+        println()
+        t1 = Dates.now()
+    end
+
+    # find all the positions where to read data
+    file_offset_key, file_part_per_key, file_block_positions = find_read_positions( files, filebase, blocks, 
+                                                                                    parttype, keylist, key_info, 
+                                                                                    verbose)
+
+    N_to_read = 0
+
+    @inbounds for i = 1:N_files
+        N_to_read += sum(file_part_per_key[i])
+    end
 
     if verbose
         t2 = Dates.now()
-        @info "$(length(files)) files found. Took: $(t2 - t1)"
+        println()
+        @info "Positions read. Took: $(t2 - t1)"
+        println()
+        @info "Reading $N_to_read particles..."
     end
 
-    for i = 1:length(files)
-        if nfiles > 1
+
+    # prepare dictionary for particle storage
+    d = allocate_data_dict(blocks, N_to_read, snap_info, no_mass_block)
+
+    if verbose
+        @info "Reading Blocks..."
+        t1 = Dates.now()
+    end
+
+    n_read = 1
+
+    for i = 1:N_files
+        if N_files > 1
             filename = filebase * ".$(files[i])"
         else
             filename = filebase
-        end
-
-        # read header of the file
-        h = head_to_obj(filename)
-
-        if h.npart[parttype+1] == 0
-            error("No particles of type $parttype in file!")
-        end
-
-        filename_keyfile = filename * ".key"
-
-        # read key file data
-        h_key = read_keyheader(filename_keyfile)
-        keys_in_file = read_block_by_name(filename_keyfile, "KEY",
-                                          info = key_info[getfield.(key_info, :block_name) .== "KEY"][1],
-                                          parttype = parttype)
-
-        if verbose
-            @info "Calculating index list..."
-            t1 = Dates.now()
-        end
-
-        index_list = get_index_list(keylist, keys_in_file)
-
-        if verbose
-            t2 = Dates.now()
-            @info "Index list done. Took: $(t2 - t1)"
-            @info "Reading $(length(index_list)) key segments..."
-        end
-
-        part_per_key = read_block_by_name(filename_keyfile, "NKEY",
-                                          info = key_info[getfield.(key_info, :block_name) .== "NKEY"][1],
-                                          parttype = parttype)
-
-        n_to_read = sum(part_per_key[index_list])
-
-        if verbose
-            @info "Reading $n_to_read particles..."
-        end
-
-        offset_key = read_block_by_name(filename_keyfile, "OKEY",
-                                          info = key_info[getfield.(key_info, :block_name) .== "OKEY"][1],
-                                          parttype = parttype)
-
-        sorted_offset = sortperm(offset_key[index_list])
-
-        # save sorted arrays
-        offset_key   = offset_key[index_list[sorted_offset]]
-        part_per_key = part_per_key[index_list[sorted_offset]]
-
-        part_per_key_b = part_per_key
-
-        # check if blocks can be joined
-        use_block, part_per_key = join_blocks(offset_key, part_per_key)
-
-        if verbose
-            @info "Reduced independent blocks from $(length(offset_key)) to $(length(use_block[use_block]))"
-        end
-
-        offset_key   = offset_key[use_block]
-        part_per_key = part_per_key[use_block]
-
-        pos = get_block_positions(filename)
-
-        # double-check if blocks are present
-        blocks_in_file = String.(keys(pos))
-        for blockname in blocks
-            if !block_present(filename, blockname, blocks_in_file)
-                error("Block $blockname not present in file $filename !")
-            end
-        end
-
-        if verbose
-            @info "Reading Blocks..."
-            t1 = Dates.now()
         end
 
         # read blocks in parallel
@@ -811,22 +846,31 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
                     offset += h.npart[i]
                 end
             end
-            d[blocks[j]] = read_block_with_offset(filename, d[blocks[j]], pos[blocks[j]],
-                                              block_info, offset, offset_key,
-                                              n_to_read, part_per_key)
+
+            # reads data into the dictionary and counts up n_read
+            read_block_with_offset!(d[blocks[j]], n_read, filename, 
+                                    file_block_positions[i][blocks[j]],
+                                    block_info, offset, file_offset_key[i],
+                                    file_part_per_key[i])
 
         end # loop over blocks
 
-        if no_mass_block
-            d["MASS"] = [d["MASS"]; h.massarr[parttype+1] .* ones(Float32, n_to_read, 1)]
-        end
+        
+        n_read += sum(file_part_per_key[i])
 
-        if verbose
-            t2 = Dates.now()
-            @info "Blocks read. Took: $(t2 - t1)"
-        end
+        @info "Read $(n_read-1) / $N_to_read particles"
 
     end # for i = 1:length(files)
+
+    # finally construct masses of no mass block present
+    if no_mass_block
+        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read, 1)
+    end
+
+    if verbose
+        t2 = Dates.now()
+        @info "Blocks read. Took: $(t2 - t1)"
+    end
 
     return d
 end
@@ -862,7 +906,7 @@ and radius for a given particle type. Returns a dictionary with all requested bl
 See also: [`read_particles_in_box`](@ref)
 """
 function read_particles_in_volume(filename::String, blocks::Vector{String},
-                                  center_pos, radius;
+                                  center_pos::Array{<:Real}, radius::Real;
                                   parttype::Integer=0, verbose::Bool=true)
 
     # calculate lower left and upper right corner

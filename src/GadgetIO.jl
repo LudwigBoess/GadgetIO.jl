@@ -11,6 +11,7 @@ module GadgetIO
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_snapshot.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_subfind.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particle_in_box.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particles_in_halo.jl"))
 
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
@@ -27,13 +28,16 @@ module GadgetIO
            read_header,
            read_particles_in_box,
            read_particles_in_volume,
+           read_particles_in_halo,
            get_index_list,
 
            # subfind read
+           HaloID,
            read_subfind_header,
            read_subfind,
            find_most_massive_halo,
            filter_subfind,
+           read_ids_in_halo,
 
            # write snapshot functions
            write_header,

@@ -3,6 +3,10 @@
 
 """
 
+
+using ProgressMeter
+using Base.Threads
+
 struct SubfindHeader
     nhalos::Int32                       # number of halos in the output file
     nsubhalos::Int32                    # number of subhalos in the output file
@@ -23,6 +27,24 @@ struct SubfindHeader
     flag_ic_info::Int32
 end
 
+"""
+    struct HaloID
+        file::Int64
+        id::Int64
+    end
+
+Stores the subfile that contains the halo in `file` and the position in the block in `id`.
+"""
+struct HaloID
+    file::Int64
+    id::Int64
+end
+
+"""
+    read_subfind_header(filename::String)
+
+Reads the header of a subfind file into a SubfindHeader struct.
+"""
 function read_subfind_header(filename::String)
 
     f = open(filename)
@@ -103,48 +125,28 @@ function read_subfind_header(filename::String)
                          flag_ic_info)
 end
 
+"""
+    read_subfind(filename::String, blockname::String)
 
+Reads a block of a subfind file.
+"""
 function read_subfind(filename::String, blockname::String)
 
+    # read the info block
     info = read_info(filename)
 
-    info = info[getfield.(info, :block_name) .== blockname][1]
+    # the the block is not contained in the file throw and error
+    if length(info[getfield.(info, :block_name) .== blockname]) == 0
+        error("Block $blockname not present!")
+    end
 
-    parttype = findall(info.is_present .== 1)[1] - 1
+    # get the relevant entry
+    info_selected = info[getfield.(info, :block_name) .== blockname][1]
 
-    return read_snap(filename, blockname, parttype)
-end
+    # blocks are type specific so we can use this to make our life easier
+    parttype = findall(info_selected.is_present .== 1)[1] - 1
 
-
-using ProgressMeter
-using Base.Threads
-
-struct SubfindID
-    file::Int64
-    id::Int64
-end
-
-@inline function select_file(filebase::String, i::Int, nfiles::Int)
-
-    if nfiles > 1
-        sub_input = filebase * ".$i"
-        if !isfile(sub_input)
-            error("File $sub_input not present!")
-        end
-    else  # nfiles > 1
-        sub_input = filebase
-
-        if !isfile(sub_input)
-            sub_input = filebase * ".0"
-        end
-
-        if !isfile(sub_input)
-            error("Subfind file not present!")
-        end
-
-    end  # nfiles > 1
-
-    return sub_input
+    return read_block_by_name(filename, blockname, info = info_selected, parttype = parttype)
 end
 
 
@@ -152,7 +154,7 @@ end
     find_most_massive_halo(filebase::String [, nfiles::Int=1])
 
 Reads the selected file and its subfiles and returns position, virial radius
-and a SubfindID object that contains the subfile which contains the most massive
+and a HaloID object that contains the subfile which contains the most massive
 halo and the position in the block.
 
 """
@@ -164,11 +166,21 @@ function find_most_massive_halo(filebase::String, nfiles::Int=1)
     max_file = 0
     max_id   = 0
 
+    sub_input = select_file(filebase, 0)
+    # read the info block
+    info = read_info(sub_input)
+
+    # check if the massblock is called MVIR or MTOP
+    mass_block = "MVIR"
+    if length(info[getfield.(info, :block_name) .== mass_block]) == 0
+        mass_block = "MTOP"
+    end
+
     @showprogress "Reading files..." for i = 0:nfiles-1
 
-        sub_input = select_file(filebase, i, nfiles)
+        sub_input = select_file(filebase, i)
 
-        M = read_subfind(sub_input, "MVIR")
+        M = read_subfind(sub_input, mass_block)
         max_test = findmax(M)
 
         if max_test[1] > Mmax
@@ -186,13 +198,9 @@ function find_most_massive_halo(filebase::String, nfiles::Int=1)
 
     end # for
 
-    return POS, RVIR, SubfindID(max_file, max_id)
+    return POS, RVIR, HaloID(max_file, max_id)
 end
 
-struct SubfindFilter
-    file::Int64
-    index::Array{Int64}
-end
 
 
 """
@@ -213,16 +221,21 @@ julia> filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
 function filter_subfind(filebase::String, blockname::String, filter_function::Function, nfiles::Integer=1)
 
     # allocate empty array for SubfindFilter objects
-    A = Vector{SubfindFilter}(undef, 0)
+    A = Vector{HaloID}(undef, 0)
 
     # loop over all files in parallel
     @threads for i = 0:nfiles-1
 
-        sub_input = select_file(filebase, i, nfiles)
+        # find correct input file
+        sub_input = select_file(filebase, i)
 
+        # read block
         block = read_subfind(sub_input, blockname)
 
+        # apply filter function
         selection = filter_function.(block)
+
+        # select matches
         correct_selection = findall(selection)
 
         if length(selection[selection]) > 0
@@ -230,8 +243,10 @@ function filter_subfind(filebase::String, blockname::String, filter_function::Fu
             # create array of integers for easy storing
             id_array = collect(1:length(selection))[correct_selection]
 
-            # create SubfindFilter object and push it to the storage array
-            push!(A, SubfindFilter(i, id_array))
+            # create HaloID object and push it to the storage array
+            for j = 1:length(id_array)
+                push!(A, HaloID(i, id_array[j]))
+            end
 
         end # if entries > 0
 
@@ -240,21 +255,3 @@ function filter_subfind(filebase::String, blockname::String, filter_function::Fu
     return A
 end
 
-function read_particles_in_halo(sub_file::String, snap_filebase::String,
-                                halo_id::Int64, blocks::Vector{String};
-                                parttype::Integer=0, Rhalf_factor::AbstractFloat=5.0)
-
-
-    error("Not finished!")
-
-    # read subfind data
-
-    pos      = read_subfind(sub_input, "SPOS")[halo_id,:]
-    rhalf    = read_subfind(sub_input, "RHMS")[halo_id]
-
-    sub_info = read_info(sub_file)
-    pos = get_block_positions(sub_file)
-    ids = read_block_with_offset(sub_info, "KEY",
-                                      info = sub_info[getfield.(sub_info, :block_name) .== "PID"][1],
-                                      parttype = 0)
-end

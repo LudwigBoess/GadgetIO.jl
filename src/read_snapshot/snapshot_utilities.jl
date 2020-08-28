@@ -170,6 +170,32 @@ function block_present(filename::String, blockname::String, blocks::Vector{Strin
     return false
 end
 
+"""
+    check_blocks(snap_base::String, blocks::Array{String})
+
+Check if all requested blocks are present.
+"""
+function check_blocks(filename::String, blocks::Array{String})
+
+    # check if requested blocks are present
+    no_mass_block = false
+    blocks_in_file = print_blocks(filename, verbose=false)
+    for blockname in blocks
+        if !block_present(filename, blockname, blocks_in_file)
+            if blockname == "MASS"
+
+                no_mass_block = true
+                deleteat!(blocks, "MASS")
+            else
+                error("Block $blockname not present!")
+            end
+        end
+    end
+
+    return blocks, no_mass_block
+
+end
+
 
 """
     get_block_positions(filename::String)
@@ -220,6 +246,48 @@ function get_block_positions(filename::String)
     close(f)
 
     d = Dict( blocks[i] => pos[i] for i = 1:length(blocks))
+
+    return d
+end
+
+
+"""
+    select_file(filebase::String, filenum::Integer)
+
+Checks if the requested files exists and returns the path.
+"""
+function select_file(filebase::String, filenum::Integer)
+
+    if !isfile(filebase)
+        filename = filebase * ".$filenum"
+        if !isfile(filename)
+            error("File $filename not present!")
+        else
+            return filename
+        end
+    else
+        return filebase
+    end
+end
+
+
+"""
+    allocate_data_dict( blocks::Array{String}, N_to_read::Integer, 
+                        snap_info::Array{Info_Line}, no_mass_block::Bool )
+
+Helper function to allocate the data `Dict`.
+"""
+function allocate_data_dict(blocks::Array{String}, N_to_read::Integer, 
+                            snap_info::Array{Info_Line}, no_mass_block::Bool)
+
+    # prepare dictionary for particle storage, this looks super ugly...
+    d = Dict(blocks[i] => Array{snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].data_type,2}(undef, N_to_read,
+            snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].n_dim) for i = 1:length(blocks))
+
+    # allocate mass array, if it's not in a block
+    if no_mass_block
+        d["MASS"] = Array{Float32,2}(undef, N_to_read, 1)
+    end
 
     return d
 end
