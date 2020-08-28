@@ -32,11 +32,12 @@ module GadgetIO
            get_index_list,
 
            # subfind read
-           SubfindID,
+           HaloID,
            read_subfind_header,
            read_subfind,
            find_most_massive_halo,
            filter_subfind,
+           read_ids_in_halo,
 
            # write snapshot functions
            write_header,

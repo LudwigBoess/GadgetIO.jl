@@ -560,26 +560,27 @@ end
 
 @inline function get_index_list_sorted(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
 
-    sorted_list = sort(keylist)
-    sorted_file_idx = sortperm(keys_in_file)
+    #sorted_list = sort(keylist)
+    sorted_file_idx = sortperm(keys_in_file[:,1])
     sorted_file = keys_in_file[sorted_file_idx]
 
     result = Vector{Int}(undef, length(keylist))
     len = 0
     i = 1
 
-    for entry = 1:length(sorted_list)
+    @inbounds for entry = 1:length(keylist)
 
-        k = findnext( sorted_file .== sorted_list[entry], i)
+        k = findnext( sorted_file .== keylist[entry], i)
         
         if k !== nothing
             len += 1
             i   += entry
-            @inbounds result[len] = sorted_file_idx[k]
+            result[len] = sorted_file_idx[k]
         end
     end
     return resize!(result, len)
 end
+
 
 
 function join_blocks(offset_key, part_per_key)
@@ -602,115 +603,20 @@ function join_blocks(offset_key, part_per_key)
     return use_block, part_per_key
 end
 
-"""
-    Read particles in box main
-"""
 
 """
-    read_particles_in_box(filename::String, blocks::Vector{String},
-                          corner_lowerleft, corner_upperright;
-                          parttype::Integer=0, verbose::Bool=true)
+    find_read_positions(files::Array{<:Integer}, filebase::String, 
+                             blocks::Array{String}, parttype::Integer)
 
-Reads all particles within a box defined by a lower left and upper right corner
-for a given particle type. Returns a dictionary with all requested blocks.
+Helper function to get positions and length of particle blocks in files.
 """
-function read_particles_in_box(filename::String, blocks::Vector{String},
-                               corner_lowerleft, corner_upperright;
-                               parttype::Integer=0, verbose::Bool=true)
+function find_read_positions(files::Array{<:Integer}, filebase::String, 
+                             blocks::Array{String}, parttype::Integer,
+                             keylist::Array{<:Integer}, key_info::Array{Info_Line},
+                             verbose::Bool)
 
-
-    if verbose
-        println()
-        @info "Running on $(nthreads()) threads"
-    end
-
-    filebase = filename
-    file_key_index = filebase * ".key.index"
-
-    # if the snapshot does not exist it may be split into multiple files
-    if !isfile(filebase)
-
-        if verbose
-            @info "File: $filebase not found, looking for sub-files."
-        end
-
-        # try reading the first of the distributed snapshots
-        filename = filebase * ".0"
-
-        # throw error if file does not exist
-        if !isfile(filename)
-            error("File: $filename not found!")
-        end
-
-        h = head_to_obj(filename)
-
-        if verbose
-            @info "$(h.num_files) sub-files found."
-        end
-
-        nfiles = h.num_files
-    else
-        nfiles = 1
-    end
-
-    no_mass_block = false
-
-    # check if requested blocks are present
-    blocks_in_file = print_blocks(filename, verbose=false)
-    for blockname in blocks
-        if !block_present(filename, blockname, blocks_in_file)
-            if blockname == "MASS"
-
-                no_mass_block = true
-                deleteat!(blocks, "MASS")
-            else
-                error("Block $blockname not present!")
-            end
-        end
-    end
-
-    # read info blocks once here
-    snap_info = read_info(filename)
-    key_info  = read_info(filename * ".key")
-
-    if verbose
-        @info "All requested blocks present!"
-        @info "Checking for .key files..."
-    end
-
-    # check if key files are present
-    file_key = filename * ".key"
-    if !block_present(file_key, "KEY")
-        error("No .key file present!")
-    end
-
-    if verbose
-        @info ".key files found!"
-        @info "Calculating peano-hilbert keys..."
-        t1 = Dates.now()
-    end
-
-    # first read the header
-    h_key = read_keyheader(file_key)
-
-    # get a list of the required peano-hilbert keys
-    keylist = get_keylist(h_key, corner_lowerleft, corner_upperright)
-
-    if verbose
-        t2 = Dates.now()
-        @info "$(length(keylist)) Peano-Hilbert keys found. Took: $(t2 - t1)"
-        @info "Looking for relevant files..."
-        t1 = Dates.now()
-    end
-
-    # find relevant files
-    files = find_files_for_keys(filebase, nfiles, keylist)
-    
+    # store number of file
     N_files = length(files)
-    if verbose
-        t2 = Dates.now()
-        @info "$N_files files found. Took: $(t2 - t1)"
-    end
 
     # allocate arrys to store reading information
     file_offset_key      = Array{Array{<:Integer}}(undef, N_files)
@@ -718,11 +624,8 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
     file_block_positions = Array{Dict{String,Integer}}(undef, N_files)
 
     @inbounds for i = 1:N_files
-        if nfiles > 1
-            filename = filebase * ".$(files[i])"
-        else
-            filename = filebase
-        end
+
+        filename = select_file(filebase, files[i])
 
         # read header of the file
         h = head_to_obj(filename)
@@ -793,6 +696,111 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
 
     end # for i = 1:length(files)
 
+    return file_offset_key, file_part_per_key, file_block_positions
+end
+
+
+"""
+    Read particles in box main
+"""
+
+
+
+"""
+    read_particles_in_box(filename::String, blocks::Vector{String},
+                          corner_lowerleft, corner_upperright;
+                          parttype::Integer=0, verbose::Bool=true)
+
+Reads all particles within a box defined by a lower left and upper right corner
+for a given particle type. Returns a dictionary with all requested blocks.
+"""
+function read_particles_in_box(filename::String, blocks::Vector{String},
+                               corner_lowerleft, corner_upperright;
+                               parttype::Integer=0, verbose::Bool=true)
+
+
+    if verbose
+        println()
+        @info "Running on $(nthreads()) threads"
+    end
+
+    filebase = filename
+    file_key_index = filebase * ".key.index"
+
+    # if the snapshot does not exist it may be split into multiple files
+    if !isfile(filebase)
+
+        if verbose
+            @info "File: $filebase not found, looking for sub-files."
+        end
+
+        # try reading the first of the distributed snapshots
+        filename = select_file(filebase, 0)
+
+        h = head_to_obj(filename)
+
+        if verbose
+            @info "$(h.num_files) sub-files found."
+        end
+
+        nfiles = h.num_files
+    else
+        nfiles = 1
+    end
+
+    blocks, no_mass_block = check_blocks(filename, blocks)
+
+    # read info blocks once here
+    snap_info = read_info(filename)
+    key_info  = read_info(filename * ".key")
+
+    if verbose
+        @info "All requested blocks present!"
+        @info "Checking for .key files..."
+    end
+
+    # check if key files are present
+    file_key = filename * ".key"
+    if !block_present(file_key, "KEY")
+        error("No .key file present!")
+    end
+
+    if verbose
+        @info ".key files found!"
+        @info "Calculating peano-hilbert keys..."
+        t1 = Dates.now()
+    end
+
+    # first read the header
+    h_key = read_keyheader(file_key)
+
+    # get a list of the required peano-hilbert keys
+    keylist = get_keylist(h_key, corner_lowerleft, corner_upperright)
+
+    if verbose
+        t2 = Dates.now()
+        @info "$(length(keylist)) Peano-Hilbert keys found. Took: $(t2 - t1)"
+        @info "Looking for relevant files..."
+        t1 = Dates.now()
+    end
+
+    # find relevant files
+    files = find_files_for_keys(filebase, nfiles, keylist)
+    
+    N_files = length(files)
+    if verbose
+        t2 = Dates.now()
+        @info "$N_files files found. Took: $(t2 - t1)"
+
+        @info "Searching read positions..."
+        println()
+        t1 = Dates.now()
+    end
+
+    # find all the positions where to read data
+    file_offset_key, file_part_per_key, file_block_positions = find_read_positions( files, filebase, blocks, 
+                                                                                    parttype, keylist, key_info, 
+                                                                                    verbose)
 
     N_to_read = 0
 
@@ -801,17 +809,16 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
     end
 
     if verbose
+        t2 = Dates.now()
+        println()
+        @info "Positions read. Took: $(t2 - t1)"
+        println()
         @info "Reading $N_to_read particles..."
     end
 
-    # prepare dictionary for particle storage, this looks super ugly...
-    d = Dict(blocks[i] => Array{snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].data_type,2}(undef, N_to_read,
-            snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].n_dim) for i = 1:length(blocks))
 
-    # allocate mass array, if it's not in a block
-    if no_mass_block
-        d["MASS"] = Array{Float32,2}(undef, N_to_read, 1)
-    end
+    # prepare dictionary for particle storage
+    d = allocate_data_dict(blocks, N_to_read, snap_info, no_mass_block)
 
     if verbose
         @info "Reading Blocks..."
