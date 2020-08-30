@@ -185,7 +185,7 @@ function check_blocks(filename::String, blocks::Array{String})
             if blockname == "MASS"
 
                 no_mass_block = true
-                deleteat!(blocks, "MASS")
+                deleteat!(blocks, findfirst(blocks .== "MASS"))
             else
                 error("Block $blockname not present!")
             end
@@ -195,7 +195,6 @@ function check_blocks(filename::String, blocks::Array{String})
     return blocks, no_mass_block
 
 end
-
 
 """
     get_block_positions(filename::String)
