@@ -38,6 +38,7 @@ module GadgetIO
            find_most_massive_halo,
            filter_subfind,
            read_ids_in_halo,
+           read_particles_by_id,
 
            # write snapshot functions
            write_header,

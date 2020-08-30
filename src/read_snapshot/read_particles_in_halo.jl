@@ -52,7 +52,7 @@ end
                          pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
                          r0::Real=0.0)
 
-Reads particles filtered by the provided IDs.
+Reads particles filtered by the provided IDs. Returns all requested blocks as entries in a `Dict`.
 """
 function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
                               blocks::Array{String}; 
@@ -60,6 +60,10 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                               pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
                               r0::Real=0.0)
 
+    # sort the IDs if they are not already sorted
+    if !issorted(selected_ids)
+        sort!(selected_ids)
+    end
     # try reading the first of the distributed snapshots
     filename = select_file(snap_base, 0)
 
@@ -81,6 +85,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                                             parttype=parttype, verbose=verbose)
 
             if verbose
+                println()
                 @info "Matching IDs..."
                 t1 = Dates.now()
             end
@@ -160,6 +165,29 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
         end
     end
+end
+
+"""
+    read_particles_by_id(snap_base::String, ids::Array{<:Integer}, 
+                         block::String; 
+                         parttype::Integer=0, verbose::Bool=true,
+                         pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
+                         r0::Real=0.0)
+
+Reads particles filtered by the provided IDs. Returns the requested block as an `Array`.
+"""
+function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
+                              block::String; 
+                              parttype::Integer=0, verbose::Bool=true,
+                              pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
+                              r0::Real=0.0)
+
+   data = read_particles_by_id(snap_base, selected_ids, 
+                              [block],
+                              parttype=parttype, verbose=verbose,
+                              pos0=pos0, r0=r0)
+
+    return data[block]
 end
 
 
@@ -383,5 +411,3 @@ function read_particles_in_halo(snap_base::String, block::String,
 
     return data[block]
 end
-
-

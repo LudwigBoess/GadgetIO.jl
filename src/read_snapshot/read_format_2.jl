@@ -91,13 +91,11 @@ function read_block_by_name(filename::String, blockname::String;
             if info.is_present[i] == Int32(1)
                 if parttype == -1
                     d[parttypes[i]] = Dict()
-                    d[parttypes[i]][blockname] = copy(transpose(
-                                                        read!(f, Array{info.data_type,2}(undef,(info.n_dim,h.npart[i])))))
+                    d[parttypes[i]][blockname] = read_block_data(f, info.data_type, info.n_dim, h.npart[i])
                 else
                     if i == (parttype+1)
 
-                        block = copy(transpose(
-                                        read!(f, Array{info.data_type,2}(undef,(info.n_dim,h.npart[i])))))
+                        block = read_block_data(f, info.data_type, info.n_dim, h.npart[i])
                         close(f)
                         return block
                     else
@@ -143,6 +141,13 @@ function read_block_by_name(filename::String, blockname::String;
         end
     end # eof(f) != true
 
+end
+
+function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart::Integer)
+    
+    return copy(transpose(
+        read!(f, Array{data_type,2}(undef, (n_dim,npart) ) 
+    )))
 end
 
 function snap_2_d_info(filename::String, d::Dict{Any,Any}, info::Array{Info_Line,1})
@@ -259,8 +264,7 @@ function read_block_with_info(f::IOStream, d::Dict{Any,Any}, info::Info_Line)
     for i ∈ 1:length(info.is_present)
 
         if info.is_present[i] == Int32(1)
-            d[parttypes[i]][info.block_name] = copy(transpose(
-                                         read!(f, Array{info.data_type,2}(undef,(info.n_dim,d["Header"]["npart"][i])))))
+            d[parttypes[i]][info.block_name] = read_block_data(f, info.data_type, info.n_dim, d["Header"]["npart"][i])
         end
 
     end
@@ -291,9 +295,9 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
             if data["Header"]["npart"][i] != Int32(0)
 
                 if data["Header"]["massarr"][i] == Int32(0)
-                    data[data["Header"]["PartTypes"][i]][blockname] = copy(transpose(read!(f, Array{dtype,2}(undef,(1,n)))))
+                    data[data["Header"]["PartTypes"][i]][blockname] = read_block_data(f, dtype, 1, n)
                 else
-                    data[data["Header"]["PartTypes"][i]][blockname] =  Float32.(data["Header"]["massarr"][i] .* ones(n))
+                    data[data["Header"]["PartTypes"][i]][blockname] = dtype.(data["Header"]["massarr"][i] .* ones(n))
                 end
 
             end
@@ -313,7 +317,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
             #println("nr. of gas-particles: ", n)
             #println("reading dimensions: ", skipsize/(n*bit_size))
 
-            data[data["Header"]["PartTypes"][1]][blockname] = copy(transpose(read!(f, Array{dtype,2}(undef,(dim,n)))))
+            data[data["Header"]["PartTypes"][1]][blockname] = read_block_data(f, dtype, dim, n)
 
         # check if bh
         elseif (any(x->x==blockname,bh_arr)) == true
@@ -327,18 +331,18 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
             #println("reading dimensions: ", skipsize/(n*bit_size))
 
             if blockname != "BHPC"
-                data[data["Header"]["PartTypes"][6]][blockname] = copy(transpose(read!(f, Array{dtype,2}(undef,(dim,n)))))
+                data[data["Header"]["PartTypes"][6]][blockname] = read_block_data(f, dtype, dim, n)
             else
-                data[data["Header"]["PartTypes"][6]][blockname] = Int.(copy(transpose(read!(f, Array{UInt32,2}(undef,(1,n))))))
+                data[data["Header"]["PartTypes"][6]][blockname] = Int64.(read_block_data(f, UInt32, 1, n))
             end
 
         elseif blockname == gas_bh
 
             n = Int64(data["Header"]["npart"][1])
-            data[data["Header"]["PartTypes"][1]][blockname] = Int.(copy(transpose(read!(f, Array{UInt32,2}(undef,(1,n))))))
+            data[data["Header"]["PartTypes"][1]][blockname] = Int64.(read_block_data(f, UInt32, 1, n))
 
             n = Int64(data["Header"]["npart"][6])
-            data[data["Header"]["PartTypes"][6]][blockname] = Int.(copy(transpose(read!(f, Array{UInt32,2}(undef,(1,n))))))
+            data[data["Header"]["PartTypes"][6]][blockname] = Int64.(read_block_data(f, UInt32, 1, n))
 
         else
             # read Blocks
@@ -354,7 +358,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
                     n = Int64(data["Header"]["npart"][i])
 
-                    data[data["Header"]["PartTypes"][i]][blockname] = copy(transpose(read!(f, Array{dtype,2}(undef,(dim,n)))))
+                    data[data["Header"]["PartTypes"][i]][blockname] = read_block_data(f, dtype, dim, n)
 
                 end
 
@@ -369,7 +373,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
                 n = Int64(data["Header"]["npart"][i])
 
-                data[data["Header"]["PartTypes"][i]][blockname] = copy(transpose(read!(f, Array{UInt32,2}(undef,(1,n)))))
+                data[data["Header"]["PartTypes"][i]][blockname] = read_block_data(f, UInt32, 1, n)
 
             end
 
@@ -410,8 +414,7 @@ function read_block_with_offset(filename::String, data_old, pos0::Integer, info:
         seek(f, p + len*offset_key[i])
         n_this_key += part_per_key[i]
 
-        data[n_read:n_this_key, :] = copy(transpose(read!(f,
-                    Array{info.data_type,2}(undef,(info.n_dim,part_per_key[i])))))
+        data[n_read:n_this_key, :] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
 
         n_read += part_per_key[i]
 
@@ -423,7 +426,13 @@ function read_block_with_offset(filename::String, data_old, pos0::Integer, info:
     return [data_old; data]
 end
 
+"""
+    read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::Info_Line,
+                                offset::Integer, offset_key::Array{<:Integer}, 
+                                part_per_key::Array{<:Integer} )
 
+Read part of a block to pre-allocated array.
+"""
 function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::Info_Line,
                                 offset::Integer, offset_key::Array{<:Integer}, 
                                 part_per_key::Array{<:Integer} )
@@ -448,8 +457,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
         seek(f, p + len*offset_key[i])
         n_this_key += part_per_key[i]
 
-        data[n_read:n_this_key, :] = copy(transpose(read!(f,
-                    Array{info.data_type,2}(undef,(info.n_dim,part_per_key[i])))))
+        data[n_read:n_this_key, :] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
 
         n_read += part_per_key[i]
 

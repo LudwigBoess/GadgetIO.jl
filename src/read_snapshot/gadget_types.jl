@@ -125,7 +125,7 @@ Contains the data of a single entry in the `INFO` block of a Gadget snapshot.
 |                                      |  or gas + BHs: [ 1, 0, 0, 0, 0, 1 ]                                                    |
 
 """
-mutable struct Info_Line
+struct Info_Line
     block_name::String              # name of the data block, e.g. "POS"
     data_type::DataType             # datatype of the block, e.g. Float32 for single precision, Float64 for double
     n_dim::Int32                    # number of dimensions of the block, usually 1 or 3

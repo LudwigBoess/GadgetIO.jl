@@ -274,7 +274,7 @@ function read_key_index(file_key_index::String)
     return low_list, high_list, file_list
 end
 
-function get_index_bounds(ids::Vector{Int}, low_bounds::Vector{UInt}, high_bounds::Vector{UInt})
+function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
 
     nids = length(ids)
     nbounds = length(low_bounds)
@@ -409,9 +409,11 @@ function get_index_bounds(ids::Vector{Int}, low_bounds::Vector{UInt}, high_bound
 end
 
 """
-This should be fixed! It's A LOT faster than the simpler version!
+    find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
+
+Selects the files in which the particles associated with the given Peano-Hilbert keys are stored.
 """
-function find_files_for_keys_old(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
+function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
 
     file_key_index = filebase * ".key.index"
 
@@ -430,12 +432,15 @@ function find_files_for_keys_old(filebase::String, nfiles::Integer, keylist::Vec
 
     file_sort = sort(file_list[index_bounds])
 
-    files = file_list[file_sort]
-
-    return Int64.(unique!(files))
+    return Int64.(file_sort)
 end
 
-function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
+"""
+    find_files_for_keys_AR(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
+
+Selects the files in which the particles associated with the given Peano-Hilbert keys are stored. Version of Antonio. (Slower than Klaus' version!)
+"""
+function find_files_for_keys_AR(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
 
     file_key_index = filebase * ".key.index"
 
@@ -456,7 +461,13 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
     return Int64.(unique!(sort!(file_list[mask])))
 end
 
-function get_index_list_old(idarr1, idarr2)
+
+"""
+    get_index_list(idarr1::Array{<:Integer}, idarr2::Array{<:Integer})
+
+Get positions in `idarr2` where `idarr2` matches `idarr1`.
+"""
+@inline function get_index_list(idarr1::Array{<:Integer}, idarr2::Array{<:Integer})
 
     narr1 = length(idarr1)
     narr2 = length(idarr2)
@@ -473,28 +484,27 @@ function get_index_list_old(idarr1, idarr2)
 
     lend = false
 
-    iiarr1 = sortperm(idarr1[:,1])
     iiarr2 = sortperm(idarr2[:,1])
 
     while !lend
 
-        if idarr2[iiarr2[icountarr2]] == idarr1[iiarr1[icountarr1]]
+        if idarr2[iiarr2[icountarr2]] == idarr1[icountarr1]
 
             ind_all[icountall] = iiarr2[icountarr2]
             icountall  += 1
             icountarr1 += 1
             icountarr2 += 1
-        else  # idarr2[iiarr2[icountnotarr2]] == idarr1[iiarr1[icountnotarr1]]
-            if idarr2[iiarr2[icountarr2]] < idarr1[iiarr1[icountarr1]]
+        else  # idarr2[iiarr2[icountnotarr2]] == idarr1[icountnotar1]]
+            if idarr2[iiarr2[icountarr2]] < idarr1[icountarr1]
                 not_arr1t[icountnotarr1] = iiarr2[icountarr2]
                 icountarr2    += 1
                 icountnotarr1 += 1
-            else # idarr2[iiarr2[icountnotarr2]] < idarr1[iiarr1[icountnotarr1]]
-                not_arr2t[icountnotarr2] = iiarr1[icountarr1]
+            else # idarr2[iiarr2[icountnotarr2]] < idarr1[icountnotar1]]
+                not_arr2t[icountnotarr2] = icountarr1
                 icountarr1    += 1
                 icountnotarr2 += 1
-            end # idarr2[iiarr2[icountnotarr2]] < idarr1[iiarr1[icountnotarr1]]
-        end # idarr2[iiarr2[icountnotarr2]] == idarr1[iiarr1[icountnotarr1]]
+            end # idarr2[iiarr2[icountnotarr2]] < idarr1[icountnotar1]]
+        end # idarr2[iiarr2[icountnotarr2]] == idarr1[icountnotar1]]
         if (icountarr2 >= narr2 ) || (icountarr1 >= narr1)
             lend = true
         end
@@ -502,12 +512,12 @@ function get_index_list_old(idarr1, idarr2)
 
     rest = narr1 - icountarr1
     if rest > 0
-        not_arr2t[icountnotarr2:icountnotarr2+rest] = iiarr1[icountarr1:icountarr1+rest]
+        not_arr2t[icountnotarr2:icountnotarr2+rest] = icountarr1:icountarr1+rest
         icountnotarr2 += rest
     end # rest > 0
 
     if icountall > 1
-        ind_out = ind_all[1:icountall]
+        ind_out = ind_all[1:icountall-1]
     # else
     #     error("Not enough data found!")
     end
@@ -515,7 +525,12 @@ function get_index_list_old(idarr1, idarr2)
     return ind_out
 end
 
-function get_keylist(h_key::KeyHeader, x0, x1)
+"""
+    get_keylist(h_key::KeyHeader, x0::Array{<:Real}, x1::Array{<:Real})
+
+Get all Peano-Hilbert keys for domain defined by the corner points `x0` and `x1`.
+"""
+function get_keylist(h_key::KeyHeader, x0::Array{<:Real}, x1::Array{<:Real})
 
     ix0 = zeros(Int, 3)
     ix1 = zeros(Int, 3)
@@ -538,10 +553,16 @@ function get_keylist(h_key::KeyHeader, x0, x1)
         i += 1
     end
 
-    return keylist
+    return sort(keylist)
 end
 
-@inline function get_index_list(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+
+"""
+    get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+
+Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `Dict` for lookup -> slower than the normal version.
+"""
+@inline function get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
 
     dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
     result = Vector{Int}(undef, length(keylist))
@@ -557,33 +578,12 @@ end
     return resize!(result, len)
 end
 
-
-@inline function get_index_list_sorted(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
-
-    #sorted_list = sort(keylist)
-    sorted_file_idx = sortperm(keys_in_file[:,1])
-    sorted_file = keys_in_file[sorted_file_idx]
-
-    result = Vector{Int}(undef, length(keylist))
-    len = 0
-    i = 1
-
-    @inbounds for entry = 1:length(keylist)
-
-        k = findnext( sorted_file .== keylist[entry], i)
-        
-        if k !== nothing
-            len += 1
-            i   += entry
-            result[len] = sorted_file_idx[k]
-        end
-    end
-    return resize!(result, len)
-end
-
-
-
-function join_blocks(offset_key, part_per_key)
+"""
+   function join_blocks(offset_key, part_per_key)
+    
+Joins neigboring blocks to simplify read-in.
+"""
+@inline function join_blocks(offset_key, part_per_key)
 
     use_block = trues(length(offset_key))
 
@@ -647,7 +647,7 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
             t1 = Dates.now()
         end
 
-        index_list = get_index_list(keylist, keys_in_file)
+        index_list = get_index_list_dict(keylist, keys_in_file)
 
         if verbose
             t2 = Dates.now()
@@ -816,7 +816,6 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         @info "Reading $N_to_read particles..."
     end
 
-
     # prepare dictionary for particle storage
     d = allocate_data_dict(blocks, N_to_read, snap_info, no_mass_block)
 
@@ -889,7 +888,7 @@ function read_particles_in_box(filename::String, blocks::String,
                                corner_lowerleft, corner_upperright;
                                parttype::Integer=0, verbose::Bool=true)
 
-    d = read_particles_in_box(filename, [blocks], x0, x1, parttype=parttype, verbose=verbose)
+    d = read_particles_in_box(filename, [blocks], corner_lowerleft, corner_upperright, parttype=parttype, verbose=verbose)
 
     return d[blocks]
 end
