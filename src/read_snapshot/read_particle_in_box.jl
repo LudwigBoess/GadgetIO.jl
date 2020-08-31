@@ -525,6 +525,28 @@ Get positions in `idarr2` where `idarr2` matches `idarr1`.
     return ind_out
 end
 
+
+"""
+    get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+
+Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `Dict` for lookup -> slower than the normal version.
+"""
+@inline function get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+
+    dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
+    result = Vector{Int}(undef, length(keylist))
+    len = 0
+
+    for k in keylist
+        i = get(dict, k, nothing)
+        if i !== nothing
+            len += 1
+            @inbounds result[len] = i
+        end
+    end
+    return resize!(result, len)
+end
+
 """
     get_keylist(h_key::KeyHeader, x0::Array{<:Real}, x1::Array{<:Real})
 
@@ -556,27 +578,6 @@ function get_keylist(h_key::KeyHeader, x0::Array{<:Real}, x1::Array{<:Real})
     return sort(keylist)
 end
 
-
-"""
-    get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
-
-Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `Dict` for lookup -> slower than the normal version.
-"""
-@inline function get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
-
-    dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
-    result = Vector{Int}(undef, length(keylist))
-    len = 0
-
-    for k in keylist
-        i = get(dict, k, nothing)
-        if i !== nothing
-            len += 1
-            @inbounds result[len] = i
-        end
-    end
-    return resize!(result, len)
-end
 
 """
    function join_blocks(offset_key, part_per_key)
@@ -746,6 +747,7 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         nfiles = h.num_files
     else
         nfiles = 1
+        h = head_to_obj(filename)
     end
 
     blocks, no_mass_block = check_blocks(filename, blocks)
