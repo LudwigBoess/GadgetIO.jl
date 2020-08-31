@@ -8,7 +8,7 @@ Checks for matching IDs.
 function filter_by_ids( selected_ids::Array{<:Integer}, ids::Array{<:Integer})
 
     # look for the array positions where the IDs match
-    matched = sort( get_index_list( selected_ids, ids ) )
+    matched = sort( get_index_list_dict( selected_ids, ids ) )
 
     return matched
 end
@@ -109,7 +109,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
         # single file read
         if isfile(snap_base)
 
-            return read_particles_by_id_single_file(snap_file, selected_ids, blocks, parttype, verbose=verbose)
+            return read_particles_by_id_single_file(snap_base, selected_ids, blocks, parttype, verbose=verbose)
             
         else # multi-file brute-force read -> slow!
 
@@ -318,7 +318,7 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
         @info "IDs read. Took: $(t2 - t1)"
     end
 
-    return halo_ids
+    return sort(halo_ids)
 end
 
 
