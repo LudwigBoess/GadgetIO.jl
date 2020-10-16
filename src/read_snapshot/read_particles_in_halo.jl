@@ -204,11 +204,15 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
     # read the header
     sub_header = read_subfind_header(sub_file)
 
+    # read info for PID datatype
+    info = read_info(sub_file)
+    pid_info = info[getfield.(info, :block_name) .== "PID"][1]
+
     # if there are fewer IDs in the file than in the halo they are distributed over multiple files
     if (sub_header.nfof - offset) < N_ids
         
         # allocate array for IDs
-        ids = Array{<:Integer}(undef, N_ids)
+        ids = Array{pid_info.data_type}(undef, N_ids)
 
         ids_read = 0
         files_read = 0
@@ -297,21 +301,21 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     end
     
     # read number of IDs in the halo
-    N_ids = read_subfind(sub_file, len_block)[halo.id]
+    N_ids = Int64(read_subfind(sub_file, len_block)[halo.id])
 
     if verbose
         t2 = Dates.now()
         @info "N_particles to read: $N_ids. Took: $(t2 - t1)"
     end
     # read offset in PID array
-    offset = read_subfind(sub_file, off_block)[halo.id]
+    offset = Int64(read_subfind(sub_file, off_block)[halo.id])
 
     if verbose
         @info "Reading IDs in halo..."
         t1 = Dates.now()
     end
     # read all IDs of the particles contained in a halo
-    halo_ids = read_pids(sub_base, N_ids, offset)
+    halo_ids = read_pids(sub_file, N_ids, offset)
 
     if verbose
         t2 = Dates.now()
