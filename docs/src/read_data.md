@@ -151,7 +151,7 @@ If the simulation is too large to read the whole snapshot into memory you can gi
 
 This will return a dictionary with all requested blocks.
 
-## Large Simulations
+## Read subvolumes
 
 
 For large simulations Gadget distributes snapshots over multiple files. These files contain particles associated with specific Peano-Hilbert keys.
@@ -221,6 +221,37 @@ data["RHO"]  # array of densities
 (...)
 ```
 
+## Read distributed snapshotfiles
+
+If you want to read in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
+
+```julia
+read_blocks_over_all_files(snap_base::String, blocks::Array{String}, filter_function::Function; 
+                                    N_to_read::Integer=-1, parttype::Integer=0)
+```
+This will read the specified `blocks` for all particles that pass the `filter_function`. This can be useful if you don't know where the region you are interested in is located and don't have enough memory to read in all particles.
+
+### Filter functions
+
+The `filter_function` can be any function that takes a `String` input and returns an `Array` of `Integer`s, or `CartesianCoordinates`.
+For example, if you want to filter all particles with a Mach number larger than 1:
+
+```julia
+function mach_gt_1(snap_file)
+    mach = read_snap(snap_file, "MACH", 0)
+    sel  = findall( mach .> 1.0 )
+    return sel
+end
+```
+
+Or if you want to trick the function into reading all particles after all:
+
+```julia
+function pass_all(snap_file)
+    h = read_header(snap_file)
+    return collect(1:h.npart[1])
+end
+```
 
 # Read Subfind Data
 
