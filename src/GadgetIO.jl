@@ -12,6 +12,7 @@ module GadgetIO
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_subfind.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particle_in_box.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particles_in_halo.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_distributed_files.jl"))
 
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
@@ -26,10 +27,14 @@ module GadgetIO
            read_snap,
            read_block_by_name,      # similar to readnew.pro by Klaus Dolag
            read_header,
+
+           # large simulations
            read_particles_in_box,
            read_particles_in_volume,
            read_particles_in_halo,
            get_index_list,
+           get_npart_to_read,
+           read_blocks_over_all_files,
 
            # subfind read
            HaloID,
