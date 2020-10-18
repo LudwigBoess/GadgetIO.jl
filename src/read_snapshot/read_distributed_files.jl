@@ -1,5 +1,15 @@
 using ProgressMeter
 
+function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real}, 
+                          parttype::Integer)
+
+    pos = read_snap(snap_file, "POS", parttype)
+    sel = findall( ( corner_lowerleft[1] .<= pos[:,1] .< corner_upperright[1] ) .&
+                   ( corner_lowerleft[2] .<= pos[:,2] .< corner_upperright[2] ) .&
+                   ( corner_lowerleft[3] .<= pos[:,3] .< corner_upperright[3] ) )
+    return sel
+end
+
 """
     get_npart_to_read( snap_base::String, filter_function::Function)
 
@@ -13,11 +23,15 @@ function get_npart_to_read( snap_base::String, filter_function::Function)
     # number of particles that fulfill the filter criteria
     N_part = 0
 
-    @showprogress "Selecting particles..." for sub_snap = 0:(h.num_files-1)
+    for sub_snap = 0:(h.num_files-1)
         snap_file = select_file(snap_base, sub_snap)
         sel       = filter_function(snap_file)
-        N_part   += length(sel)
+        N_this_file = length(sel)
+        @info "sub-snap $sub_snap: $N_this_file particles"
+        N_part   += N_this_file
     end
+
+    @info "Need to read $N_part particles"
 
     return N_part
 
@@ -34,8 +48,8 @@ If that number is known in advance it can be given via the `N_to_read` keyword a
 function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, filter_function::Function; 
                                     N_to_read::Integer=-1, parttype::Integer=0)
 
-    h           = read_header(snap_base * ".0")
-    snap_info   = read_info(snap_base * ".0")
+    h           = read_header(select_file(snap_base, 0))
+    snap_info   = read_info(select_file(snap_base, 0))
 
     # default behaviour is to find the particles to read.
     # If this number is known in advance it can be given as an input parameter.

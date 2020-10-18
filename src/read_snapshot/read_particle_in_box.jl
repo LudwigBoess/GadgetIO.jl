@@ -533,7 +533,7 @@ Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `
 """
 @inline function get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
 
-    dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
+    dict = Dict((n, i) for (i, n) in enumerate(Int64.(keys_in_file)))
     result = Vector{Int}(undef, length(keylist))
     len = 0
 
@@ -708,15 +708,15 @@ end
 
 
 """
-    read_particles_in_box(filename::String, blocks::Vector{String},
-                          corner_lowerleft, corner_upperright;
-                          parttype::Integer=0, verbose::Bool=true)
+    read_particles_in_box_peano(filename::String, blocks::Vector{String},
+                                corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
+                                parttype::Integer=0, verbose::Bool=true)
 
 Reads all particles within a box defined by a lower left and upper right corner
-for a given particle type. Returns a dictionary with all requested blocks.
+for a given particle type based on peano hilbert key reading. Returns a dictionary with all requested blocks.
 """
-function read_particles_in_box(filename::String, blocks::Vector{String},
-                               corner_lowerleft, corner_upperright;
+function read_particles_in_box_peano(filename::String, blocks::Vector{String},
+                               corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
                                parttype::Integer=0, verbose::Bool=true)
 
 
@@ -879,18 +879,49 @@ end
 
 """
     read_particles_in_box(filename::String, blocks::String,
-                          corner_lowerleft, corner_upperright;
-                          parttype::Integer=0, verbose::Bool=true)
+                          corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
+                          parttype::Integer=0, verbose::Bool=true,
+                          use_keys::Bool=true)
+
+Reads all particles within a box defined by a lower left and upper right corner
+for a given particle type based on peano hilbert key reading. Returns a dictionary with all requested blocks.
+"""
+function read_particles_in_box(filename::String, blocks::Vector{String},
+                               corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
+                               parttype::Integer=0, verbose::Bool=true,
+                               use_keys::Bool=true)
+
+    if use_keys
+        d = read_particles_in_box_peano(filename, blocks, corner_lowerleft, corner_upperright, 
+                                        parttype=parttype, verbose=verbose)
+    else
+        if verbose
+            @info "Brute-force read-in."
+        end
+        filter_function(snap_file) = filter_positions(snap_file, corner_lowerleft, corner_upperright, parttype)
+        d = read_blocks_over_all_files(filename, blocks, filter_function, parttype = parttype )
+    end
+
+    return d
+end
+
+"""
+    read_particles_in_box(filename::String, blocks::String,
+                          corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
+                          parttype::Integer=0, verbose::Bool=true,
+                          use_keys::Bool=true)
 
 Like `read_particles_in_box` but for a single block. Returns the block as an array.
 
 See also: [`read_particles_in_box`](@ref)
 """
 function read_particles_in_box(filename::String, blocks::String,
-                               corner_lowerleft, corner_upperright;
-                               parttype::Integer=0, verbose::Bool=true)
+                               corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
+                               parttype::Integer=0, verbose::Bool=true,
+                               use_keys::Bool=true)
 
-    d = read_particles_in_box(filename, [blocks], corner_lowerleft, corner_upperright, parttype=parttype, verbose=verbose)
+    d = read_particles_in_box(filename, [blocks], corner_lowerleft, corner_upperright, 
+                              parttype=parttype, verbose=verbose, use_keys=use_keys)
 
     return d[blocks]
 end
@@ -899,7 +930,8 @@ end
 """
     read_particles_in_box(filename::String, blocks::Vector{String},
                           center_pos, radius;
-                          parttype::Integer=0, verbose::Bool=true)
+                          parttype::Integer=0, verbose::Bool=true,
+                          use_keys::Bool=true)
 
 Reads all particles within a box encapsulating a volume defined by center position
 and radius for a given particle type. Returns a dictionary with all requested blocks.
@@ -908,13 +940,14 @@ See also: [`read_particles_in_box`](@ref)
 """
 function read_particles_in_volume(filename::String, blocks::Vector{String},
                                   center_pos::Array{<:Real}, radius::Real;
-                                  parttype::Integer=0, verbose::Bool=true)
+                                  parttype::Integer=0, verbose::Bool=true,
+                                  use_keys::Bool=true)
 
     # calculate lower left and upper right corner
     x0 = center_pos .- radius
     x1 = center_pos .+ radius
 
-    return read_particles_in_box(filename, blocks, x0, x1, parttype=parttype, verbose=verbose)
+    return read_particles_in_box(filename, blocks, x0, x1, parttype=parttype, verbose=verbose, use_keys=use_keys)
 end
 
 """
@@ -928,10 +961,12 @@ See also: [`read_particles_in_volume`](@ref)
 """
 function read_particles_in_volume(filename::String, blocks::String,
                                   center_pos, radius;
-                                  parttype::Integer=0, verbose::Bool=true)
+                                  parttype::Integer=0, verbose::Bool=true,
+                                  use_keys::Bool=true)
 
-    d = read_particles_in_volume(filename, [blocks], center_pos, parttype,
-                                 parttype=parttype, verbose=verbose)
+    d = read_particles_in_volume(filename, [blocks], center_pos, radius,
+                                 parttype=parttype, verbose=verbose,
+                                 use_keys=use_keys)
 
     return d[blocks]
 end

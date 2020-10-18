@@ -10,9 +10,9 @@ module GadgetIO
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_2.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_snapshot.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_subfind.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_distributed_files.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particle_in_box.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particles_in_halo.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_distributed_files.jl"))
 
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
