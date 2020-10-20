@@ -2,6 +2,12 @@ __precompile__()
 
 module GadgetIO
 
+    using Printf
+
+    function output_time(t1, t2)
+        return @sprintf("%0.3e", Float64((t2-t1))*1.e-9)
+    end
+    
     # functions to read snapshots
     include(joinpath(dirname(@__FILE__), "read_snapshot", "gadget_types.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_header.jl"))

@@ -15,7 +15,13 @@ end
 
 Finds the number of particles in a snapshot directory that pass the `filter_function`.
 """
-function get_npart_to_read( snap_base::String, filter_function::Function)
+function get_npart_to_read( snap_base::String, filter_function::Function;
+                            verbose::Bool=true)
+
+    if verbose
+        @info "Getting number of particles to read..."
+        t1 = time_ns()
+    end
 
     # read the header of the zero'th file 
     h = read_header(select_file(snap_base, 0))
@@ -27,11 +33,18 @@ function get_npart_to_read( snap_base::String, filter_function::Function)
         snap_file = select_file(snap_base, sub_snap)
         sel       = filter_function(snap_file)
         N_this_file = length(sel)
-        @info "sub-snap $sub_snap: $N_this_file particles"
+
+        if verbose
+            @info "sub-snap $sub_snap: $N_this_file particles"
+        end
         N_part   += N_this_file
     end
 
-    @info "Need to read $N_part particles"
+    if verbose
+        t2 = time_ns()
+        @info "Need to read $N_part particles"
+        @info "  elapsed: $(output_time(t1,t2)) s"
+    end
 
     return N_part
 
@@ -46,7 +59,7 @@ Per default the functions checks the number of particles that pass the filter.
 If that number is known in advance it can be given via the `N_to_read` keyword argument.
 """
 function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, filter_function::Function; 
-                                    N_to_read::Integer=-1, parttype::Integer=0)
+                                    N_to_read::Integer=-1, parttype::Integer=0, verbose::Bool=true )
 
     h           = read_header(select_file(snap_base, 0))
     snap_info   = read_info(select_file(snap_base, 0))
@@ -56,16 +69,30 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, fi
     if N_to_read == -1
         # check how many particles fulfill the filter criterion
         # -> needed for array pre-allocation to speed up read-in.
-        N_to_read = get_npart_to_read(snap_base, filter_function)
+        N_to_read = get_npart_to_read(snap_base, filter_function, verbose=verbose)
     end
 
+    if verbose
+        @info "Allocating storage dictionary..."
+        t1 = time_ns()
+    end
     # pre-allocate all data arrays in a dictionary
     d = allocate_data_dict(blocks, N_to_read, snap_info, false)
+    
+    if verbose
+        t2 = time_ns()
+        @info "  elapsed: $(output_time(t1,t2)) s"
+    end
 
     # store the number of particles that have been read
     N_read = 0
 
-    @showprogress "Reading..." for sub_snap = 0:(h.num_files-1)
+    if verbose
+        @info "Reading $(h.num_files) snapshots..."
+        t1 = time_ns()
+    end
+
+    for sub_snap = 0:(h.num_files-1)
 
         # select current file
         snap_file = select_file(snap_base, sub_snap)
@@ -74,22 +101,32 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, fi
         sel         = filter_function(snap_file)
         N_this_file = length(sel)
 
-        # read the blocks
-        for block ∈ blocks
+        if N_this_file > 0
+            # read the blocks
+            for block ∈ blocks
 
-            # store the block in a dummy array
-            dummy = read_snap(snap_file, block, parttype)
-            
-            # save the relevant particles in the dictionary
-            for i = 1:N_this_file
-                d[block][N_read+i,:] = dummy[sel[i][1],:]
+                # store the block in a dummy array
+                dummy = read_snap(snap_file, block, parttype)
+                
+                # save the relevant particles in the dictionary
+                for i = 1:N_this_file
+                    d[block][N_read+i,:] = dummy[sel[i][1],:]
+                end
+
             end
+            # count the number of particles already read
+            N_read += N_this_file
 
+            if verbose
+                @info "Read $N_read / $N_to_read particles"
+            end
         end
-
-        # count the number of particles already read
-        N_read += N_this_file
     
+    end
+
+    if verbose
+        t2 = time_ns()
+        @info "  elapsed: $(output_time(t1,t2)) s"
     end
 
     return d
