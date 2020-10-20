@@ -143,29 +143,28 @@ read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                      blocks::Array{String}; 
                      parttype::Integer=0, verbose::Bool=true,
                      pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
-                     r0::Real=0.0)
+                     r0::Real=0.0, use_keys::Bool=true)
 ```
 
 `snap_base` defines the target snapshot, or the snapshot directory, `selected_ids` contains the list of IDs of the particles you want to read and `blocks` containes the blocksnames of the blocks you want to read.
-If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Large Simulations](@ref) for details on this.
+If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Read Subvolumes](@ref) for details on this.
 
 This will return a dictionary with all requested blocks.
 
-## Large Simulations
+## Read Subvolumes
 
-
-For large simulations Gadget distributes snapshots over multiple files. These files contain particles associated with specific Peano-Hilbert keys.
-
+If you only want to read a subvolume of the whole simulation you can do this in two ways.
 To get all particles within a subvolume of the simulation you can use the functions [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref).
 
-[`read_particles_in_box`](@ref) takes a box defined by a lower-left corner and an upper-right corner, constructs the peano hilbert keys, selects the relevant files and reads the particles from these files into a dictionary.
+[`read_particles_in_box`](@ref) takes a box defined by a lower-left corner and an upper-right corner and reads all requested blocks and particles in that volume.
 
 ```julia
-function read_particles_in_box(filename::String, blocks::Vector{String},
-                               corner_lowerleft,
-                               corner_upperright;
-                               parttype::Int=0,
-                               verbose::Bool=true)
+function read_particles_in_box( filename::String, blocks::Vector{String},
+                                corner_lowerleft,
+                                corner_upperright;
+                                parttype::Int=0,
+                                verbose::Bool=true,
+                                use_keys::Bool=true )
 
             (...)
 
@@ -177,17 +176,29 @@ You can define an array of blocks you want to read, these will be read in parall
 [`read_particles_in_volume`](@ref) is a simple wrapper around [`read_particles_in_box`](@ref), where you can define a central position and a radius around it and it will construct the box containing that sphere for you and read all particles in it.
 
 ```julia
-function read_particles_in_volume(filename::String, blocks::Vector{String},
-                                  center_pos::Vector{AbstractFloat},
-                                  radius::AbstractFloat;
-                                  parttype::Int=0,
-                                  verbose::Bool=true)
+function read_particles_in_volume( filename::String, blocks::Vector{String},
+                                   center_pos::Vector{AbstractFloat},
+                                   radius::AbstractFloat;
+                                   parttype::Int=0,
+                                   verbose::Bool=true,
+                                   use_keys::Bool=true )
 
             (...)
 end
 ```
 
 In both functions `parttype` defines the particle type to be read, as in the previous read functions and `verbose` gives console output.
+
+### Peano-Hilbert key based reading
+
+For large simulations Gadget distributes snapshots over multiple files. These files contain particles associated with specific Peano-Hilbert keys.
+
+If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=true` (which is the default case) it constructs the peano hilbert keys, selects the relevant files and reads the particles from these files into a dictionary. This is considerably faster than the brute-force attempt.
+
+
+### Brute-Force Reading
+If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=false` it reads all particles over all distributed files which are contained in the requested subvolume.
+This takes quite a lot longer than the key based reading, but sometimes it's the only option.
 
 ### Filename
 
@@ -221,6 +232,37 @@ data["RHO"]  # array of densities
 (...)
 ```
 
+## Read distributed snapshotfiles
+
+If you want to read in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
+
+```julia
+read_blocks_over_all_files(snap_base::String, blocks::Array{String}, filter_function::Function; 
+                                    N_to_read::Integer=-1, parttype::Integer=0)
+```
+This will read the specified `blocks` for all particles that pass the `filter_function`. This can be useful if you don't know where the region you are interested in is located and don't have enough memory to read in all particles.
+
+### Filter functions
+
+The `filter_function` can be any function that takes a `String` input and returns an `Array` of `Integer`s, or `CartesianCoordinates`.
+For example, if you want to filter all particles with a Mach number larger than 1:
+
+```julia
+function mach_gt_1(snap_file)
+    mach = read_snap(snap_file, "MACH", 0)
+    sel  = findall( mach .> 1.0 )
+    return sel
+end
+```
+
+Or if you want to trick the function into reading all particles after all:
+
+```julia
+function pass_all(snap_file)
+    h = read_header(snap_file)
+    return collect(1:h.npart[1])
+end
+```
 
 # Read Subfind Data
 

@@ -31,7 +31,7 @@ function print_blocks(filename::String; verbose::Bool=true)
         p = position(f)
         seek(f,p+8)
 
-        skipsize = read(f, Int32)
+        skipsize = read(f, UInt32)
 
         p = position(f)
         seek(f,p+skipsize+8)
@@ -69,7 +69,7 @@ function read_info(filename::String; verbose::Bool=false)
         p = position(f)
         seek(f,p+8)
 
-        skipsize = read(f, Int32)
+        skipsize = read(f, UInt32)
 
         if blockname == "INFO"
             n_blocks = Int(skipsize/40) # one info line is 40 bytes
@@ -232,7 +232,7 @@ function get_block_positions(filename::String)
         read(f, Int32)
         read(f, Int32)
 
-        skipsize = read(f, Int32)
+        skipsize = read(f, UInt32)
 
         p = position(f)
 

@@ -2,6 +2,12 @@ __precompile__()
 
 module GadgetIO
 
+    using Printf
+
+    function output_time(t1, t2)
+        return @sprintf("%0.3e", Float64((t2-t1))*1.e-9)
+    end
+    
     # functions to read snapshots
     include(joinpath(dirname(@__FILE__), "read_snapshot", "gadget_types.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_header.jl"))
@@ -10,6 +16,7 @@ module GadgetIO
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_2.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_snapshot.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_subfind.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_distributed_files.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particle_in_box.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particles_in_halo.jl"))
 
@@ -26,10 +33,14 @@ module GadgetIO
            read_snap,
            read_block_by_name,      # similar to readnew.pro by Klaus Dolag
            read_header,
+
+           # large simulations
            read_particles_in_box,
            read_particles_in_volume,
            read_particles_in_halo,
            get_index_list,
+           get_npart_to_read,
+           read_blocks_over_all_files,
 
            # subfind read
            HaloID,

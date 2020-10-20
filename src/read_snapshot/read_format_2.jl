@@ -57,9 +57,9 @@ function read_block_by_name(filename::String, blockname::String;
 
     f = open(filename)
 
-    first_block = read(f, Int32)
+    first_block = read(f, UInt32)
 
-    if first_block != Int32(8)
+    if first_block != UInt32(8)
         error("Only snapshots of format 2 can be read by name!")
         return
     end
@@ -74,7 +74,7 @@ function read_block_by_name(filename::String, blockname::String;
         end
         p = position(f)
         seek(f,p+8)
-        skipsize = read(f, Int32)
+        skipsize = read(f, UInt32)
         p = position(f)
         seek(f,p+skipsize+8)
     end
@@ -183,7 +183,7 @@ function snap_2_d(filename::String, data::Dict{Any,Any})
     seek(f, 296)
 
     N = sum(data["Header"]["npart"])
-    skipsize = read(f, Int32)
+    skipsize = read(f, UInt32)
     bit_size = Int64(skipsize/(3*N))
 
     if Int(bit_size) == 4
@@ -285,7 +285,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
     N = sum(data["Header"]["npart"])
 
-    skipsize = read(f, Int32)
+    skipsize = read(f, UInt32)
 
     if blockname == "MASS"
         for i ∈ 1:length(data["Header"]["PartTypes"])
