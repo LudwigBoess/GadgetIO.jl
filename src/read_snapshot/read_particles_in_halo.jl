@@ -58,7 +58,8 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                               blocks::Array{String}; 
                               parttype::Integer=0, verbose::Bool=true,
                               pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
-                              r0::Real=0.0)
+                              r0::Real=0.0,
+                              use_keys::Bool=true)
 
     # sort the IDs if they are not already sorted
     if !issorted(selected_ids)
@@ -82,7 +83,8 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             # read all particles in the defined volume
             data = read_particles_in_volume(snap_base, blocks, pos0, r0,
-                                            parttype=parttype, verbose=verbose)
+                                            parttype=parttype, verbose=verbose,
+                                            use_keys=use_keys)
 
             if verbose
                 println()
