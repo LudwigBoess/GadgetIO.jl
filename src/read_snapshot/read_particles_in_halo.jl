@@ -37,11 +37,11 @@ function read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:I
 
     if verbose
         t2 = Dates.now()
-        @info "Found $(length(matched)) matches. Took: $(t2 - t1)"
+        @info "Found $(size(matched)[1]) matches. Took: $(t2 - t1)"
     end
 
     # read the data blocks whole, but only store relevant entries
-    return Dict(blocks[i] => read_snap(snap_file, blocks[i], parttype)[matched,:] for i = 1:length(blocks))
+    return Dict(blocks[i] => read_snap(snap_file, blocks[i], parttype)[matched,:] for i = 1:size(blocks)[1])
 
 end
 
@@ -97,13 +97,13 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             if verbose
                 t2 = Dates.now()
-                @info "Found $(length(matched)) matches. Took: $(t2 - t1)"
+                @info "Found $(size(matched)[1]) matches. Took: $(t2 - t1)"
             end
             
-            return Dict(blocks[i] => data[blocks[i]][matched,:] for i = 1:length(blocks))
+            return Dict(blocks[i] => data[blocks[i]][matched,:] for i = 1:size(blocks)[1])
 
         else # if there are no .key files we need to read the while snapshot
-            return read_particles_by_id_single_file(snap_file, selected_ids, blocks, parttype, verbose=verbose)
+            return read_particles_by_id_single_file(filename, selected_ids, blocks, parttype, verbose=verbose)
         end
 
     else # otherwise we need to search whole files
@@ -116,7 +116,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
         else # multi-file brute-force read -> slow!
 
             # total number of particles to read
-            N_to_read = length(ids)
+            N_to_read = size(ids)[1]
 
             # number of particles read so far 
             N_read = 0
@@ -142,7 +142,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 # read data from file
                 data_file = read_particles_by_id_single_file(filename, selected_ids, blocks, parttype, verbose=verbose)
 
-                N_this_file = length(data_file["ID"][:,1])
+                N_this_file = size(data_file["ID"])[1]
 
                 # write into master dict
                 for block in blocks
@@ -156,7 +156,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             # reduce array size
             for block in blocks
-                if length(data[block][1,:]) == 1
+                if size(data[block])[2] == 1
                     resize!(data[block], N_read)
                 else
                     data[block] = reshape(resize!(vec(data[block]),3*N_read),N_read,3)
@@ -350,6 +350,14 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
         # halos
         pos_block = "GPOS"
         rad_block = "R200"
+        if !block_present(sub_file, rad_block)
+            rad_block = "RMEA"
+
+            if !block_present(sub_file, rad_block)
+                error("Neither R200 nor RMEA present!")
+            end
+        end
+
     elseif halo_type == 2
         # subhalos
         pos_block = "SPOS"

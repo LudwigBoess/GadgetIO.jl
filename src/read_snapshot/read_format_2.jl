@@ -39,7 +39,7 @@ function read_block_by_name(filename::String, blockname::String;
                 error("No Info block in snapshot! Supply Info_Line type!")
             end
         else # info != 1
-            for i ∈ 1:length(info)
+            for i ∈ 1:size(info)[1]
                 if info[i].block_name == blockname
                     info = info[i]
                     break
@@ -85,7 +85,7 @@ function read_block_by_name(filename::String, blockname::String;
 
         blocksize = read(f,Int32)
 
-        for i ∈ 1:length(info.is_present)
+        for i ∈ 1:size(info.is_present)[1]
             p = position(f)
 
             if info.is_present[i] == Int32(1)
@@ -103,11 +103,11 @@ function read_block_by_name(filename::String, blockname::String;
                     end # if i == (parttype+1)
                 end # parttype == -1
             end # info.is_present[i] == Int32(1)
-        end # i ∈ 1:length(info.is_present)
+        end # i ∈ 1:size(info.is_present)[1]
 
         # fill in mass from header
         if blockname == "MASS"
-            for i ∈ 1:length(info.is_present)
+            for i ∈ 1:size(info.is_present)[1]
                 if info.is_present[i] == Int32(0)
                     if parttype == -1
                         d[parttypes[i]] = Dict()
@@ -126,7 +126,7 @@ function read_block_by_name(filename::String, blockname::String;
             error("Block not present!")
         else
             if parttype == -1
-                for i = 1:length(parttypes)
+                for i = 1:size(parttypes)[1]
                     d[parttypes[i]] = Dict()
                     d[parttypes[i]][blockname] = Array{info.data_type,2}(undef,(h.npart[i], info.n_dim))
                     d[parttypes[i]][blockname] .= h.massarr[i]
@@ -145,9 +145,19 @@ end
 
 function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart::Integer)
     
-    return copy(transpose(
+    # return copy(transpose(
+    #     read!(f, Array{data_type,2}(undef, (n_dim,npart) ) 
+    # )))
+
+    if n_dim > 1
+        return copy(transpose(
         read!(f, Array{data_type,2}(undef, (n_dim,npart) ) 
-    )))
+                )))
+        #return read!(f, Array{data_type,2}(undef, (npart,n_dim)))
+        # return read!(f, Array{data_type,2}(undef, (n_dim,npart)))
+    else
+        read!(f, Array{data_type,1}(undef, npart))
+    end
 end
 
 function snap_2_d_info(filename::String, d::Dict{Any,Any}, info::Array{Info_Line,1})
@@ -156,14 +166,14 @@ function snap_2_d_info(filename::String, d::Dict{Any,Any}, info::Array{Info_Line
 
     seek(f, 300)
 
-    for i ∈ 1:length(d["Header"]["npart"])
+    for i ∈ 1:size(d["Header"]["npart"])[1]
         if d["Header"]["npart"][i] != Int32(0)
             d[d["Header"]["PartTypes"][i]] = Dict()
             d[d["Header"]["PartTypes"][i]]["MASS"] = Float32.(d["Header"]["massarr"][i] .* ones(d["Header"]["npart"][i]))
         end
     end
 
-    for i ∈ 1:length(info)
+    for i ∈ 1:size(info)[1]
         #println("Reading block: ", info[i].block_name)
         d = read_block_with_info(f, d, info[i])
         p = position(f)
@@ -200,7 +210,7 @@ function snap_2_d(filename::String, data::Dict{Any,Any})
     seek(f, 288)
 
     # set up dictionaries for particles
-    for i in 1:length(data["Header"]["PartTypes"])
+    for i in 1:size(data["Header"]["PartTypes"])[1]
         if data["Header"]["npart"][i] != 0
             data[data["Header"]["PartTypes"][i]] = Dict()
         end
@@ -261,7 +271,7 @@ function read_block_with_info(f::IOStream, d::Dict{Any,Any}, info::Info_Line)
     parttypes = ["PartType0", "PartType1", "PartType2",
                  "PartType3", "PartType4", "PartType5"]
 
-    for i ∈ 1:length(info.is_present)
+    for i ∈ 1:size(info.is_present)[1]
 
         if info.is_present[i] == Int32(1)
             d[parttypes[i]][info.block_name] = read_block_data(f, info.data_type, info.n_dim, d["Header"]["npart"][i])
@@ -288,7 +298,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
     skipsize = read(f, UInt32)
 
     if blockname == "MASS"
-        for i ∈ 1:length(data["Header"]["PartTypes"])
+        for i ∈ 1:size(data["Header"]["PartTypes"])[1]
 
             n = data["Header"]["npart"][i]
 
@@ -348,7 +358,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
             # read Blocks
             #println("Blockname: ", blockname)
 
-            for i in 1:length(data["Header"]["PartTypes"])
+            for i in 1:size(data["Header"]["PartTypes"])[1]
 
                 dim = (skipsize/(N*bit_size))
 
@@ -367,7 +377,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
     else
 
-        for i in 1:length(data["Header"]["PartTypes"])
+        for i in 1:size(data["Header"]["PartTypes"])[1]
 
             if data["Header"]["npart"][i] != 0
 
@@ -408,7 +418,7 @@ function read_block_with_offset(filename::String, data_old, pos0::Integer, info:
     n_read = 1
     n_this_key = 0
 
-    for i = 1:length(offset_key)
+    for i = 1:size(offset_key)[1]
 
         # jump to start of key
         seek(f, p + len*offset_key[i])
@@ -451,7 +461,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
 
     n_this_key = n_read - 1
 
-    for i = 1:length(offset_key)
+    for i = 1:size(offset_key)[1]
 
         # jump to start of key
         seek(f, p + len*offset_key[i])
