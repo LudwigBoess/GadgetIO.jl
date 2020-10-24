@@ -136,7 +136,7 @@ function read_subfind(filename::String, blockname::String)
     info = read_info(filename)
 
     # the the block is not contained in the file throw and error
-    if length(info[getfield.(info, :block_name) .== blockname]) == 0
+    if size(info[getfield.(info, :block_name) .== blockname])[1] == 0
         error("Block $blockname not present!")
     end
 
@@ -172,7 +172,7 @@ function find_most_massive_halo(filebase::String, nfiles::Int=1)
 
     # check if the massblock is called MVIR or MTOP
     mass_block = "MVIR"
-    if length(info[getfield.(info, :block_name) .== mass_block]) == 0
+    if size(info[getfield.(info, :block_name) .== mass_block])[1] == 0
         mass_block = "MTOP"
     end
 
@@ -238,13 +238,13 @@ function filter_subfind(filebase::String, blockname::String, filter_function::Fu
         # select matches
         correct_selection = findall(selection)
 
-        if length(selection[selection]) > 0
+        if size(selection[selection])[1] > 0
 
             # create array of integers for easy storing
-            id_array = collect(1:length(selection))[correct_selection]
+            id_array = collect(1:size(selection)[1])[correct_selection]
 
             # create HaloID object and push it to the storage array
-            for j = 1:length(id_array)
+            for j = 1:size(id_array)[1]
                 push!(A, HaloID(i, id_array[j]))
             end
 
@@ -254,4 +254,3 @@ function filter_subfind(filebase::String, blockname::String, filter_function::Fu
 
     return A
 end
-
