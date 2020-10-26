@@ -829,7 +829,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
     n_read = 1
 
     for i = 1:N_files
-        if N_files > 1
+        if nfiles > 1
             filename = filebase * ".$(files[i])"
         else
             filename = filebase
