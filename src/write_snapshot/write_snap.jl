@@ -26,7 +26,7 @@ function write_format2_block_header(f::IOStream, blockname::String)
     @info "Writing block: $blockname"
 
     # write blocksite (8 bytes)
-    write(f, Int32(8))
+    write(f, UInt32(8))
 
     # write block name
     write(f, write_name)
@@ -56,7 +56,7 @@ function write_block(f::IOStream, data,
     # write blocksize
     dtype = typeof(data[1,1])
     dims = length(data[1,:])
-    blocksize = Int32(N * sizeof(dtype) * dims)
+    blocksize = UInt32(N * sizeof(dtype) * dims)
 
     if snap_format == 2
 
@@ -71,8 +71,8 @@ function write_block(f::IOStream, data,
         # write end if name header, namely:
         # size to skip from directly after the block name and size of
         # the format 2 block header
-        write(f, Int32(blocksize + Int32(8)))
-        write(f, Int32(8))
+        write(f, UInt32(blocksize + UInt32(8)))
+        write(f, UInt32(8))
     end
 
     # write blocksize
@@ -97,12 +97,12 @@ function write_header(f::IOStream, h::Header; snap_format::Integer=2)
 
     if snap_format == 2
         f = write_format2_block_header(f, "HEAD")
-        write(f, Int32(264))
-        write(f, Int32(8))
+        write(f, UInt32(264))
+        write(f, UInt32(8))
     end
 
     # write blocksize
-    write(f, Int32(256))
+    write(f, UInt32(256))
 
     # write header to file
     for fields in fieldnames(Header)
@@ -110,5 +110,5 @@ function write_header(f::IOStream, h::Header; snap_format::Integer=2)
     end
 
     # write blocksize
-    write(f, Int32(256))
+    write(f, UInt32(256))
 end
