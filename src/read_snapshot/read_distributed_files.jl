@@ -1,4 +1,5 @@
 using ProgressMeter
+using Base.Threads
 
 function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real}, 
                           parttype::Integer)
@@ -60,7 +61,7 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, fi
     for file ∈ files
 
         # select current file
-        filename = select_file(snap_base, file)
+        filename = select_file(snap_base, file ) #parse(Int,file)
 
         # read header block
         h = read_header(filename)
@@ -72,7 +73,7 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, fi
         file_block_positions = get_block_positions(filename)
 
         # read the blocks
-        for block ∈ blocks
+        @threads for block ∈ blocks
 
             # read the info ot the curent block
             block_info = snap_info[getfield.(snap_info, :block_name) .== block][1]
@@ -87,7 +88,8 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String}, fi
 
             read_block_with_offset!(d[block], N_read, filename, 
                         file_block_positions[block],
-                        block_info, offset, read_positions[file]["index"],
+                        block_info, offset, 
+                        read_positions[file]["index"],
                         read_positions[file]["n_to_read"])
 
         end
