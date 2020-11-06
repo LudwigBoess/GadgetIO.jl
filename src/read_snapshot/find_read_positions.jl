@@ -106,3 +106,27 @@ function load_read_positions(read_positions_file::String)
 end
 
 
+"""
+    Backup
+"""
+# import JSON
+
+# """
+#     save_read_positions(read_positions_file::String, data)
+
+# Saves the relevant read-in positions to a JSON file.
+# """
+# function save_read_positions(read_positions_file::String, data)
+#     open(read_positions_file,"w") do f
+#         JSON.print(f, JSON.json(data))
+#     end
+# end
+
+# """
+#     load_read_positions(read_positions_file::String)
+
+# Loads the relevant read-in positions from a YAML file.
+# """
+# function load_read_positions(read_positions_file::String)
+#     JSON.parse(JSON.parsefile(read_positions_file))
+# end
