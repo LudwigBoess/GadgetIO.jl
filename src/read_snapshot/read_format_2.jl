@@ -459,7 +459,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
     # store position in file
     p = position(f)
 
-    n_this_key = n_read - 1
+    n_this_key = n_read 
 
     for i = 1:size(offset_key)[1]
 
@@ -467,7 +467,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
         seek(f, p + len*offset_key[i])
         n_this_key += part_per_key[i]
 
-        data[n_read:n_this_key, :] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
+        data[n_read+1:n_this_key, :] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
 
         n_read += part_per_key[i]
 

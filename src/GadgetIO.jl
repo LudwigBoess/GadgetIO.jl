@@ -16,6 +16,7 @@ module GadgetIO
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_2.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_snapshot.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_subfind.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "find_read_positions.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_distributed_files.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particle_in_box.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particles_in_halo.jl"))
@@ -41,6 +42,11 @@ module GadgetIO
            get_index_list,
            get_npart_to_read,
            read_blocks_over_all_files,
+           find_read_positions,
+           save_read_positions,
+           load_read_positions,
+           filter_positions,
+
 
            # subfind read
            HaloID,

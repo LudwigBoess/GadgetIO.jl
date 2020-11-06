@@ -826,15 +826,19 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         t1 = Dates.now()
     end
 
-    n_read = 1
+    n_read = 0
 
     for i = 1:N_files
-        if nfiles > 1
-            filename = select_file(filebase, files[i])
-        else
-            filename = filebase
-        end
-        h = head_to_obj(filename)
+
+        # select current file
+        filename = select_file(filebase, files[i])
+
+        # read header
+        h = read_header(filename)
+
+        # read info block
+        snap_info = read_info(filename)
+
 
         # read blocks in parallel
         @threads for j = 1:size(blocks)[1]
@@ -860,7 +864,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         
         n_read += sum(file_part_per_key[i])
 
-        @info "Read $(n_read-1) / $N_to_read particles"
+        @info "Read $n_read / $N_to_read particles"
 
     end # for i = 1:size(files)[1]
 
