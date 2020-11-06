@@ -839,6 +839,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         # read info block
         snap_info = read_info(filename)
 
+
         # read blocks in parallel
         @threads for j = 1:size(blocks)[1]
 
@@ -846,9 +847,9 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
 
             # add offset of particle types that should not be read
             offset = 0
-            for i=1:size(h.npart)[1]
-                if (block_info.is_present[i] > 0) & (h.npart[i] > 0) & ( i < parttype + 1)
-                    offset += h.npart[i]
+            for k=1:size(h.npart)[1]
+                if (block_info.is_present[k] > 0) & (h.npart[k] > 0) & ( k < parttype + 1)
+                    offset += h.npart[k]
                 end
             end
 
