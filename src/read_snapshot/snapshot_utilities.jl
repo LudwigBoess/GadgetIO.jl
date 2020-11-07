@@ -1,3 +1,40 @@
+"""
+    check_blocksize(f::IOStream, position_before::Integer, blocksize_before::Integer)
+
+Checks for integer overflow in the size of the block.
+"""
+function check_blocksize(f::IOStream, position_before::Integer, blocksize_before::Integer)
+
+    seek(f,position_before+blocksize_before+12)
+    blocksize_after = read(f,UInt32)
+
+    # of the numbers are the same everything works as it should
+    if blocksize_before == blocksize_after
+        return blocksize_before
+    else
+        blocksize_before_fix = blocksize_before + 4294967296
+        seek(f,position_before+blocksize_before_fix+12) 
+        blocksize_after_fix = read(f,UInt32) + 4294967296
+        
+        if blocksize_before_fix == blocksize_after_fix
+            return blocksize_before_fix
+        else
+            error("There is an issue with the snapshot:\n
+                   Blocksize_before = $blocksize_before_fix\n
+                   Blocksize_after  = $blocksize_after_fix")
+        end
+    end
+end
+
+"""
+    read_bockname(f::IOStream)
+
+Reads the name of the Format 2 block.
+"""
+function read_bockname(f::IOStream)
+    name = Char.(read!(f, Array{Int8,1}(undef,4)))
+    return strip(String(name))
+end
 
 """
     print_blocks(filename::String; verbose::Bool=true)
@@ -21,20 +58,21 @@ function print_blocks(filename::String; verbose::Bool=true)
 
     while eof(f) != true
 
-        name = Char.(read!(f, Array{Int8,1}(undef,4)))
-        blockname = String(name)
+        # read block name
+        blockname = read_bockname(f)
 
-        blockname = strip(blockname)
-
+        # store block name in array
         push!(blocks, blockname)
 
         p = position(f)
+
         seek(f,p+8)
 
         skipsize = read(f, UInt32)
 
-        p = position(f)
-        seek(f,p+skipsize+8)
+        skipsize = check_blocksize(f, p, skipsize)
+
+        seek(f,p+skipsize+20)
 
     end
 
@@ -59,19 +97,23 @@ If `verbose=true` the blocknames are also printed to console.
 function read_info(filename::String; verbose::Bool=false)
 
     f = open(filename)
-    seek(f,4)
+    blocksize = read(f, Int32)
 
     while eof(f) != true
 
-        name = Char.(read!(f, Array{Int8,1}(undef,4)))
-        blockname = String(name)
+        # read block name
+        blockname = read_bockname(f)
 
         p = position(f)
+
         seek(f,p+8)
 
         skipsize = read(f, UInt32)
 
+        skipsize = check_blocksize(f, p, skipsize)
+
         if blockname == "INFO"
+            seek(f,p+12)
             n_blocks = Int(skipsize/40) # one info line is 40 bytes
             arr_info = Array{Info_Line,1}(undef,n_blocks)
 
@@ -91,8 +133,7 @@ function read_info(filename::String; verbose::Bool=false)
             return arr_info
 
         else
-            p = position(f)
-            seek(f,p+skipsize+8)
+            seek(f,p+skipsize+20)
         end # if blockname == "INFO"
 
     end # while eof(f) != true
@@ -104,11 +145,7 @@ end
 
 function read_info_line(f)
 
-    # block name consists of 4 C Chars.
-    name = Char.(read!(f, Array{Int8,1}(undef,4)))
-    blockname = String(name)
-
-    block_name = strip(blockname)
+    block_name = blockname = read_bockname(f)
 
     # the datatype is stored as a 8 char word.
     letters = read!(f, Array{Int8,1}(undef,8))
@@ -211,9 +248,6 @@ function get_block_positions(filename::String)
         error("Block search not possible - use snap_format 2!")
     end
 
-    p = position(f)
-    seek(f,4)
-
     blocks = Vector{String}(undef, 0)
     pos    = Vector{Int64}(undef, 0)
 
@@ -221,30 +255,28 @@ function get_block_positions(filename::String)
     while eof(f) != true
 
         # read block name
-        name = Char.(read!(f, Array{Int8,1}(undef,4)))
-        blockname = String(name)
-
-        blockname = strip(blockname)
+        blockname = read_bockname(f)
 
         # store block name in array
         push!(blocks, blockname)
 
-        read(f, Int32)
-        read(f, Int32)
+        p = position(f)
+
+        seek(f,p+8)
 
         skipsize = read(f, UInt32)
 
-        p = position(f)
+        skipsize = check_blocksize(f, p, skipsize)
 
-        push!(pos, p)
+        push!(pos, p+12)
 
-        seek(f,p+skipsize+8)
+        seek(f,p+skipsize+20)
 
     end
 
     close(f)
 
-    d = Dict( blocks[i] => pos[i] for i = 1:length(blocks))
+    d = Dict( blocks[i] => pos[i] for i = 1:size(blocks,1))
 
     return d
 end
