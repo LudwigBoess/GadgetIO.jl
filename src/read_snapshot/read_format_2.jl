@@ -1,4 +1,3 @@
-
 """
     read_block_by_name(filename::String, blockname::String;
                                 info::Info_Line=Info_Line(),
@@ -65,25 +64,24 @@ function read_block_by_name(filename::String, blockname::String;
     end
 
     while eof(f) != true
-        name = Char.(read!(f, Array{Int8,1}(undef,4)))
-        blname = String(name)
-        blname = strip(blname)
+        blname = read_bockname(f)
 
         if blname == blockname
             break
         end
         p = position(f)
         seek(f,p+8)
-        skipsize = read(f, UInt32)
-        p = position(f)
-        seek(f,p+skipsize+8)
+        blocksize = read(f, UInt32)
+
+        # check if the blocksize is correct
+        blocksize = check_blocksize(f, p, blocksize)
+
+        seek(f,p+blocksize+20)
     end
 
     if eof(f) != true
         p = position(f)
-        seek(f,p+8)
-
-        blocksize = read(f,Int32)
+        seek(f,p+12)
 
         for i ∈ 1:size(info.is_present)[1]
             p = position(f)
@@ -193,8 +191,8 @@ function snap_2_d(filename::String, data::Dict{Any,Any})
     seek(f, 296)
 
     N = sum(data["Header"]["npart"])
-    skipsize = read(f, UInt32)
-    bit_size = Int64(skipsize/(3*N))
+    blocksize = read(f, UInt32)
+    bit_size = Int64(blocksize/(3*N))
 
     if Int(bit_size) == 4
         dtype = Float32
@@ -248,10 +246,7 @@ function snap_2_d(filename::String, data::Dict{Any,Any})
         seek(f, p+4)
         # read blockname
 
-        name = Char.(read!(f, Array{Int8,1}(undef,4)))
-        blockname = String(name)
-
-        blockname = String(strip(blockname))
+        blockname = read_bockname(f)
 
         p = position(f)
         #seek(f, p+8)
@@ -295,7 +290,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
     N = sum(data["Header"]["npart"])
 
-    skipsize = read(f, UInt32)
+    blocksize = read(f, UInt32)
 
     if blockname == "MASS"
         for i ∈ 1:size(data["Header"]["PartTypes"])[1]
@@ -322,10 +317,10 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
             n = Int64(data["Header"]["npart"][1])
 
-            dim = Int(skipsize/(n*bit_size))
+            dim = Int(blocksize/(n*bit_size))
 
             #println("nr. of gas-particles: ", n)
-            #println("reading dimensions: ", skipsize/(n*bit_size))
+            #println("reading dimensions: ", blocksize/(n*bit_size))
 
             data[data["Header"]["PartTypes"][1]][blockname] = read_block_data(f, dtype, dim, n)
 
@@ -336,9 +331,9 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
             #println("nr. of bh-particles: ", n)
 
-            dim = Int(skipsize/(n*bit_size))
+            dim = Int(blocksize/(n*bit_size))
 
-            #println("reading dimensions: ", skipsize/(n*bit_size))
+            #println("reading dimensions: ", blocksize/(n*bit_size))
 
             if blockname != "BHPC"
                 data[data["Header"]["PartTypes"][6]][blockname] = read_block_data(f, dtype, dim, n)
@@ -360,7 +355,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 
             for i in 1:size(data["Header"]["PartTypes"])[1]
 
-                dim = (skipsize/(N*bit_size))
+                dim = (blocksize/(N*bit_size))
 
                 dim = Int64(trunc(dim))
 
