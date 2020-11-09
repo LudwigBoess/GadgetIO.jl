@@ -22,7 +22,7 @@ end
 """
     read_blocks_over_all_files( snap_base::String, blocks::Array{String};
                                 filter_function::Union{Function, Nothing}=nothing, 
-                                read_positions::Union{Dict, Nothing}=nothing=nothing, 
+                                read_positions::Union{Dict, Nothing}=nothing, 
                                 parttype::Integer=0, verbose::Bool=true )
 
 Reads the specified blocks from all distributed files where particles pass the `filter_function`, or are given by a `Dict` of `read_positions`.
@@ -30,7 +30,7 @@ For `read_positions` please see [`find_read_positions`](@ref).
 """
 function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
                                     filter_function::Union{Function, Nothing}=nothing, 
-                                    read_positions::Union{Dict, Nothing}=nothing=nothing, 
+                                    read_positions::Union{Dict, Nothing}=nothing, 
                                     parttype::Integer=0, verbose::Bool=true )
 
     # default behaviour is to find the particles to read.
