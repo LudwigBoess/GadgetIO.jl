@@ -1,8 +1,8 @@
 using GadgetIO, Test, DelimitedFiles
 
 @testset "Objects" begin
-    @test_nowarn Header()
-    @test_nowarn Info_Line()
+    @test_nowarn SnapshotHeader()
+    @test_nowarn InfoLine()
 end
 
 @testset "Read Snapshot" begin
@@ -66,7 +66,7 @@ end
     @test_nowarn write_block(f, x, "POS")
     close(f)
 
-    pos_info = Info_Line("POS", Float32, 3, [1, 0, 0, 0, 0, 0])
+    pos_info = InfoLine("POS", Float32, 3, [1, 0, 0, 0, 0, 0])
     x_check = read_block_by_name(output_file, "POS", info=pos_info, parttype=0)
 
     # check if we read the same thing we wrote
