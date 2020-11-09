@@ -56,6 +56,9 @@ module GadgetIO
            filter_subfind,
            read_ids_in_halo,
            read_particles_by_id,
+           read_halo_prop,
+           read_halo_prop_and_id,
+
 
            # write snapshot functions
            write_header,
