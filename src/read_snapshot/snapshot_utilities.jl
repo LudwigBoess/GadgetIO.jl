@@ -210,12 +210,12 @@ end
 
 """
     allocate_data_dict( blocks::Array{String}, N_to_read::Integer, 
-                        snap_info::Array{Info_Line}, no_mass_block::Bool )
+                        snap_info::Array{InfoLine}, no_mass_block::Bool )
 
 Helper function to allocate the data `Dict`.
 """
 function allocate_data_dict(blocks::Array{String}, N_to_read::Integer, 
-                            snap_info::Array{Info_Line}, no_mass_block::Bool)
+                            snap_info::Array{InfoLine}, no_mass_block::Bool)
 
     # prepare dictionary for particle storage, this looks super ugly...
     d = Dict(blocks[i] => Array{snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].data_type,2}(undef, N_to_read,

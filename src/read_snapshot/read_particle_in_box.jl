@@ -613,7 +613,7 @@ Helper function to get positions and length of particle blocks in files.
 """
 function find_read_positions(files::Array{<:Integer}, filebase::String, 
                              blocks::Array{String}, parttype::Integer,
-                             keylist::Array{<:Integer}, key_info::Array{Info_Line},
+                             keylist::Array{<:Integer}, key_info::Array{InfoLine},
                              verbose::Bool)
 
     # store number of file

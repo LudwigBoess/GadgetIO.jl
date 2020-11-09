@@ -1,20 +1,20 @@
 """
     read_block_by_name(filename::String, blockname::String;
-                                info::Info_Line=Info_Line(),
+                                info::InfoLine=InfoLine(),
                                 parttype::Integer=-1)
 
 Reads a block in a snapshot with given name. Names are case sensitive.
 
 # Examples
 ```jldoctest
-julia> pos_info = Info_Line("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
+julia> pos_info = InfoLine("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
 [...]
 julia> gas_pos = read_block_by_name(filename, "POS", info=pos_info, parttype=0)
 [...]
 ```
 """
 function read_block_by_name(filename::String, blockname::String;
-                            info::Info_Line=Info_Line(),
+                            info::InfoLine=InfoLine(),
                             parttype::Integer=-1)
 
 
@@ -33,9 +33,9 @@ function read_block_by_name(filename::String, blockname::String;
         info = read_info(filename)
         if info == 1
             if blockname == "MASS"
-                info = Info_Line("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
+                info = InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
             else
-                error("No Info block in snapshot! Supply Info_Line type!")
+                error("No Info block in snapshot! Supply InfoLine type!")
             end
         else # info != 1
             for i ∈ 1:size(info)[1]
@@ -46,7 +46,7 @@ function read_block_by_name(filename::String, blockname::String;
             end # loop over info
             if isa(info, Array)
                 if (blockname == "MASS")
-                    info = Info_Line("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
+                    info = InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
                 else
                     error("Block not present!")
                 end
@@ -158,7 +158,7 @@ function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart
     end
 end
 
-function snap_2_d_info(filename::String, d::Dict{Any,Any}, info::Array{Info_Line,1})
+function snap_2_d_info(filename::String, d::Dict{Any,Any}, info::Array{InfoLine,1})
 
     f = open(filename)
 
@@ -261,7 +261,7 @@ function snap_2_d(filename::String, data::Dict{Any,Any})
 
 end
 
-function read_block_with_info(f::IOStream, d::Dict{Any,Any}, info::Info_Line)
+function read_block_with_info(f::IOStream, d::Dict{Any,Any}, info::InfoLine)
 
     parttypes = ["PartType0", "PartType1", "PartType2",
                  "PartType3", "PartType4", "PartType5"]
@@ -392,7 +392,7 @@ function read_block(p::Integer, data::Dict{Any,Any}, dtype::DataType, blockname:
 end
 
 
-function read_block_with_offset(filename::String, data_old, pos0::Integer, info::Info_Line,
+function read_block_with_offset(filename::String, data_old, pos0::Integer, info::InfoLine,
                                 offset::Integer, offset_key, n_to_read::Integer, part_per_key )
 
     # open the file
@@ -432,13 +432,13 @@ function read_block_with_offset(filename::String, data_old, pos0::Integer, info:
 end
 
 """
-    read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::Info_Line,
+    read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::InfoLine,
                                 offset::Integer, offset_key::Array{<:Integer}, 
                                 part_per_key::Array{<:Integer} )
 
 Read part of a block to pre-allocated array.
 """
-function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::Info_Line,
+function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::InfoLine,
                                 offset::Integer, offset_key::Array{<:Integer}, 
                                 part_per_key::Array{<:Integer} )
 

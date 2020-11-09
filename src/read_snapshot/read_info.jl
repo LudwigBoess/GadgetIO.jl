@@ -1,5 +1,5 @@
 """
-    struct Info_Line([  block_name="", data_type=Float32, n_dim=Int32(0),
+    struct InfoLine([  block_name="", data_type=Float32, n_dim=Int32(0),
                                 is_present=zeros(Int32, 6) ])
 
 Contains the data of a single entry in the `INFO` block of a Gadget snapshot.
@@ -15,7 +15,7 @@ Contains the data of a single entry in the `INFO` block of a Gadget snapshot.
 |                                      |  or gas + BHs: [ 1, 0, 0, 0, 0, 1 ]                                                    |
 
 """
-struct Info_Line
+struct InfoLine
     block_name::String              # name of the data block, e.g. "POS"
     data_type::DataType             # datatype of the block, e.g. Float32 for single precision, Float64 for double
     n_dim::Int32                    # number of dimensions of the block, usually 1 or 3
@@ -23,7 +23,7 @@ struct Info_Line
                                     # e.g. gas only:  [ 1, 0, 0, 0, 0, 0 ]
                                     # e.g. gas + BHs: [ 1, 0, 0, 0, 0, 1 ]
 
-    function Info_Line(block_name="", data_type=Float32, n_dim=Int32(0),
+    function InfoLine(block_name="", data_type=Float32, n_dim=Int32(0),
                         is_present=zeros(Int32, 6))
 
         new(block_name, data_type, n_dim, is_present)
@@ -35,7 +35,7 @@ end
 """
     read_info(filename; verbose::Bool=false)
 
-Reads the info block of a snapshot and returns the information in an array of `Info_Line` types.
+Reads the info block of a snapshot and returns the information in an array of `InfoLine` types.
 If `verbose=true` the blocknames are also printed to console.
 """
 function read_info(filename::String; verbose::Bool=false)
@@ -59,7 +59,7 @@ function read_info(filename::String; verbose::Bool=false)
         if blockname == "INFO"
             seek(f,p+12)
             n_blocks = Int(skipsize/40) # one info line is 40 bytes
-            arr_info = Array{Info_Line,1}(undef,n_blocks)
+            arr_info = Array{InfoLine,1}(undef,n_blocks)
 
             for i = 1:n_blocks
                 arr_info[i] = read_info_line(f)
@@ -90,7 +90,7 @@ end
 """
     read_info_line(f::IOStream)
 
-Helper function to read the binary data into a `Info_Line` struct.
+Helper function to read the binary data into a `InfoLine` struct.
 """
 function read_info_line(f::IOStream)
 
@@ -130,5 +130,5 @@ function read_info_line(f::IOStream)
     is_present = read!(f, Array{Int32,1}(undef,6))
 
     # construct the info line struct and return it.
-    return Info_Line(block_name, dt, n_dim, is_present)
+    return InfoLine(block_name, dt, n_dim, is_present)
 end

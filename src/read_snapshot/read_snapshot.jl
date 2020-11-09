@@ -16,7 +16,7 @@ function snap_to_dict(filename::String, try_info::Bool=true)
 
                     info = read_info(filename)
 
-                    if typeof(info) == Array{Info_Line,1}
+                    if typeof(info) == Array{InfoLine,1}
 
                         data = snap_2_d_info(filename, data, info)
 
