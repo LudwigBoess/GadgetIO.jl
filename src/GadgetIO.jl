@@ -9,17 +9,23 @@ module GadgetIO
     end
     
     # functions to read snapshots
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "gadget_types.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_header.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "snapshot_utilities.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_info.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "utility", "snapshot_utilities.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_1.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_2.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_snapshot.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_subfind.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "find_read_positions.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_distributed_files.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particle_in_box.jl"))
-    include(joinpath(dirname(@__FILE__), "read_snapshot", "read_particles_in_halo.jl"))
+    include(joinpath(dirname(@__FILE__), "read_subfind", "read_subfind.jl"))
+    include(joinpath(dirname(@__FILE__), "read_subfind", "read_halo_prop.jl"))
+    include(joinpath(dirname(@__FILE__), "read_subfind", "filter_subfind.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "distributed_files", "find_read_positions.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "distributed_files", "read_distributed_files.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "particles_in_box", "read_key_files.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "particles_in_box", "peano_hilbert.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "particles_in_box", "utility.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "particles_in_box", "read_particle_in_box.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "particles_in_halo", "read_particles_by_id.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "particles_in_halo", "read_particles_in_halo.jl"))
 
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
