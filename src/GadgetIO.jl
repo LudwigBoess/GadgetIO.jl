@@ -30,7 +30,7 @@ module GadgetIO
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
 
-    export SnapshotHeader, Info_Line,       # types
+    export SnapshotHeader, InfoLine,       # types
            head_to_dict,
            snap_to_dict,
            head_to_obj,
