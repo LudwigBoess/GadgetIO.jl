@@ -1,5 +1,5 @@
 """
-    mutable struct Header( [ **Fields ])
+    mutable struct SnapshotHeader( [ **Fields ])
 
 Contains the data of the `HEAD` block of a Gadget snapshot.
 
@@ -27,10 +27,8 @@ Contains the data of the `HEAD` block of a Gadget snapshot.
 | `flag_ic_info::Int32`                | 1 if initial snapshot file contains an info block, else 0                              |
 | `lpt_scalingfactor::Float32`         | factor to use second order ic generation                                               |
 | `fill::Vector{Int32}`                | the HEAD block needs to be filled with zeros to have a size of 256 bytes               |
-
-
 """
-mutable struct Header
+mutable struct SnapshotHeader
     npart::Vector{Int32}                # an array of particle numbers per type in this snapshot
     massarr::Vector{Float64}            # an array of particle masses per type in this snapshot - if zero: MASS block present
     time::Float64                       # time / scale factor of the simulation
@@ -53,7 +51,7 @@ mutable struct Header
     lpt_scalingfactor::Float32          # factor to use second order ic generation
     fill::Vector{Int32}                 # the HEAD block needs to be filled with zeros to have a size of 256 bytes
 
-    function Header(npart::Vector{Int32}=Int32.([0,0,0,0,0,0]),
+    function SnapshotHeader(npart::Vector{Int32}=Int32.([0,0,0,0,0,0]),
            massarr::Vector{Float64}=zeros(6),
            time::Float64=0.,
            z::Float64=0.,
@@ -103,11 +101,11 @@ end
 """
     head_to_obj(filename::String)
 
-Returns the header of a snapshot as a `Header` object.
+Returns the header of a snapshot as a `SnapshotHeader` object.
 """
 function head_to_obj(filename)
 
-    h = Header()
+    h = SnapshotHeader()
 
     f = open(filename)
     blocksize = read(f, Int32)
@@ -234,7 +232,7 @@ end
 """
     read_header(filename::String)
 
-Reads the header of a snapshot and returns a Header object.
+Reads the header of a snapshot and returns a SnapshotHeader object.
 
 See also: [`head_to_obj`](@ref)
 """

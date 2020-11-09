@@ -89,11 +89,11 @@ end
 
 
 """
-    write_header(f::IOStream, h::Header; snap_format::Integer=2)
+    write_header(f::IOStream, h::SnapshotHeader; snap_format::Integer=2)
 
 Writes the header block to an opened file `f`.
 """
-function write_header(f::IOStream, h::Header; snap_format::Integer=2)
+function write_header(f::IOStream, h::SnapshotHeader; snap_format::Integer=2)
 
     if snap_format == 2
         f = write_format2_block_header(f, "HEAD")
@@ -105,7 +105,7 @@ function write_header(f::IOStream, h::Header; snap_format::Integer=2)
     write(f, UInt32(256))
 
     # write header to file
-    for fields in fieldnames(Header)
+    for fields in fieldnames(SnapshotHeader)
         write(f, getfield(h, fields))
     end
 
