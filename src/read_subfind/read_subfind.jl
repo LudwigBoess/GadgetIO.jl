@@ -7,6 +7,33 @@
 using ProgressMeter
 using Base.Threads
 
+"""
+    struct SubfindHeader
+
+Contains the data of the `HEAD` block in the subfind output
+
+# Fields
+| Name                                 | Meaning                                                                                |
+| :----------------------------------  | :------------------------------------------------------------------------------------- |
+| `nhalos::Int32`                      | number of halos in the output file                                                     |
+| `nsubhalos::Int32`                   | number of subhalos in the output file                                                  |
+| `nfof::Int32`                        | number of particles in the FoF                                                         |
+| `ngroups::Int32`                     | number of large groups in the output file                                              |
+| `time::Float64`                      | time / scale factor of the simulation                                                  |
+| `z::Float64`                         | redshift of the simulation                                                             |
+| `tothalos::UInt32`                   | total number of halos over all output files                                            |
+| `totsubhalos::UInt32`                | total number of subhalos over all output files                                         |
+| `totfof::UInt32`                     | total number of particles in the FoF                                                   |
+| `totgroups::UInt32`                  | 1 if simulation was run with cooling, else 0                                           |
+| `num_colors::Int32`                  | number of colors                                                                       |
+| `boxsize::Float64`                   | total size of the simulation box                                                       |
+| `omega_0::Float64`                   | Omega matter                                                                           |
+| `omega_l::Float64`                   | Omega dark enery                                                                       |
+| `h0::Float64`                        | little h                                                                               |
+| `flag_doubleprecision::Int32`        | 1 if snapshot is in double precision, else 0                                           |
+| `flag_ic_info::Int32`                | 1 if initial snapshot file contains an info block, else 0                              |
+
+"""
 struct SubfindHeader
     nhalos::Int32                       # number of halos in the output file
     nsubhalos::Int32                    # number of subhalos in the output file
