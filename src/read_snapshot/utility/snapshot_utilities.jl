@@ -154,17 +154,13 @@ function get_block_positions(filename::String)
         error("Block search not possible - use snap_format 2!")
     end
 
-    blocks = Vector{String}(undef, 0)
-    pos    = Vector{Int64}(undef, 0)
-
+    # allocate data dict
+    d = Dict{String, Integer}()
 
     while eof(f) != true
 
         # read block name
         blockname = read_bockname(f)
-
-        # store block name in array
-        push!(blocks, blockname)
 
         p = position(f)
 
@@ -174,15 +170,15 @@ function get_block_positions(filename::String)
 
         skipsize = check_blocksize(f, p, skipsize)
 
-        push!(pos, p+12)
+        # store blockname and position in Dict
+        d[blockname] = p+12
 
+        # skip to the next name block
         seek(f,p+skipsize+20)
 
     end
 
     close(f)
-
-    d = Dict( blocks[i] => pos[i] for i = 1:size(blocks,1))
 
     return d
 end
