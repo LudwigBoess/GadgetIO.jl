@@ -51,6 +51,13 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
         @info "Allocating storage dictionary..."
         t1 = time_ns()
     end
+
+    # select current file
+    filename = select_file(snap_base, 0 )
+
+    # read info block
+    snap_info = read_info(filename)
+
     # pre-allocate all data arrays in a dictionary
     d = allocate_data_dict(blocks, read_positions["N_part"], snap_info, false)
     
