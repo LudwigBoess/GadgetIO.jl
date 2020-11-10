@@ -147,7 +147,8 @@ Returns a `Dict` with each of the `blocks` as entries.
 function read_particles_in_halo(snap_base::String, blocks::Array{String},
                                 sub_base::String, halo::HaloID; 
                                 rad_scale::Real=1.0, halo_type::Integer=1,
-                                parttype::Integer=0, verbose::Bool=true)
+                                parttype::Integer=0, verbose::Bool=true,
+                                use_keys::Bool=true)
 
     # select subfind file to read
     sub_file = select_file(sub_base, halo.file)
@@ -197,7 +198,8 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
     data = read_particles_by_id(snap_base, halo_ids, blocks,
                               parttype=parttype, verbose=verbose,
                               pos0=halo_pos,
-                              r0=initial_radius)
+                              r0=initial_radius,
+                              use_keys=use_keys)
 
     if verbose
         t2 = Dates.now()
@@ -223,12 +225,14 @@ Returns an `Array` with the requested `block`.
 function read_particles_in_halo(snap_base::String, block::String,
                                 sub_base::String, halo::HaloID; 
                                 rad_scale::Real=1.0, halo_type::Integer=1,
-                                parttype::Integer=0, verbose::Bool=true)
+                                parttype::Integer=0, verbose::Bool=true,
+                                use_keys::Bool=true)
 
     data = read_particles_in_halo(snap_base, [block],
                                   sub_base, halo, 
                                   rad_scale=rad_scale, halo_type=halo_type,
-                                  parttype=parttype, verbose=verbose)
+                                  parttype=parttype, verbose=verbose,
+                                  use_keys=use_keys)
 
     return data[block]
 end
