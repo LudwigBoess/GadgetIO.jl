@@ -37,6 +37,9 @@ function read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::S
         @info "Reading property $blockname of halo at index $i_global"
     end
 
+    # store here for error handling
+    i_global0 = i_global
+
     # run through files until halo at index i_global is reached
     for i in 0:nfiles - 1
         sub_input = select_file(filebase, i)
@@ -53,5 +56,5 @@ function read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::S
             return get_prop_from_block(block, i_global + 1), HaloID(i, i_global + 1)
         end
     end
-    error("Halo at index $i_global does not exist!")
+    error("Halo at index $i_global0 does not exist!")
 end
