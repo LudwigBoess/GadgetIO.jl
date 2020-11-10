@@ -10,31 +10,59 @@ function snap_to_dict(filename::String, try_info::Bool=true)
 
         data["Header"] = head_to_dict(filename)
 
+        h = head_to_obj(filename)
+
         if data["Header"]["snap_format"] == 2
 
-            if try_info
+            info = read_info(filename)
+            blocks = print_blocks(filename, verbose=false)
 
-                    info = read_info(filename)
+            # delete "HEAD" and "INFO"
+            delete_blocks = ["HEAD", "INFO"]
 
-                    if typeof(info) == Array{InfoLine,1}
+            for del_block ∈ delete_blocks
+                deletepos = findfirst(blocks .== del_block)
 
-                        data = snap_2_d_info(filename, data, info)
+                if !isnothing(deletepos)
+                    deleteat!(blocks, deletepos)
+                end
+            end
 
-                    else
+            if typeof(info) == Array{InfoLine,1}
 
-                        data = snap_2_d(filename, data)
+                block_positions = get_block_positions(filename)
+                
+                for parttype = 0:5
+                    if data["Header"]["nall"][parttype+1] > 0
+                        
+                        # allocate dict for particle type
+                        keyname = "PartType$parttype"
+                        data[keyname] = Dict()
 
+                        for block ∈ blocks
+                            
+                            block_info = info[getfield.(info, :block_name) .== block][1]
+
+                            if block_info.is_present[parttype+1] == 1
+                                data[keyname][block] = read_block(filename, block, 
+                                                                  parttype=parttype,
+                                                                  block_position=block_positions[block],
+                                                                  info=block_info,
+                                                                  h=h)
+                            end
+
+                        end
                     end
+                end
 
             else
 
-                data = snap_2_d(filename, data)
+                error("No INFO block present! Snapshot can't be read in the lazy way.")
 
             end
+
         else
-
-            data = snap_1_d(filename, data)
-
+            error("Reading format 1 has been removed in version 0.3.0! If you need it please open an issue on GitHub!")
         end
 
         return data
