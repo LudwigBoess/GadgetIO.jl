@@ -47,7 +47,7 @@ function read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::S
 
         block = read_subfind(sub_input, blockname)
         len = size(block, 1)
-        if len < i_global # halo is not in current file
+        if len ≤ i_global # halo is not in current file
             i_global -= len
         else
             return get_prop_from_block(block, i_global + 1), HaloID(i, i_global + 1)
