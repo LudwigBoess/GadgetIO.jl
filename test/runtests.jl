@@ -5,7 +5,7 @@ using GadgetIO, Test, DelimitedFiles, HTTP
 
 function filter_dummy(filename::String)
     mtop = read_subfind(filename, "MTOP")
-    return findall(mtop .> 20.0)
+    return findall(mtop .> 7.0)
 end
 
 @info "downloading test data..."
@@ -38,7 +38,7 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
 
     @testset "Read Snapshot" begin
 
-        snap_file = joinpath(dirname(@__FILE__), "snap_sedov")
+        snap_file = "snap_sedov"
 
         @testset "Read blocks" begin
             @test_nowarn read_snap(snap_file)
@@ -58,19 +58,52 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
         end
 
         @testset "Read particles in box" begin
-            center = [6382.1562, -1780.875, -7379.2812]
-            rvir   = 194.34073
+            center = Float32[3978.9688, -95.40625, -8845.25]
+            rvir   = 118.76352
             pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false, parttype=1)
 
-            @test pos[1,:] ≈ [6202.94, -1771.11, -7363.77]
+            @test pos[1,:] ≈ Float32[3882.5537, -20.574343, -8768.669]
+
+            # to do: use key files!
         end
 
         @testset "Read particles in halo" begin
-            center = [6382.1562, -1780.875, -7379.2812]
-            rvir   = 194.34073
-            #read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false)
+            pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0,4), use_keys=false)
+
+            @test pos[1,:] ≈ Float32[3909.1545, -189.9392, -8845.135]
         end
 
+        @testset "Read positions" begin
+            center = Float32[3978.9688, -95.40625, -8845.25]
+            rvir   = 118.76352
+            ff(filename) = filter_positions(filename, center .- rvir, center .+ rvir, 1) 
+            read_positions = find_read_positions("snap_002", ff)
+
+            @test read_positions["N_part"] == 87
+
+            @test read_positions[0]["index"][1] == 2441
+            @test read_positions[0]["index"][5] == 3966
+
+            @test read_positions[0]["n_to_read"][1] == 2
+            @test read_positions[0]["n_to_read"][4] == 74
+
+            # test IO
+            save_read_positions("dummy.yml", read_positions)
+            loaded_read_positions = load_read_positions("dummy.yml")
+
+            @test read_positions == loaded_read_positions
+
+            # delete dummy file
+            rm("dummy.yml")
+        end
+
+        @testset "Error Handling" begin
+            @test_throws ErrorException("Please specify particle type!") read_block("snap_002.0", "POS")  
+            @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype=5, h=SnapshotHeader()) 
+            @test_throws ErrorException("Block not present!") read_block("snap_002.0", "ABCD", parttype=0)  
+            @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")  
+
+        end
     end
 
     @testset "Read subfind" begin
@@ -80,37 +113,38 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
 
         @testset "standard read" begin
             # check if standard reading works
-            mtop = read_subfind(subbase * ".0", "MTOP")
-            @test mtop ≈ Float32[79.19597, 50.597424, 41.497887, 30.298456, 25.498701, 24.998726, 25.69869, 16.29917, 19.599, 19.499006, 16.599154, 15.49921, 16.09918, 13.199327, 13.099333, 11.999389, 11.699404]
+            mtop = read_subfind("sub_002.0", "MTOP")
+            @test mtop ≈ Float32[6.793532, 6.0309854, 7.230924, 8.415218]
         end
 
         @testset "Filter Subfind" begin
            # check if filter works
-            find_mass_gt_20(M) = ( (M > 20.0) ? true : false )
-            dummy = filter_subfind("sub_002", "MTOP", find_mass_gt_20)
-            @test dummy[1] == HaloID(0, 1)
-            @test dummy[2] == HaloID(0, 2)
+            find_mass_gt_7(M) = ( (M > 7.0) ? true : false )
+            dummy = filter_subfind("sub_002", "MTOP", find_mass_gt_7)
+            @test dummy[1] == HaloID(0, 3)
+            @test dummy[2] == HaloID(0, 4)
 
             dummy2 = filter_subfind("sub_002", filter_dummy)
             @test dummy == dummy2
 
             # find the most massive halo in the sample subfind output
             center, rvir, haloid = find_most_massive_halo("sub_002", 4)
-            @test center ≈ [6382.1562, -1780.875, -7379.2812]
-            @test rvir   ≈ 194.34073
-            @test haloid == HaloID(0, 1) 
+            @test center ≈ Float32[3978.9688, -95.40625, -8845.25]
+            @test rvir   ≈ 118.76352
+            @test haloid == HaloID(0, 4) 
         end
 
         @testset "Read halo props" begin
-            prop, haloid = read_halo_prop_and_id("sub_002", 22, "MTOP", 4)
+            prop, haloid = read_halo_prop_and_id("sub_002", 4, "MTOP", 4)
 
-            @test prop ≈ 11.299424
-            @test haloid == HaloID(1, 6)
+            @test prop ≈ 5.431016
+            @test haloid == HaloID(1, 1)
         end
 
         @testset "Error handling" begin
             # check error handling
-            @test_throws ErrorException("Block MVIR not present!") read_subfind(subfile, "MVIR")    
+            @test_throws ErrorException("Block MVIR not present!") read_subfind(subfile, "MVIR")  
+            @test_throws ErrorException("Halo at index 1000 does not exist!") read_halo_prop_and_id(subfile, 1000, "MTOP", verbose=false)  
         end
         
     end
