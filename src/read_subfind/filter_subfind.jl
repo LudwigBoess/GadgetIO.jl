@@ -20,8 +20,10 @@ function find_most_massive_halo(filebase::String, nfiles::Int=1)
 
     # check if the massblock is called MVIR or MTOP
     mass_block = "MVIR"
+    rvir_block = "RVIR"
     if size(info[getfield.(info, :block_name) .== mass_block])[1] == 0
         mass_block = "MTOP"
+        rvir_block = "RTOP"
     end
 
     @showprogress "Reading files..." for i = 0:nfiles-1
@@ -38,7 +40,7 @@ function find_most_massive_halo(filebase::String, nfiles::Int=1)
 
             # store position and virial radius of most massive halo
             POS  = read_subfind(sub_input, "GPOS")[max_id,:]
-            RVIR = read_subfind(sub_input, "RVIR")[max_id]
+            RVIR = read_subfind(sub_input, rvir_block)[max_id]
 
             # store new maximum mass
             Mmax = max_test[1]
