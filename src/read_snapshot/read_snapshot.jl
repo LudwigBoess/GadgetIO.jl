@@ -52,7 +52,7 @@ particle type.
 
 # Examples
 ```jldoctest
-julia> gas_pos = read_block_by_name(filename, "POS", 0)
+julia> gas_pos = read_block(filename, "POS", 0)
 [...]
 ```
 
@@ -65,7 +65,7 @@ function read_snap(filename::String, blockname::String="", parttype::Integer=-1)
     end
 
     if blockname != ""
-        return read_block_by_name(filename, blockname, parttype=parttype)
+        return read_block(filename, blockname, parttype=parttype)
     end
 
 end

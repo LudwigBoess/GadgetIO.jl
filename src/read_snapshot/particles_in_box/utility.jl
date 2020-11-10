@@ -35,7 +35,7 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
 
         # read key file data
         h_key = read_keyheader(filename_keyfile)
-        keys_in_file = read_block_by_name(filename_keyfile, "KEY",
+        keys_in_file = read_block(filename_keyfile, "KEY",
                                           info = key_info[getfield.(key_info, :block_name) .== "KEY"][1],
                                           parttype = parttype)
 
@@ -53,13 +53,13 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
         end
 
         # number of particles associated with PH key
-        part_per_key = read_block_by_name(filename_keyfile, "NKEY",
+        part_per_key = read_block(filename_keyfile, "NKEY",
                                           info = key_info[getfield.(key_info, :block_name) .== "NKEY"][1],
                                           parttype = parttype)
 
 
         # offsets in the blocks to get to the relevant particles
-        offset_key = read_block_by_name(filename_keyfile, "OKEY",
+        offset_key = read_block(filename_keyfile, "OKEY",
                                           info = key_info[getfield.(key_info, :block_name) .== "OKEY"][1],
                                           parttype = parttype)
 

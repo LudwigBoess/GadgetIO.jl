@@ -11,6 +11,7 @@ module GadgetIO
     # functions to read snapshots
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_header.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_info.jl"))
+    include(joinpath(dirname(@__FILE__), "read_snapshot", "utility", "allocate_dict.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "utility", "snapshot_utilities.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_1.jl"))
     include(joinpath(dirname(@__FILE__), "read_snapshot", "read_format_2.jl"))
@@ -38,7 +39,7 @@ module GadgetIO
            read_info,
            block_present,
            read_snap,
-           read_block_by_name,      # similar to readnew.pro by Klaus Dolag
+           read_block,      # similar to readnew.pro by Klaus Dolag
            read_header,
 
            # large simulations
@@ -62,6 +63,8 @@ module GadgetIO
            filter_subfind,
            read_ids_in_halo,
            read_particles_by_id,
+           read_halo_prop,
+           read_halo_prop_and_id,
 
            # write snapshot functions
            write_header,

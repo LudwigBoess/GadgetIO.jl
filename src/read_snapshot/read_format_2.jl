@@ -1,5 +1,5 @@
 """
-    read_block_by_name(filename::String, blockname::String;
+    read_block(filename::String, blockname::String;
                                 info::InfoLine=InfoLine(),
                                 parttype::Integer=-1)
 
@@ -9,11 +9,11 @@ Reads a block in a snapshot with given name. Names are case sensitive.
 ```jldoctest
 julia> pos_info = InfoLine("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
 [...]
-julia> gas_pos = read_block_by_name(filename, "POS", info=pos_info, parttype=0)
+julia> gas_pos = read_block(filename, "POS", info=pos_info, parttype=0)
 [...]
 ```
 """
-function read_block_by_name(filename::String, blockname::String;
+function read_block(filename::String, blockname::String;
                             info::InfoLine=InfoLine(),
                             parttype::Integer=-1)
 
@@ -117,6 +117,7 @@ function read_block_by_name(filename::String, blockname::String;
         end
         close(f)
 
+        # this needs better error handling!
         return d
 
     else # blockname not found
@@ -143,10 +144,6 @@ end
 
 function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart::Integer)
     
-    # return copy(transpose(
-    #     read!(f, Array{data_type,2}(undef, (n_dim,npart) ) 
-    # )))
-
     if n_dim > 1
         return copy(transpose(
         read!(f, Array{data_type,2}(undef, (n_dim,npart) ) 
