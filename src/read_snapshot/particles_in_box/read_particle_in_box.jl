@@ -83,7 +83,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
 
     if verbose
         t2 = Dates.now()
-        @info "$(size(keylist)[1]) Peano-Hilbert keys found. Took: $(t2 - t1)"
+        @info "$(size(keylist,1)) Peano-Hilbert keys found. Took: $(t2 - t1)"
         @info "Looking for relevant files..."
         t1 = Dates.now()
     end
@@ -91,7 +91,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
     # find relevant files
     files = find_files_for_keys(filebase, nfiles, keylist)
     
-    N_files = size(files)[1]
+    N_files = size(files,1)
     if verbose
         t2 = Dates.now()
         @info "$N_files files found. Took: $(t2 - t1)"
@@ -143,13 +143,13 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
 
 
         # read blocks in parallel
-        @threads for j = 1:size(blocks)[1]
+        @threads for j = 1:size(blocks,1)
 
             block_info = snap_info[getfield.(snap_info, :block_name) .== blocks[j]][1]
 
             # add offset of particle types that should not be read
             offset = 0
-            for k=1:size(h.npart)[1]
+            for k=1:size(h.npart,1)
                 if (block_info.is_present[k] > 0) & (h.npart[k] > 0) & ( k < parttype + 1)
                     offset += h.npart[k]
                 end
@@ -168,7 +168,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
 
         @info "Read $n_read / $N_to_read particles"
 
-    end # for i = 1:size(files)[1]
+    end # for i = 1:size(files,1)
 
     # finally construct masses of no mass block present
     if no_mass_block

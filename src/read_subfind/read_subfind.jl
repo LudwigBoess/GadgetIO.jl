@@ -163,7 +163,7 @@ function read_subfind(filename::String, blockname::String)
     info = read_info(filename)
 
     # the the block is not contained in the file throw and error
-    if size(info[getfield.(info, :block_name) .== blockname])[1] == 0
+    if size(info[getfield.(info, :block_name) .== blockname],1) == 0
         error("Block $blockname not present!")
     end
 

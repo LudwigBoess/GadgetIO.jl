@@ -13,7 +13,7 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
                              verbose::Bool)
 
     # store number of file
-    N_files = size(files)[1]
+    N_files = size(files,1)
 
     # allocate arrys to store reading information
     file_offset_key      = Array{Array{<:Integer}}(undef, N_files)
@@ -49,7 +49,7 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
         if verbose
             t2 = Dates.now()
             @info "Index list done. Took: $(t2 - t1)"
-            @info "Reading $(size(index_list)[1]) key segments..."
+            @info "Reading $(size(index_list,1)) key segments..."
         end
 
         # number of particles associated with PH key
@@ -74,7 +74,7 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
         use_block, part_per_key = join_blocks(offset_key, part_per_key)
 
         if verbose
-            @info "Reduced independent blocks from $(size(offset_key)[1]) to $(size(use_block[use_block])[1])"
+            @info "Reduced independent blocks from $(size(offset_key,1)) to $(size(use_block[use_block],1))"
         end
 
         # store the arrays for later reading
@@ -91,15 +91,15 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
             end
         end
 
-    end # for i = 1:size(files)[1]
+    end # for i = 1:size(files,1)
 
     return file_offset_key, file_part_per_key, file_block_positions
 end
 
 function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
 
-    nids = size(ids)[1]
-    nbounds = size(low_bounds)[1]
+    nids = size(ids,1)
+    nbounds = size(low_bounds,1)
 
     ind_all = zeros(Int64, nids)
 
@@ -274,7 +274,7 @@ function find_files_for_keys_AR(filebase::String, nfiles::Integer, keylist::Vect
     # get the data from the index file
     low_list, high_list, file_list = read_key_index(file_key_index)
 
-    mask = falses(size(low_list)[1])
+    mask = falses(size(low_list,1))
 
     for key in keylist
         @. mask = mask | ( (key >= low_list ) & ( key <= high_list ))
@@ -291,8 +291,8 @@ Get positions in `idarr2` where `idarr2` matches `idarr1`.
 """
 @inline function get_index_list(idarr1::Array{<:Integer}, idarr2::Array{<:Integer})
 
-    narr1 = size(idarr1)[1]
-    narr2 = size(idarr2)[1]
+    narr1 = size(idarr1,1)
+    narr2 = size(idarr2,1)
 
     ind_all   = zeros(Int64, narr1)
     not_arr2t = zeros(Int64, narr1)
@@ -356,7 +356,7 @@ Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `
 @inline function get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
 
     dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
-    result = Vector{Int}(undef, size(keylist)[1])
+    result = Vector{Int}(undef, size(keylist,1))
     len = 0
 
     for k in keylist
@@ -377,11 +377,11 @@ Joins neigboring blocks to simplify read-in.
 """
 @inline function join_blocks(offset_key, part_per_key)
 
-    use_block = trues(size(offset_key)[1])
+    use_block = trues(size(offset_key,1))
 
     icount = 1
 
-    for i = 2:size(offset_key)[1]-1
+    for i = 2:size(offset_key,1)-1
 
         if offset_key[i] == offset_key[icount] + part_per_key[icount]
             part_per_key[icount] += part_per_key[i]

@@ -59,7 +59,7 @@ function read_block(filename::String, blockname::String;
 
     seek(f,block_position)
 
-    for i ∈ 1:size(info.is_present)[1]
+    for i ∈ 1:size(info.is_present,1)
         p = position(f)
 
         if info.is_present[i] == Int32(1)
@@ -71,7 +71,7 @@ function read_block(filename::String, blockname::String;
                 seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
             end # if i == (parttype+1)
         end # info.is_present[i] == Int32(1)
-    end # i ∈ 1:size(info.is_present)[1]
+    end # i ∈ 1:size(info.is_present,1)
 
     close(f)
 
@@ -111,7 +111,7 @@ function check_info(filename::String, blockname::String)
             error("No Info block in snapshot! Supply InfoLine type!")
         end
     else # info != 1
-        for i ∈ 1:size(info)[1]
+        for i ∈ 1:size(info,1)
             if info[i].block_name == blockname
                 return info[i]
             end # if block found
@@ -179,7 +179,7 @@ function read_block_with_offset(filename::String, data_old, pos0::Integer, info:
     n_read = 1
     n_this_key = 0
 
-    for i = 1:size(offset_key)[1]
+    for i = 1:size(offset_key,1)
 
         # jump to start of key
         seek(f, p + len*offset_key[i])
@@ -222,7 +222,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
 
     n_this_key = n_read 
 
-    for i = 1:size(offset_key)[1]
+    for i = 1:size(offset_key,1)
 
         # jump to start of key
         seek(f, p + len*offset_key[i])

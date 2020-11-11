@@ -59,7 +59,7 @@ function find_read_positions( snap_base::String, filter_function::Function;
     for sub_snap = 0:(h.num_files-1)
         snap_file = select_file(snap_base, sub_snap)
         sel       = filter_function(snap_file)
-        N_this_file = size(sel)[1]
+        N_this_file = size(sel,1)
 
         # store read positions of particles are in the file
         if N_this_file > 0

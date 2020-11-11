@@ -9,7 +9,7 @@ function allocate_data_dict(blocks::Array{String}, N_to_read::Integer,
 
     # prepare dictionary for particle storage, this looks super ugly...
     d = Dict(blocks[i] => Array{snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].data_type,2}(undef, N_to_read,
-            snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].n_dim) for i = 1:length(blocks))
+            snap_info[getfield.(snap_info, :block_name) .== blocks[i]][1].n_dim) for i = 1:size(blocks,1))
 
     # allocate mass array, if it's not in a block
     if no_mass_block
