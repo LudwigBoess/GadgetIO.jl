@@ -57,7 +57,7 @@ Reads particles filtered by the provided IDs. Returns all requested blocks as en
 function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
                               blocks::Array{String}; 
                               parttype::Integer=0, verbose::Bool=true,
-                              pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
+                              pos0::Union{Array{<:Real},Nothing}=nothing,
                               r0::Real=0.0,
                               use_keys::Bool=true)
 
@@ -76,7 +76,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
     unique!(blocks)
 
     # for a given halo position and search radius we can use `read_particles_in_volume`
-    if (pos0 != [-1.234, -1.234, -1.234] && r0 != 0.0)
+    if ( !isnothing(pos0) && r0 != 0.0)
         
         # check if .key files are present
         if isfile(filename * ".key")
@@ -116,7 +116,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
         else # multi-file brute-force read -> slow!
 
             # total number of particles to read
-            N_to_read = size(ids)[1]
+            N_to_read = size(selected_ids)[1]
 
             # number of particles read so far 
             N_read = 0
@@ -129,12 +129,11 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             filename = snap_base * ".0"
             h = head_to_obj(filename)
-            nfiles = h.num_files
 
-            @warn "Brute-force reading $numfiles files! This may take a while!"
+            @warn "Brute-force reading $(h.num_files) files! This may take a while!"
 
             # loop over all the files in the snap directory
-            for i = 0:nfiles
+            for i = 0:(h.num_files-1)
 
                 # get current file name
                 filename = select_file(snap_base, i)
@@ -156,11 +155,12 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             # reduce array size
             for block in blocks
-                if size(data[block])[2] == 1
-                    resize!(data[block], N_read)
-                else
-                    data[block] = reshape(resize!(vec(data[block]),3*N_read),N_read,3)
-                end
+                # if size(data[block])[2] == 1
+                #     resize!(data[block], N_read)
+                #     data[block] = reshape(resize!(vec(data[block]),3*N_read),N_read,3)
+                # else
+                data[block] = reshape(resize!(vec(data[block]),size(data[block])[2]*N_read),N_read,size(data[block])[2])
+                #end
             end # blocks
 
             return data
@@ -181,13 +181,14 @@ Reads particles filtered by the provided IDs. Returns the requested block as an 
 function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
                               block::String; 
                               parttype::Integer=0, verbose::Bool=true,
-                              pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
-                              r0::Real=0.0)
+                              pos0::Union{Array{<:Real},Nothing}=nothing,
+                              r0::Real=0.0,
+                              use_keys::Bool=true)
 
    data = read_particles_by_id(snap_base, selected_ids, 
                               [block],
                               parttype=parttype, verbose=verbose,
-                              pos0=pos0, r0=r0)
+                              pos0=pos0, r0=r0, use_keys=use_keys)
 
     return data[block]
 end
