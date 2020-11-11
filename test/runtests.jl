@@ -64,6 +64,11 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
 
             @test pos[1,:] ≈ Float32[3882.5537, -20.574343, -8768.669]
 
+            pos = read_particles_in_box("snap_002", "POS", center .- rvir, center .+ rvir, 
+                                        use_keys=false, parttype=1, verbose=false)
+
+            @test pos[1,:] ≈ Float32[3882.5537, -20.574343, -8768.669]
+
             # to do: use key files!
         end
 
@@ -71,6 +76,11 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0,4), use_keys=false)
 
             @test pos[1,:] ≈ Float32[3909.1545, -189.9392, -8845.135]
+
+            ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
+            pos = read_particles_by_id("snap_002", ids, "POS")
+
+            @test pos ≈ Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]
         end
 
         @testset "Read positions" begin
@@ -102,7 +112,7 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype=5, h=SnapshotHeader()) 
             @test_throws ErrorException("Block not present!") read_block("snap_002.0", "ABCD", parttype=0)  
             @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")  
-
+            @test_throws ErrorException("Please provide either a dictionary with read positions or a filter function!") read_blocks_over_all_files("snap_002", ["POS"]) 
         end
     end
 
@@ -139,6 +149,10 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
 
             @test prop ≈ 5.431016
             @test haloid == HaloID(1, 1)
+
+            prop2 = read_halo_prop("sub_002", haloid, "MTOP")
+
+            @test prop2 == prop
         end
 
         @testset "Error handling" begin
@@ -175,7 +189,19 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
     end
 
     @testset "Peano-Hilbert" begin
-        
+        h_key = GadgetIO.read_keyheader("snap_002.0.key")
+
+        @test h_key.nkeys_file[1] == Int32(597)
+        @test h_key.bits == 10
+
+        low_list, high_list, file_list = GadgetIO.read_key_index("snap_002.key.index")
+        @test file_list == UInt32[0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000000]
+    
+        @test GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 0) == 0
+        @test GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 1) == 1
+        @test GadgetIO.peano_hilbert_key(h_key.bits, 0, 1, 1) == 6
+
+        @test GadgetIO.get_int_pos( 1000.5, h_key.domain_corners[1], h_key.domain_fac ) == 1
     end
 
     @testset "Write Snapshot" begin
