@@ -186,6 +186,12 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
         filename = GadgetIO.select_file(ref_file, 0)
 
         @test filename == ref_file
+
+        info = read_info(ref_file)
+        d = GadgetIO.allocate_data_dict(["POS", "ID"], 10, info, true)
+        @test haskey(d, "MASS")
+
+        @test_throws ErrorException("File dummy_snap.0 not present!") GadgetIO.select_file("dummy_snap", 0)  
     end
 
     @testset "Peano-Hilbert" begin
