@@ -151,52 +151,6 @@ end
 
 
 
-
-"""
-    read_block_with_offset(filename::String, data_old, pos0::Integer, info::InfoLine,
-                                offset::Integer, offset_key, n_to_read::Integer, part_per_key )
-
-Read part of a block and return an array of the entries.
-"""
-function read_block_with_offset(filename::String, data_old, pos0::Integer, info::InfoLine,
-                                offset::Integer, offset_key, n_to_read::Integer, part_per_key )
-
-    # open the file
-    f = open(filename)
-
-    # number of bits in data_type
-    len = sizeof(info.data_type) * info.n_dim
-
-    # jump to position of particle type in relevant block
-    seek(f, pos0+offset*len)
-
-    # store position in file
-    p = position(f)
-
-    # allocate array to store data
-    data =  Array{info.data_type,2}(undef, (n_to_read, info.n_dim))
-
-    n_read = 1
-    n_this_key = 0
-
-    for i = 1:size(offset_key,1)
-
-        # jump to start of key
-        seek(f, p + len*offset_key[i])
-        n_this_key += part_per_key[i]
-
-        data[n_read:n_this_key, :] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
-
-        n_read += part_per_key[i]
-
-    end # for
-
-    # close the file
-    close(f)
-
-    return [data_old; data]
-end
-
 """
     read_block_with_offset!(data, n_read::Integer, filename::String, pos0::Integer, info::InfoLine,
                                 offset::Integer, offset_key::Array{<:Integer}, 
