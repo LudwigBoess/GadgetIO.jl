@@ -73,6 +73,8 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
     key_entries = collect(keys(read_positions))
     files = key_entries[ key_entries .!= "N_part"]
 
+    sort!(files)
+
     if verbose
         @info "Reading $(size(files,1)) snapshots..."
         t1 = time_ns()
