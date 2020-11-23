@@ -79,9 +79,8 @@ blockname: Returns only that block. If parttype specified only for that
 particle type.
 
 # Examples
-```jldoctest
-julia> gas_pos = read_block(filename, "POS", 0)
-[...]
+```julia
+julia> gas_pos = read_snap(filename, "POS", 0)
 ```
 
 """
