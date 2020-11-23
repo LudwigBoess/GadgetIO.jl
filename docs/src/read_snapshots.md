@@ -8,60 +8,40 @@ DocTestSetup = quote
 end
 ```
 
-## Reading the header
+`GadgetIO.jl` is specialized to read `Gadget` snapshots of `Format 2`. The structure of a `Format 2` snapshot is as follows:
 
+```
+8              # size of the blockname block (Int32)
+BLOCKNAME      # Blockname (4*Char)
+8+SIZE_BLOCK   # number of bytes to skip if block should not be read
+8              # end of blockname block
 
-Reading the header block of the simulation can be done by using:
-
-```julia
- h = read_header(filename::String)
+SIZE_BLOCK     # size of the current block in bytes
+{...}          # content of the block ordered by particle type
+SIZE_BLOCK     # end of the current block
 ```
 
-Where `h` is the returned [`Header`](@ref) object:
+which repeats for every block.
+
+## Filename
+
+Before we get started, a short bit for clarification: In what follows we need to distinguish between `filename` and `filebase`.
+For small simulations the data is written to a single file. In that case you can simply supply an absolute, or relative path to the one snapshot file as `filename`.
+
+For larger simulations the data may be distributed over multiple files, which again may be in individual snapshot directories. With the snapshots being distributed over multiple files you need to supply the base-name `filebase`. Assuming you want to read snapshot 140, which is in the snapshot directory 140 the `filebase` is
 
 ```julia
-mutable struct Header
-    npart::Vector{Int32}                # an array of particle numbers per type in this snapshot
-    massarr::Vector{Float64}            # an array of particle masses per type in this snapshot - if zero: MASS block present
-    time::Float64                       # time / scale factor of the simulation
-    z::Float64                          # redshift of the simulation
-    flag_sfr::Int32                     # 1 if simulation was run with star formation, else 0
-    flag_feedback::Int32                # 1 if simulation was run with stellar feedback, else 0
-    nall::Vector{UInt32}                # total number of particles in the simulation
-    flag_cooling::Int32                 # 1 if simulation was run with cooling, else 0
-    num_files::Int32                    # number of snapshots over which the simulation is distributed
-    boxsize::Float64                    # total size of the simulation box
-    omega_0::Float64                    # Omega matter
-    omega_l::Float64                    # Omega dark enery
-    h0::Float64                         # little h
-    flag_stellarage::Int32              # 1 if simulation was run with stellar age, else 0
-    flag_metals::Int32                  # 1 if simulation was run with metals, else 0
-    npartTotalHighWord::Vector{UInt32}  # weird
-    flag_entropy_instead_u::Int32       # 1 if snapshot U field contains entropy instead of internal energy, else 0
-    flag_doubleprecision::Int32         # 1 if snapshot is in double precision, else 0
-    flag_ic_info::Int32                 # 1 if the IC file contains an INFO block   
-    lpt_scalingfactor::Float32          # (almost) never used
-    fill::Vector{Int32}                 # the HEAD block needs to be filled with zeros to have a size of 256 bytes
-end
+filebase = "path/to/your/snapshot/directories/snapdir_140/snap_140"
 ```
 
-This is equivalent to:
-
-```julia
- h = head_to_obj(filename::String)
-```
-
-If you want to read the header information into a dictionary you can use:
-
-```julia
- h = head_to_dict(filename::String)
-```
+In the relevant functions `GadgetIO.jl` will then automatically loop through the sub-snapshots which end in ".0", ".1", ... , ".N".
 
 ## Reading a snapshot
 
+There are multiple ways to read the data in the snapshot
 
 ### Full snapshot
-If you want to read a simulation snapshot into memory with GadgetIO.jl, it's as easy as this:
+If you want to read a simulation snapshot into memory with `GadgetIO.jl`, it's as easy as this:
 
 ```julia
     data = read_snap(filename)
@@ -78,8 +58,6 @@ As an example, this is how you would access the positions of the gas particles:
 
 ### Specific blocks
 
-Reading specific blocks only works with Format 2 at the moment.
-
 If you only want to read a specific block for a single particle type, e.g. positions of gas particles, you can use the function with a specified blockname and particle type like so:
 
 ```julia
@@ -90,10 +68,10 @@ This will return an array of the datatype of your simulation, usually `Float32`.
 
 If the snapshot has no info block this will fail unfortunately.
 
-You can still read the specific block by supplying a hand-constructed [`Info_Line`](@ref) object:
+You can still read the specific block by supplying a hand-constructed [`InfoLine`](@ref) object:
 
 ```julia
-mutable struct Info_Line
+struct InfoLine
     block_name::String              # name of the data block, e.g. "POS"
     data_type::DataType             # datatype of the block, e.g. Float32 for single precision, Float64 for double
     n_dim::Int32                    # number of dimensions of the block, usually 1 or 3
@@ -103,53 +81,19 @@ mutable struct Info_Line
 end
 ```
 
-and passing that to the function [`read_block_by_name`](@ref):
+and passing that to the function [`read_block`](@ref):
 
 ```julia
-    pos = read_block_by_name(filename, "POS", info=pos_info, parttype=0)
+pos = read_block(filename, "POS", info=pos_info, parttype=0)
 ```
 
-where `pos_info` is an [`Info_Line`](@ref) object.
+where `pos_info` is an [`InfoLine`](@ref) object.
 
-[`read_snap`](@ref) is used mainly as a wrapper function to call [`read_block_by_name`](@ref), in case you were wondering about the function name change.
+[`read_snap`](@ref) is used mainly as a wrapper function to call [`read_block`](@ref), in case you were wondering about the function name change.
 
-I will collect some example `Info_Line` objects in a later release to be able to read some common blocks even without an info block.
-
-### Getting snapshot infos
-
-If you have a Format 2 snapshot and just want to know what blocks the snapshot contains you can use the function
-
-```julia
-    print_blocks(filename)
-```
-
-to get an output of all block names.
-
-If your simulation contains an INFO block you can read the info lines into [`Info_Line`](@ref) object like so:
-
-```julia
-    info = read_info(filename, verbose=true)
-```
-
-This will return an Array of [`Info_Line`](@ref) objects. The optional keyword `verbose` additionally gives the same functionality as [`print_blocks`](@ref) and prints the names to the console.
+I will collect some example `InfoLine` objects in a later release to be able to read some common blocks even without an `INFO` block.
 
 
-### Reading particles by referenced ID
-
-If you want to select specific particles to read from an array if `IDs` you can do this with [`read_particles_by_id`](@ref):
-
-```julia
-read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
-                     blocks::Array{String}; 
-                     parttype::Integer=0, verbose::Bool=true,
-                     pos0::Array{<:Real}=[-1.234, -1.234, -1.234],
-                     r0::Real=0.0, use_keys::Bool=true)
-```
-
-`snap_base` defines the target snapshot, or the snapshot directory, `selected_ids` contains the list of IDs of the particles you want to read and `blocks` containes the blocksnames of the blocks you want to read.
-If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Read Subvolumes](@ref) for details on this.
-
-This will return a dictionary with all requested blocks.
 
 ## Read Subvolumes
 
@@ -188,6 +132,7 @@ end
 ```
 
 In both functions `parttype` defines the particle type to be read, as in the previous read functions and `verbose` gives console output.
+There are also multiple dispatch versions of both functions available that only take a single `block` as input and return an array with the values instead of a dictionary.
 
 ### Peano-Hilbert key based reading
 
@@ -200,15 +145,6 @@ If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref
 If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=false` it reads all particles over all distributed files which are contained in the requested subvolume.
 This takes quite a lot longer than the key based reading, but sometimes it's the only option.
 
-### Filename
-
-With the snapshots being distributed over multiple filenames you need to be careful with that keyword. In this case filename refers to the base-name. Assuming you want to read snapshot 140, which is in the snapshot directory 140 the filename is
-
-```julia
-filename = "path/to/your/snapshot/directories/snapdir_140/snap_140"
-```
-
-GadgetIO will then automatically loop through the sub-snapshots which end in ".0", ".1", ... , ".N".
 
 ### Example
 
@@ -237,10 +173,13 @@ data["RHO"]  # array of densities
 If you want to read in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
 
 ```julia
-read_blocks_over_all_files(snap_base::String, blocks::Array{String}, filter_function::Function; 
-                                    N_to_read::Integer=-1, parttype::Integer=0)
+read_blocks_over_all_files( snap_base::String, blocks::Array{String};
+                            filter_function::Union{Function, Nothing}=nothing, 
+                            read_positions::Union{Dict, Nothing}=nothing, 
+                            parttype::Integer=0, verbose::Bool=true )
 ```
 This will read the specified `blocks` for all particles that pass the `filter_function`. This can be useful if you don't know where the region you are interested in is located and don't have enough memory to read in all particles.
+Alternatively you can also provide a `Dict` with `read_positions` as described in [Read positions](@ref).
 
 ### Filter functions
 
@@ -264,96 +203,54 @@ function pass_all(snap_file)
 end
 ```
 
-# Read Subfind Data
-
-
-## Reading the header
-
-
-Similarly to the normal snapshot you can read the header of the subfind output into a [`SubfindHeader`](@ref) object
+As an example, to read positions, velocity and ID of all shocked particles from distributed snapshots use
 
 ```julia
-struct SubfindHeader
-    nhalos::Int32                       # number of halos in the output file
-    nsubhalos::Int32                    # number of subhalos in the output file
-    nfof::Int32                         # number of particles in the FoF
-    ngroups::Int32                      # number of large groups in the output file
-    time::Float64                       # time / scale factor of the simulation
-    z::Float64                          # redshift of the simulation
-    tothalos::UInt32                    # total number of halos over all output files
-    totsubhalos::UInt32                 # total number of subhalos over all output files
-    totfof::UInt32                      # total number of particles in the FoF
-    totgroups::UInt32                   # total number of large groups over all output files
-    num_colors::Int32                   # number of colors
-    boxsize::Float64                    # total size of the simulation box
-    omega_0::Float64                    # Omega matter
-    omega_l::Float64                    # Omega dark enery
-    h0::Float64                         # little h
-    flag_doubleprecision::Int32         # 1 if snapshot is in double precision, else 0
-    flag_ic_info::Int32
-end
+blocks = ["POS", "VEL", "ID"]
+data = read_blocks_over_all_files(snap_base, blocks, filter_function=mach_gt_1, parttype=0)
 ```
 
-using
+### Read positions
+
+To avoid having to filter all files each time you want to read a snapshot you can also split the steps.
+You can first filter the particles to find the positions of the particles within the data blocks with [`find_read_positions`](@ref)
+```julia
+read_positions = find_read_positions(snap_base, filter_function)
+```
+and then save the result as a binary file with [`save_read_positions`](@ref)
 
 ```julia
-h = read_subfind_header(filename::String)
+save_read_positions(save_file, read_positions)
 ```
+where `save_file` is the filename you specified for storage.
 
-## Reading the subfind files
-
-
-If you compiled Gadget with `WRITE_SUB_IN_SNAP_FORMAT` you can read the subfind output like you would a normal snapshot, with any of the above methods. For convenience you can also use a helper function provided by GadgetIO. Since each of the blocks is only relevant for either halos, subhalos, Fof or large groups you don't need to define a particly type, aka halo type in this case.
-
-So in order to read the virial radius of the halos in a file you can simply use
+To re-use the `read_positions` you can load them from file using [`load_read_positions`](@ref)
 
 ```julia
-R_vir = read_subfind(filename, "RVIR")
+read_positions = load_read_positions(save_file)
 ```
 
-## Filtered read-in
-
-If you want to read specific halos from the subfind output you can use the function
+This can then be used to read any number of blocks with
 
 ```julia
-filter_subfind(filebase::String, blockname::String, filter_function::Function, nfiles::Integer=1)
+blocks = ["POS", "VEL", "ID"]
+data = read_blocks_over_all_files(snap_base, blocks, read_positions=read_positions, parttype=0)
 ```
 
-This will return an array of [HaloID](@ref)s 
+## Reading particles by referenced ID
+
+If you want to select specific particles to read from an array of `IDs` you can do this with [`read_particles_by_id`](@ref):
 
 ```julia
-struct HaloID
-    file::Int64
-    id::Int64
-end
+read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
+                     blocks::Array{String}; 
+                     parttype::Integer=0, verbose::Bool=true,
+                     pos0::Union{Array{<:Real},Nothing}=nothing,
+                     r0::Real=0.0,
+                     use_keys::Bool=true )
 ```
 
-You can use this to read specific files with [`read_subfind`](@ref) and select the array entry via the `id` field.
+`snap_base` defines the target snapshot, or the snapshot basename, `selected_ids` contains the list of IDs of the particles you want to read and `blocks` containes the blocknames of the blocks you want to read.
+If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Read Subvolumes](@ref) for details on this.
 
-The `filter_function` argument takes any function that takes one input argument and returns `true` if the requirement is fulfilled, or `false` if not.
-
-So to find e.g. all halos with a virial mass largert than ``10^{15} M_\odot`` you can use
-
-```julia
-find_mass_gt_1e15(M) = ( (M > 1.e15) ? true : false )
-
-filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
-```
-
-This will search all subfind files in the directory and check if they fulfill the filter. Since halos in subfind files are sorted by mass you can also supply a number of files to search with the argument `nfiles`. That way, if you are looking for a very massive halo you can constrian the reading and filtering to only the first `N` files to save time.
-
-
-## Reading particles in a halo
-
-
-If you want to read all particles associated with a FoF halo you can do this with the function [`read_particles_in_halo`](@ref)
-
-```julia
-read_particles_in_halo( snap_base::String, blocks::Array{String},
-                        sub_base::String, halo::HaloID; 
-                        rad_scale::Real=1.0, halo_type::Integer=1,
-                        parttype::Integer=0, verbose::Bool=true)
-```
-
-This reads all blocks defined in `blocks` for the `halo` into a dictionary. `snap_base` and `sub_base` should point to the snap and subfind directories, or the files if you only have one file. The `HaloID` point to the selected halo. `halo_type` should be set to `1` for halos and `2` for subhalos. 
-If you didn't get all the particles you were looking for it might be that the search radius for the read-in was too small. `rad_scale` defines the multiplication factor for the search radius. For halos the default search radius is ``r_{200}`` and for subhalos it's the half-mass radius.
+This will return a dictionary with all requested blocks.
