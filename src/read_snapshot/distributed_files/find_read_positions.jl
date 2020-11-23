@@ -1,4 +1,3 @@
-import YAML
 using ProgressMeter
 
 """
@@ -86,47 +85,62 @@ function find_read_positions( snap_base::String, filter_function::Function;
 
 end
 
-
 """
     save_read_positions(read_positions_file::String, data)
 
-Saves the relevant read-in positions to a YAML file.
+Saves the relevant read-in positions to a binary file.
 """
 function save_read_positions(read_positions_file::String, data)
-    YAML.write_file(read_positions_file, data)
+
+    f = open(read_positions_file, "w")
+    N_part = data["N_part"]
+
+    delete!(data, "N_part")
+    files = keys(data)
+    N_files = length(keys(data))
+
+    write(f, Int64(N_part))
+    write(f, Int64(N_files))
+
+    for file ∈ files
+        N_entries = size(data[file]["index"],1)
+        write(f, Int64(file))
+        write(f, Int64(N_entries))
+        write(f, Int64.(data[file]["index"]))
+        write(f, Int64.(data[file]["n_to_read"]))
+    end
+
+    close(f)
+
 end
 
 """
     load_read_positions(read_positions_file::String)
 
-Loads the relevant read-in positions from a YAML file.
+Loads the relevant read-in positions from a binary file.
 """
 function load_read_positions(read_positions_file::String)
-    YAML.load(open(read_positions_file))
+    
+    read_positions = Dict()
+
+    f = open(read_positions_file, "r")
+
+    read_positions["N_part"] = read(f, Int64)
+
+    N_files = read(f, Int64)
+
+    for _ ∈ 1:N_files
+
+        file      = read(f, Int64)
+        N_entries = read(f, Int64)
+        index     = read!(f, Array{Int64,1}(undef, N_entries))
+        n_to_read = read!(f, Array{Int64,1}(undef, N_entries))
+
+        read_positions[file] = Dict("index" => index, "n_to_read" => n_to_read)
+
+    end
+
+    close(f)
+
+    return read_positions
 end
-
-
-"""
-    Backup
-"""
-# import JSON
-
-# """
-#     save_read_positions(read_positions_file::String, data)
-
-# Saves the relevant read-in positions to a JSON file.
-# """
-# function save_read_positions(read_positions_file::String, data)
-#     open(read_positions_file,"w") do f
-#         JSON.print(f, JSON.json(data))
-#     end
-# end
-
-# """
-#     load_read_positions(read_positions_file::String)
-
-# Loads the relevant read-in positions from a YAML file.
-# """
-# function load_read_positions(read_positions_file::String)
-#     JSON.parse(JSON.parsefile(read_positions_file))
-# end
