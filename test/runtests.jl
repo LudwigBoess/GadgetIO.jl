@@ -98,13 +98,14 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             @test read_positions[0]["n_to_read"][4] == 74
 
             # test IO
-            save_read_positions("dummy.yml", read_positions)
-            loaded_read_positions = load_read_positions("dummy.yml")
+            save_read_positions("dummy.bin", read_positions)
+            loaded_read_positions = load_read_positions("dummy.bin")
+            delete!(loaded_read_positions, "N_part")
 
             @test read_positions == loaded_read_positions
 
             # delete dummy file
-            rm("dummy.yml")
+            rm("dummy.bin")
         end
 
         @testset "Error Handling" begin
