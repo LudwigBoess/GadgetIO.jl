@@ -1,10 +1,13 @@
 # Table of Contents
 
-
 ```@contents
-Pages = [ "index.md", 
-          "read_data.md", 
+Pages = [ "index.md",
+          "install.md",
+          "file_infos.md",
+          "read_snapshots.md", 
+          "read_subfind.md",
           "write_data.md",
-          "api.md"]
+          "api.md" 
+        ]
 Depth = 3
 ```

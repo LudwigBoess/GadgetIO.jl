@@ -1,11 +1,111 @@
 """
+    mutable struct SnapshotHeader( [ **Fields ])
+
+Contains the data of the `HEAD` block of a Gadget snapshot.
+
+# Fields
+| Name                                 | Meaning                                                                                |
+| :-------------------------------     | :------------------------------------------------------------------------------------- |
+| `npart::Vector{Int32}`               | an array of particle numbers per type in this snapshot                                 |
+| `massarr::Vector{Float64}`           | an array of particle masses per type in this snapshot - if zero: MASS block present    |
+| `time::Float64`                      | time / scale factor of the simulation                                                  |
+| `z::Float64`                         | redshift of the simulation                                                             |
+| `flag_sfr::Int32`                    | 1 if simulation was run with star formation, else 0                                    |
+| `flag_feedback::Int32`               | 1 if simulation was run with stellar feedback, else 0                                  |
+| `nall::Vector{UInt32}`               | total number of particles in the simulation                                            |
+| `flag_cooling::Int32`                | 1 if simulation was run with cooling, else 0                                           |
+| `num_files::Int32`                   | number of snapshots over which the simulation is distributed                           |
+| `omega_0::Float64`                   | Omega matter                                                                           |
+| `boxsize::Float64`                   | total size of the simulation box                                                       |
+| `omega_l::Float64`                   | Omega dark enery                                                                       |
+| `h0::Float64`                        | little h                                                                               |
+| `flag_stellarage::Int32`             | 1 if simulation was run with stellar age, else 0                                       |
+| `flag_metals::Int32`                 | 1 if simulation was run with metals, else 0                                            |
+| `npartTotalHighWord::Vector{UInt32}` | weird                                                                                  |
+| `flag_entropy_instead_u::Int32`      | 1 if snapshot U field contains entropy instead of internal energy, else 0              |
+| `flag_doubleprecision::Int32`        | 1 if snapshot is in double precision, else 0                                           |
+| `flag_ic_info::Int32`                | 1 if initial snapshot file contains an info block, else 0                              |
+| `lpt_scalingfactor::Float32`         | factor to use second order ic generation                                               |
+| `fill::Vector{Int32}`                | the HEAD block needs to be filled with zeros to have a size of 256 bytes               |
+"""
+mutable struct SnapshotHeader
+    npart::Vector{Int32}                # an array of particle numbers per type in this snapshot
+    massarr::Vector{Float64}            # an array of particle masses per type in this snapshot - if zero: MASS block present
+    time::Float64                       # time / scale factor of the simulation
+    z::Float64                          # redshift of the simulation
+    flag_sfr::Int32                     # 1 if simulation was run with star formation, else 0
+    flag_feedback::Int32                # 1 if simulation was run with stellar feedback, else 0
+    nall::Vector{UInt32}                # total number of particles in the simulation
+    flag_cooling::Int32                 # 1 if simulation was run with cooling, else 0
+    num_files::Int32                    # number of snapshots over which the simulation is distributed
+    boxsize::Float64                    # total size of the simulation box
+    omega_0::Float64                    # Omega matter
+    omega_l::Float64                    # Omega dark enery
+    h0::Float64                         # little h
+    flag_stellarage::Int32              # 1 if simulation was run with stellar age, else 0
+    flag_metals::Int32                  # 1 if simulation was run with metals, else 0
+    npartTotalHighWord::Vector{UInt32}  # weird
+    flag_entropy_instead_u::Int32       # 1 if snapshot U field contains entropy instead of internal energy, else 0
+    flag_doubleprecision::Int32         # 1 if snapshot is in double precision, else 0
+    flag_ic_info::Int32                 # 1 if initial snapshot file contains an info block, else 0
+    lpt_scalingfactor::Float32          # factor to use second order ic generation
+    fill::Vector{Int32}                 # the HEAD block needs to be filled with zeros to have a size of 256 bytes
+
+    function SnapshotHeader(npart::Vector{Int32}=Int32.([0,0,0,0,0,0]),
+           massarr::Vector{Float64}=zeros(6),
+           time::Float64=0.,
+           z::Float64=0.,
+           flag_sfr::Int32=Int32(0),
+           flag_feedback::Int32=Int32(0),
+           nall::Vector{UInt32}=UInt32.([0,0,0,0,0,0]),
+           flag_cooling::Int32=Int32(0),
+           num_files::Int32=Int32(0),
+           boxsize::Float64=0.,
+           omega_0::Float64=0.,
+           omega_l::Float64=0.,
+           h0::Float64=0.,
+           flag_stellarage::Int32=Int32(0),
+           flag_metals::Int32=Int32(0),
+           npartTotalHighWord::Vector{UInt32}=UInt32.([0,0,0,0,0,0]),
+           flag_entropy_instead_u::Int32=Int32(0),
+           flag_doubleprecision::Int32=Int32(0),
+           flag_ic_info::Int32=Int32(0),
+           lpt_scalingfactor::Float32=Float32(0.),
+           fill::Vector{Int32}=Int32.(zeros(12)))
+
+          new(npart,
+              massarr,
+              time,
+              z,
+              flag_sfr,
+              flag_feedback,
+              nall,
+              flag_cooling,
+              num_files,
+              boxsize,
+              omega_0,
+              omega_l,
+              h0,
+              flag_stellarage,
+              flag_metals,
+              npartTotalHighWord,
+              flag_entropy_instead_u,
+              flag_doubleprecision,
+              flag_ic_info,
+              lpt_scalingfactor,
+              fill)
+    end
+end
+
+
+"""
     head_to_obj(filename::String)
 
-Returns the header of a snapshot as a `Header` object.
+Returns the header of a snapshot as a `SnapshotHeader` object.
 """
 function head_to_obj(filename)
 
-    h = Header()
+    h = SnapshotHeader()
 
     f = open(filename)
     blocksize = read(f, Int32)
@@ -132,7 +232,7 @@ end
 """
     read_header(filename::String)
 
-Reads the header of a snapshot and returns a Header object.
+Reads the header of a snapshot and returns a SnapshotHeader object.
 
 See also: [`head_to_obj`](@ref)
 """
