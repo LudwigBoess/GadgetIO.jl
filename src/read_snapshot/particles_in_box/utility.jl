@@ -252,6 +252,12 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
 
     index_bounds = get_index_bounds(keylist[key_sort], low_list, high_list)
 
+    # bug fix for case when get_index_bounds returns -1:
+    # treat as if no index file existed
+    if index_bounds == -1
+        return collect(0:nfiles-1)
+    end
+
     file_sort = sort(file_list[index_bounds])
 
     return Int64.(file_sort)
