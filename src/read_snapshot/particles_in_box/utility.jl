@@ -124,9 +124,9 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
                 else # ids[icountids] > high_bounds[icountbounds]
                     icountids += 1
 
-                    if icountids >= nids
+                    if icountids > nids
                         lend2 = true
-                    end # icountids >= nids
+                    end # icountids > nids
                 end # ids[icountids] > high_bounds[icountbounds]
             end # while !lend2
 
@@ -148,44 +148,19 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
                         else # ids[icountids] >= low_bounds[icountbounds]
                             icountids += 1
 
-                            if icountids >= nids
+                            if icountids > nids
                                 lend2 = true
                             end
                         end # if ids[icountids] >= low_bounds[icountbounds]
 
                     end # while !lend2
 
-                else # if icountids < nids
+                end # if icountids <= nids
 
-                    if ids[icountids] > high_bounds[icountbounds]
-
-                        icountbounds += 1
-
-                        if icountbounds < nbounds
-
-                            lend2 = false
-
-                            while !lend2
-
-                                if ids[icountids] <= high_bounds[icountbounds]
-                                    lend2 = true
-                                else # if ids[icountids] <= high_bounds[icountbounds]
-                                    icountbounds += 1
-                                    if icountbounds >= nbounds
-                                        lend2 = true
-                                    end
-                                end # if ids[icountids] <= high_bounds[icountbounds]
-                            end # while !lend2
-                        end # if icountbounds < nbounds
-
-                    end # if ids[icountids] > high_bounds[icountbounds]
-
-                end # if icountids < nids
-
-            else # if ids[icountids] < low_bounds[icountbounds]
+            elseif ids[icountids] > high_bounds[icountbounds] # if ids[icountids] < low_bounds[icountbounds]
                 icountbounds += 1
 
-                if icountbounds < nbounds
+                if icountbounds <= nbounds
                     lend2 = false
 
                     while !lend2
@@ -193,22 +168,22 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
                             lend2 = true
                         else # ids[icountids] <= high_bounds[icountbounds]
                             icountbounds += 1
-                            if icountbounds >= nbounds
+                            if icountbounds > nbounds
                                 lend2 = true
-                            end # icountbounds >= nbounds
+                            end # icountbounds > nbounds
                         end # ids[icountids] <= high_bounds[icountbounds]
                     end # while !lend2
 
-                end # icountbounds < nbounds
+                end # icountbounds <= nbounds
 
             end # if ids[icountids] < low_bounds[icountbounds]
 
         end # if low_bounds[icountbounds] <= ids[icountids] <= high_bounds[icountbounds]
 
-        if icountids >= nids
+        if icountids > nids
             lend = true
         end
-        if icountbounds >= nbounds
+        if icountbounds > nbounds
             lend = true
         end
 
@@ -219,12 +194,8 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
     end # while !lend
 
     if icountall > 1
-        ind_out = ind_all[1:icountall]
-        if ind_out[end] == 0
-            return ind_out[1:end-1]
-        else
-            return ind_out
-        end
+        ind_out = ind_all[1:icountall-1]
+        return ind_out
     else
         return -1
     end
@@ -251,12 +222,6 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
     key_sort = sortperm(keylist)
 
     index_bounds = get_index_bounds(keylist[key_sort], low_list, high_list)
-
-    # bug fix for case when get_index_bounds returns -1:
-    # treat as if no index file existed
-    if index_bounds == -1
-        return collect(0:nfiles-1)
-    end
 
     file_sort = sort(file_list[index_bounds])
 
