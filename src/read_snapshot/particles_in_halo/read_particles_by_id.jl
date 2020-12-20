@@ -8,7 +8,7 @@ Checks for matching IDs.
 function filter_by_ids( selected_ids::Array{<:Integer}, ids::Array{<:Integer})
 
     # look for the array positions where the IDs match
-    matched = sort( get_index_list_dict( selected_ids, ids ) )
+    matched = sort( get_index_list( selected_ids, ids ) )
 
     return matched
 end
