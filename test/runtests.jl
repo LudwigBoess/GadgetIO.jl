@@ -86,7 +86,7 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
         @testset "Read positions" begin
             center = Float32[3978.9688, -95.40625, -8845.25]
             rvir   = 118.76352
-            ff(filename) = filter_positions(filename, center .- rvir, center .+ rvir, 1) 
+            ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1) 
             read_positions = find_read_positions("snap_002", ff)
 
             @test read_positions["N_part"] == 87

@@ -17,8 +17,6 @@ function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, co
     return sel
 end
 
-
-
 """
     read_blocks_over_all_files( snap_base::String, blocks::Array{String};
                                 filter_function::Union{Function, Nothing}=nothing, 

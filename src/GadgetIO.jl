@@ -9,6 +9,7 @@ module GadgetIO
     end
     
     # functions to read snapshots
+    include(joinpath("read_snapshot", "utility", "domain_slices.jl"))
     include(joinpath("read_snapshot", "read_header.jl"))
     include(joinpath("read_snapshot", "read_info.jl"))
     include(joinpath("read_snapshot", "utility", "allocate_dict.jl"))
@@ -52,8 +53,10 @@ module GadgetIO
            find_read_positions,
            save_read_positions,
            load_read_positions,
-           filter_positions,
 
+           # domain slices
+           filter_cube,
+           filter_cylinder,
 
            # subfind read
            HaloID,
