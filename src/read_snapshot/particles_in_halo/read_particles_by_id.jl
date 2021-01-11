@@ -41,7 +41,7 @@ function read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:I
     end
 
     # read the data blocks whole, but only store relevant entries
-    return Dict(blocks[i] => read_snap(snap_file, blocks[i], parttype)[matched,:] for i = 1:size(blocks,1))
+    return Dict(blocks[i] => read_snap(snap_file, blocks[i], parttype)[:, matched] for i = 1:size(blocks,1))
 
 end
 
@@ -100,7 +100,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 @info "Found $(size(matched,1)) matches. Took: $(t2 - t1)"
             end
             
-            return Dict(blocks[i] => data[blocks[i]][matched,:] for i = 1:size(blocks,1))
+            return Dict(blocks[i] => data[blocks[i]][:, matched] for i = 1:size(blocks,1))
 
         else # if there are no .key files we need to read the while snapshot
             return read_particles_by_id_single_file(filename, selected_ids, blocks, parttype, verbose=verbose)
@@ -145,7 +145,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
                 # write into master dict
                 for block in blocks
-                    data[block][N_read+1:N_read+N_this_file,:] = data_file[block]
+                    data[block][:, N_read+1:N_read+N_this_file] = data_file[block]
                 end # blocks
 
                 # update number of read particles
@@ -155,7 +155,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             # reduce array size
             for block in blocks
-                data[block] = reshape(resize!(vec(data[block]),size(data[block],2)*N_read),N_read,size(data[block],2))
+                data[block] = reshape(resize!(vec(data[block]),size(data[block],1)*N_read),size(data[block],1), N_read)
             end # blocks
 
             return data

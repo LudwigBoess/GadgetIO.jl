@@ -39,7 +39,7 @@ function find_most_massive_halo(filebase::String, nfiles::Int=1)
             max_id   = max_test[2][1]
 
             # store position and virial radius of most massive halo
-            POS  = read_subfind(sub_input, "GPOS")[max_id,:]
+            POS  = read_subfind(sub_input, "GPOS")[:,max_id]
             RVIR = read_subfind(sub_input, rvir_block)[max_id]
 
             # store new maximum mass
