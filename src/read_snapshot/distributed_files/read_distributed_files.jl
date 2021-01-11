@@ -1,23 +1,6 @@
 using ProgressMeter
 using Base.Threads
 
-"""
-    filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real}, 
-                          parttype::Integer)
-
-Reads positions from `snap_file` and returns the indices of particles contained in a box defined by `corner_lowerleft` and `corner_upperright`.
-"""
-function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real}, 
-                          parttype::Integer)
-
-    pos = read_snap(snap_file, "POS", parttype)
-    sel = findall( ( corner_lowerleft[1] .<= pos[:,1] .< corner_upperright[1] ) .&
-                   ( corner_lowerleft[2] .<= pos[:,2] .< corner_upperright[2] ) .&
-                   ( corner_lowerleft[3] .<= pos[:,3] .< corner_upperright[3] ) )
-    return sel
-end
-
-
 
 """
     read_blocks_over_all_files( snap_base::String, blocks::Array{String};
