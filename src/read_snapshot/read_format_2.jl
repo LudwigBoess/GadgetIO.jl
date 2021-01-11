@@ -47,7 +47,7 @@ function read_block(filename::String, blockname::String;
         if block_position == -1
             # if no mass block is present we can read it from the header
             if blockname == "MASS"
-                block = Array{info.data_type,2}(undef,(h.npart[parttype+1], info.n_dim))
+                block = Array{info.data_type,1}(undef, h.npart[parttype+1])
                 block .= h.massarr[parttype+1]
                 return block
             end
@@ -86,11 +86,7 @@ Reads the binary data in a block.
 function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart::Integer)
     
     if n_dim > 1
-        return copy(transpose(
-        read!(f, Array{data_type,2}(undef, (n_dim,npart) ) 
-                )))
-        #return read!(f, Array{data_type,2}(undef, (npart,n_dim)))
-        # return read!(f, Array{data_type,2}(undef, (n_dim,npart)))
+        return read!(f, Array{data_type,2}(undef, (n_dim, npart)))
     else
         read!(f, Array{data_type,1}(undef, npart))
     end
@@ -182,7 +178,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
         seek(f, p + len*offset_key[i])
         n_this_key += part_per_key[i]
 
-        data[n_read+1:n_this_key, :] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
+        data[:, n_read+1:n_this_key] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
 
         n_read += part_per_key[i]
 

@@ -3,7 +3,7 @@
 Get the full property from `block` at `index`. Returns an array or scalar depending on the block type.
 """
 function get_prop_from_block(block::Array, index::Integer)
-    return ndims(block) == 1 ? block[index] : block[index, :]
+    return ndims(block) == 1 ? block[index] : block[:, index]
 end
 
 
