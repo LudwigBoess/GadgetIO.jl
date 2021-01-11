@@ -26,9 +26,9 @@ function filter_cylinder(filename::String, pt1::Array{<:Real}, pt2::Array{<:Real
         # read positions from file
         pos = read_snap(filename, "POS", parttype)
 
-        pos_cylinder = @views pos[in_cube,:]
-        is_in_cylinder = mapslices(check_in_cylinder_helper, pos_cylinder, dims=2)
-        return in_cube[findall( is_in_cylinder[:,1] .== true )]
+        pos_cylinder = @views pos[:, in_cube]
+        is_in_cylinder = mapslices(check_in_cylinder_helper, pos_cylinder, dims=1)
+        return in_cube[findall( is_in_cylinder[1,:] .== true )]
     else
         return in_cube
     end
@@ -54,9 +54,9 @@ function filter_cube(snap_file::String, corner_lowerleft::Array{<:Real}, corner_
         cube_upper[dim] = ((corner_lowerleft[dim] > corner_upperright[dim]) ? corner_lowerleft[dim] : corner_upperright[dim])
     end
 
-    return findall( ( cube_lower[1] .<= pos[:,1] .<= cube_upper[1] ) .& 
-                    ( cube_lower[2] .<= pos[:,2] .<= cube_upper[2] ) .&
-                    ( cube_lower[3] .<= pos[:,3] .<= cube_upper[3] ) )
+    return findall( ( cube_lower[1] .<= pos[1,:] .<= cube_upper[1] ) .& 
+                    ( cube_lower[2] .<= pos[2,:] .<= cube_upper[2] ) .&
+                    ( cube_lower[3] .<= pos[3,:] .<= cube_upper[3] ) )
 end
 
 
@@ -71,9 +71,9 @@ function filter_sphere(filename::String, center::Array{<:Real}, r::Real; parttyp
 
     if size(in_cube,1) > 0
 
-        distance = @views @. √( (pos[in_cube,1] - center[1])^2 +
-                                (pos[in_cube,2] - center[2])^2 + 
-                                (pos[in_cube,3] - center[3])^2 )
+        distance = @views @. √( (pos[1, in_cube] - center[1])^2 +
+                                (pos[2, in_cube] - center[2])^2 + 
+                                (pos[3, in_cube] - center[3])^2 )
 
         return in_cube[findall( distance .<= r )]
     else
