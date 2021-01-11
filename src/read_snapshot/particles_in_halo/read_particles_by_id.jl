@@ -15,6 +15,20 @@ end
 
 
 """
+    read_filtered(snap_file, blockname, parttype, block_position, matched)
+
+Helper function to return the correct filtered arrays.
+"""
+function read_filtered(snap_file, blockname, parttype, block_position, matched)
+    data = read_block(snap_file, blockname; parttype, block_position)
+    if size(data,2) > 1
+        return data[:,matched]
+    else
+        return data[matched]
+    end
+end
+
+"""
     read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:Integer}, 
                                           blocks::Array{String}, parttype::Integer)
 
@@ -40,8 +54,12 @@ function read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:I
         @info "Found $(size(matched,1)) matches. Took: $(t2 - t1)"
     end
 
+    # store block positions for faster read-in
+    block_positions = get_block_positions(snap_file)
+
     # read the data blocks whole, but only store relevant entries
-    return Dict(blocks[i] => read_snap(snap_file, blocks[i], parttype)[:, matched] for i = 1:size(blocks,1))
+    return Dict(blocks[i] => read_filtered(snap_file, blocks[i], parttype, block_positions[blocks[i]], matched) 
+                for i = 1:size(blocks,1))
 
 end
 
