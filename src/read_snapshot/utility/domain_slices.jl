@@ -19,7 +19,7 @@ Reads the positions contained in a file and returns the indices of particles con
 """
 function filter_cylinder(filename::String, pt1::Array{<:Real}, pt2::Array{<:Real}, r::Real; parttype::Integer=0)
 
-    in_cube = filter_cube(filename, pt1, pt2; parttype )
+    in_cube = filter_cube(filename, pt1, pt2, parttype=parttype )
 
     if size(in_cube,1) > 0
         check_in_cylinder_helper(x) = check_in_cylinder(x, pt1, pt2, r)
@@ -67,7 +67,7 @@ Reads the positions contained in a file and returns the indices of particles con
 """
 function filter_sphere(filename::String, center::Array{<:Real}, r::Real; parttype::Integer=0)
 
-    in_cube = filter_cube(filename, center .- r, center .+ r; parttype)
+    in_cube = filter_cube(filename, center .- r, center .+ r, parttype=parttype)
 
     if size(in_cube,1) > 0
 
