@@ -47,16 +47,16 @@ function filter_cube(snap_file::String, corner_lowerleft::Array{<:Real}, corner_
     pos = read_snap(snap_file, "POS", parttype)
 
     # double check if the corners are set correctly
-    cube_lower = zeros(3)
-    cube_upper = zeros(3)
+    cube_lower = Array{eltype(corner_lowerleft[1]),1}(undef, 3)
+    cube_upper = Array{eltype(corner_lowerleft[1]),1}(undef, 3)
     @inbounds for dim = 1:3
         cube_lower[dim] = ((corner_lowerleft[dim] < corner_upperright[dim]) ? corner_lowerleft[dim] : corner_upperright[dim])
         cube_upper[dim] = ((corner_lowerleft[dim] > corner_upperright[dim]) ? corner_lowerleft[dim] : corner_upperright[dim])
     end
 
-    return findall( ( cube_lower[1] .<= pos[1,:] .<= cube_upper[1] ) .& 
-                    ( cube_lower[2] .<= pos[2,:] .<= cube_upper[2] ) .&
-                    ( cube_lower[3] .<= pos[3,:] .<= cube_upper[3] ) )
+    return findall( @views ( ( cube_lower[1] .<= pos[1,:] .<= cube_upper[1] ) .& 
+                             ( cube_lower[2] .<= pos[2,:] .<= cube_upper[2] ) .&
+                             ( cube_lower[3] .<= pos[3,:] .<= cube_upper[3] )) )
 end
 
 

@@ -11,9 +11,9 @@ function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, co
                           parttype::Integer)
 
     pos = read_snap(snap_file, "POS", parttype)
-    sel = findall( ( corner_lowerleft[1] .<= pos[1,:] .< corner_upperright[1] ) .&
-                   ( corner_lowerleft[2] .<= pos[2,:] .< corner_upperright[2] ) .&
-                   ( corner_lowerleft[3] .<= pos[3,:] .< corner_upperright[3] ) )
+    sel = findall( @views ( ( corner_lowerleft[1] .<= pos[1,:] .< corner_upperright[1] ) .&
+                            ( corner_lowerleft[2] .<= pos[2,:] .< corner_upperright[2] ) .&
+                            ( corner_lowerleft[3] .<= pos[3,:] .< corner_upperright[3] )) )
     return sel
 end
 
