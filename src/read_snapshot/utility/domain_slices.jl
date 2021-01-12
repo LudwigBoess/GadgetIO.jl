@@ -28,7 +28,7 @@ function filter_cylinder(filename::String, pt1::Array{<:Real}, pt2::Array{<:Real
 
         pos_cylinder = @views pos[:, in_cube]
         is_in_cylinder = mapslices(check_in_cylinder_helper, pos_cylinder, dims=1)
-        return in_cube[findall( is_in_cylinder[1,:] .== true )]
+        return in_cube[findall( is_in_cylinder .== true )]
     else
         return in_cube
     end
