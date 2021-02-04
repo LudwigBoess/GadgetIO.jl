@@ -20,7 +20,7 @@ end
 Helper function to return the correct filtered arrays.
 """
 function read_filtered(snap_file, blockname, parttype, block_position, matched)
-    data = read_block(snap_file, blockname; parttype, block_position)
+    data = read_block(snap_file, blockname, parttype=parttype, block_position=block_position)
     if size(data,2) > 1
         return data[:,matched]
     else
