@@ -108,10 +108,10 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
 
             # store the relevant data in the `d[block]` array
             read_block_with_offset!(d[block], N_read, filename, 
-                        file_block_positions[block],
-                        block_info, offset, 
-                        read_positions[file]["index"],
-                        read_positions[file]["n_to_read"])
+                                    file_block_positions[block],
+                                    block_info, offset, 
+                                    read_positions[file]["index"],
+                                    read_positions[file]["n_to_read"])
 
         end
         # count the number of particles already read

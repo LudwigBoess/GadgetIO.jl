@@ -172,7 +172,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
 
     # finally construct masses of no mass block present
     if no_mass_block
-        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read, 1)
+        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read)
     end
 
     if verbose
