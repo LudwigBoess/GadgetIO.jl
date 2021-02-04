@@ -64,6 +64,29 @@ function read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:I
 end
 
 """
+    construct_matched_dict(data_in::Dict{String, Union{Vector{T}, Array{T,2}}}, 
+                                blocks::Array{String,1}, matched::Array{<:Integer,1}) where T
+
+Write all matching particles to a new dictionary.
+"""
+function construct_matched_dict(data_in::Dict{String, Union{Vector{T}, Array{T,2}} where T}, 
+                                blocks::Array{String,1}, matched::Array{<:Integer,1})
+
+    dict_out = Dict{String, Union{Vector{T}, Array{T,2}} where T}()
+
+    for block ∈ blocks
+        dim   = size(data_in[block], 2)
+        if dim == 1
+            dict_out[block] = data_in[block][matched]
+        else
+            dict_out[block] = data_in[block][:, matched]
+        end
+    end
+    return dict_out
+end
+
+
+"""
     read_particles_by_id(snap_base::String, ids::Array{<:Integer}, 
                          blocks::Array{String}; 
                          parttype::Integer=0, verbose::Bool=true,
@@ -91,6 +114,8 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
     # extend the list of blocks to read by ID block 
     blocks = [ blocks ; "ID" ]
+    
+    # remove duplicate blocks
     unique!(blocks)
 
     # for a given halo position and search radius we can use `read_particles_in_volume`
@@ -117,8 +142,9 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 t2 = Dates.now()
                 @info "Found $(size(matched,1)) matches. Took: $(t2 - t1)"
             end
-            
-            return Dict(blocks[i] => data[blocks[i]][:, matched] for i = 1:size(blocks,1))
+
+            # construct a new dict only containing the matching particles
+            return construct_matched_dict(data, blocks, matched)
 
         else # if there are no .key files we need to read the while snapshot
             return read_particles_by_id_single_file(filename, selected_ids, blocks, parttype, verbose=verbose)
@@ -162,8 +188,13 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 N_this_file = size(data_file["ID"],1)
 
                 # write into master dict
-                for block in blocks
-                    data[block][:, N_read+1:N_read+N_this_file] = data_file[block]
+                for block ∈ blocks
+                    dim   = snap_info[getfield.(snap_info, :block_name) .== block][1].n_dim
+                    if dim == 1
+                        data[block][N_read+1:N_read+N_this_file]    = data_file[block]
+                    else
+                        data[block][:, N_read+1:N_read+N_this_file] = data_file[block]
+                    end
                 end # blocks
 
                 # update number of read particles
@@ -172,8 +203,13 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
             end
 
             # reduce array size
-            for block in blocks
-                data[block] = reshape(resize!(vec(data[block]),size(data[block],1)*N_read),size(data[block],1), N_read)
+            for block ∈ blocks
+                dim   = snap_info[getfield.(snap_info, :block_name) .== block][1].n_dim
+                if dim == 1
+                    resize!(data[block], N_read)
+                else
+                    data[block] = reshape(resize!(vec(data[block]), Int64(dim)*N_read), Int64(dim), N_read)
+                end
             end # blocks
 
             return data
