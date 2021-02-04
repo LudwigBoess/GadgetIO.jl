@@ -204,11 +204,11 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             # reduce array size
             for block ∈ blocks
-                dim   = snap_info[getfield.(snap_info, :block_name) .== block][1].n_dim
+                dim   = eltype(N_read)(snap_info[getfield.(snap_info, :block_name) .== block][1].n_dim)
                 if dim == 1
                     resize!(data[block], N_read)
                 else
-                    data[block] = reshape(resize!(vec(data[block]), Int64(dim)*N_read), Int64(dim), N_read)
+                    data[block] = reshape(resize!(vec(data[block]), dim*N_read), dim, N_read)
                 end
             end # blocks
 
