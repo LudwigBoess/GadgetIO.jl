@@ -207,7 +207,7 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         if verbose
             @info "Brute-force read-in."
         end
-        filter_function(snap_file) = filter_cube(snap_file, corner_lowerleft, corner_upperright; parttype)
+        filter_function(snap_file) = filter_cube(snap_file, corner_lowerleft, corner_upperright, parttype=parttype)
         d = read_blocks_over_all_files(filename, blocks, filter_function = filter_function, parttype = parttype, verbose = verbose )
     end
 
