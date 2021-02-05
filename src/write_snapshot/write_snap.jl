@@ -46,16 +46,16 @@ function write_block(f::IOStream, data,
                      blockname::String="";
                      snap_format::Integer=2)
 
-
-    # turn array of arrays d into one large array
-    #data = reduce(vcat, d)     # OLD! Keep for later, maybe
-
     # get total number of particles to write
-    N = size(data,2)
+    N = size(data, ndims(data))
 
     # write blocksize
     dtype = typeof(data[1,1])
-    dims = size(data,1)
+    dims = ndims(data)
+    if dims == 2
+        dims = size(data,1)
+    end
+
     blocksize = UInt32(N * sizeof(dtype) * dims)
 
     if snap_format == 2
