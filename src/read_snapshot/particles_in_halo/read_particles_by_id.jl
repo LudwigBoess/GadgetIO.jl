@@ -69,10 +69,10 @@ end
 
 Write all matching particles to a new dictionary.
 """
-function construct_matched_dict(data_in::Dict{String, Union{Vector{T}, Array{T,2}} where T}, 
+function construct_matched_dict(data_in::Dict{String, VecOrMat{T} where T}, 
                                 blocks::Array{String,1}, matched::Array{<:Integer,1})
 
-    dict_out = Dict{String, Union{Vector{T}, Array{T,2}} where T}()
+    dict_out = Dict{String, VecOrMat{T} where T}()
 
     for block ∈ blocks
         dim   = size(data_in[block], 2)
@@ -204,6 +204,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
             # reduce array size
             for block ∈ blocks
+                # eltype needed for type stable reshape function call
                 dim   = eltype(N_read)(snap_info[getfield.(snap_info, :block_name) .== block][1].n_dim)
                 if dim == 1
                     resize!(data[block], N_read)
