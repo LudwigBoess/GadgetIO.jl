@@ -189,7 +189,7 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
     end
 
     # position of halo
-    halo_pos = read_subfind(sub_file, pos_block)[halo.id,:]
+    halo_pos = read_subfind(sub_file, pos_block)[:,halo.id]
 
     # initial search radius for read-in
     initial_radius = rad_scale * read_subfind(sub_file, rad_block)[halo.id]

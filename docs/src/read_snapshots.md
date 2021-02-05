@@ -8,6 +8,19 @@ DocTestSetup = quote
 end
 ```
 
+---
+**NOTE**
+
+From v0.4 and up snapshots are read in proper column-major order, as it should be for Julia.
+This means that position data for particle `i` neads be accessed as:
+```
+x = pos[1,i]
+y = pos[2,i]
+z = pos[3,i]
+```
+---
+
+
 `GadgetIO.jl` is specialized to read `Gadget` snapshots of `Format 2`. The structure of a `Format 2` snapshot is as follows:
 
 ```

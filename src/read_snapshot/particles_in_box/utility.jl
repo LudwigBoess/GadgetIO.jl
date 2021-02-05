@@ -314,11 +314,55 @@ Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. U
     end
 end
 
+"""
+    get_index_list_arr(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses forward-searching in sorted array.
+"""
+@inline function get_index_list_arr_sort(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+    narr1 = size(list_to_find,1)
+    narr2 = size(list_to_check,1)
+
+    ind_all   = zeros(Int64, narr1)
+
+    icountall     = 1
+    icountarr1    = 1
+    icountarr2    = 1
+
+    iiarr2 = sortperm(idarr2[:,1], alg=QuickSort)
+
+    lend = false
+
+    while !lend
+
+        if list_to_check[iiarr2[icountarr2]] == list_to_find[icountarr1]
+
+            ind_all[icountall] = iiarr2[icountarr2]
+            icountall  += 1
+            icountarr1 += 1
+            icountarr2 += 1
+        else  # list_to_check[icountnotarr2] == list_to_find[icountnotar1]
+            if list_to_check[iiarr2[icountarr2]] < list_to_find[icountarr1]
+                icountarr2    += 1
+            else # list_to_check[icountnotarr2] < list_to_find[icountnotar1]
+                icountarr1    += 1
+            end # list_to_check[icountnotarr2] < list_to_find[icountnotar1]
+        end # list_to_check[icountnotarr2] == list_to_find[icountnotar1]
+        if (icountarr2 > narr2 ) || (icountarr1 > narr1)
+            lend = true
+        end
+    end # while !lend
+
+    if icountall > 1
+        return ind_all[1:icountall-1]
+    end
+end
 
 """
     get_index_list_dict(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
-Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses a `Dict` for lookup -> slower than the normal version.
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses a `Dict` for lookup -> slower than the array search, but works on unsorted arrays.
 """
 @inline function get_index_list_dict(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
