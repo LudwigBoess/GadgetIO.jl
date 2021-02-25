@@ -29,7 +29,7 @@ end
 
 """
     read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::String, nfiles::Integer=1; verbose::Bool=true)
-Get halo property from block `blockname` by global halo index `i_global`.
+Get halo property from block `blockname` by global halo index `i_global` (zero-based index).
 `nfiles` should generally be set to `h.num_files`, obtained from `read_header`.
 """
 function read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::String, nfiles::Integer=1; verbose::Bool=true)
@@ -49,7 +49,7 @@ function read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::S
         end
 
         block = read_subfind(sub_input, blockname)
-        len = size(block, 1)
+        len = ndims(block) == 2 ? size(block, 2) : length(block)
         if len ≤ i_global # halo is not in current file
             i_global -= len
         else
