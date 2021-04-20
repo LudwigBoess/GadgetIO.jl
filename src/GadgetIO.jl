@@ -46,6 +46,7 @@ module GadgetIO
            # large simulations
            read_particles_in_box,
            read_particles_in_volume,
+           read_particles_in_sphere,
            read_particles_in_halo,
            get_index_list,
            get_npart_to_read,
