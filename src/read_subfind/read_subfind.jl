@@ -175,4 +175,3 @@ function read_subfind(filename::String, blockname::String)
 
     return read_block(filename, blockname, info = info_selected, parttype = parttype)
 end
-

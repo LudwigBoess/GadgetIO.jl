@@ -26,6 +26,10 @@ module GadgetIO
     include(joinpath("read_snapshot", "particles_in_box",  "peano_hilbert.jl"))
     include(joinpath("read_snapshot", "particles_in_box",  "utility.jl"))
     include(joinpath("read_snapshot", "particles_in_box",  "read_particle_in_box.jl"))
+    include(joinpath("read_snapshot", "particles_in_geometry", "abstract_geometry.jl"))
+    include(joinpath("read_snapshot", "particles_in_geometry", "cylinder.jl"))
+    include(joinpath("read_snapshot", "particles_in_geometry", "sphere.jl"))
+    include(joinpath("read_snapshot", "particles_in_geometry", "read_particles_in_geometry.jl"))
     include(joinpath("read_snapshot", "particles_in_halo", "read_particles_by_id.jl"))
     include(joinpath("read_snapshot", "particles_in_halo", "read_particles_in_halo.jl"))
 
@@ -43,9 +47,11 @@ module GadgetIO
            read_block,      # similar to readnew.pro by Klaus Dolag
            read_header,
 
+
            # large simulations
            read_particles_in_box,
            read_particles_in_volume,
+           read_particles_in_geometry,
            read_particles_in_halo,
            get_index_list,
            get_npart_to_read,
@@ -53,6 +59,11 @@ module GadgetIO
            find_read_positions,
            save_read_positions,
            load_read_positions,
+
+           # geometries
+           AbstractGadgetGeometry,
+           GadgetCylinder,
+           GadgetSphere,
 
            # domain slices
            filter_cube,
@@ -72,5 +83,7 @@ module GadgetIO
            # write snapshot functions
            write_header,
            write_block
+
+
 
 end # module
