@@ -267,7 +267,7 @@ function read_particles_in_volume(filename::String, block::String,
                                   center_pos, radius;
                                   kwargs...)
 
-    d = read_particles_in_volume(filename, [block], center_pos, radius, kwargs...)
+    d = read_particles_in_volume(filename, [block], center_pos, radius; kwargs...)
 
     return d[block]
 end
