@@ -215,32 +215,28 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
 end
 
 """
-    read_particles_in_box(filename::String, blocks::String,
+    read_particles_in_box(filename::String, block::String,
                           corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
-                          parttype::Integer=0, verbose::Bool=true,
-                          use_keys::Bool=true)
+                          kwargs...)
 
 Like `read_particles_in_box` but for a single block. Returns the block as an array.
 
 See also: [`read_particles_in_box`](@ref)
 """
-function read_particles_in_box(filename::String, blocks::String,
+function read_particles_in_box(filename::String, block::String,
                                corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real};
-                               parttype::Integer=0, verbose::Bool=true,
-                               use_keys::Bool=true)
+                               kwargs...)
 
-    d = read_particles_in_box(filename, [blocks], corner_lowerleft, corner_upperright, 
-                              parttype=parttype, verbose=verbose, use_keys=use_keys)
+    d = read_particles_in_box(filename, [block], corner_lowerleft, corner_upperright; kwargs...)
 
-    return d[blocks]
+    return d[block]
 end
 
 
 """
     read_particles_in_volume(filename::String, blocks::Vector{String},
-                             center_pos, radius;
-                             parttype::Integer=0, verbose::Bool=true,
-                             use_keys::Bool=true)
+                             center_pos::Array{<:Real}, radius::Real;
+                             kwargs...)
 
 Reads all particles within a box encapsulating a volume defined by center position
 and radius for a given particle type. Returns a dictionary with all requested blocks.
@@ -249,43 +245,37 @@ See also: [`read_particles_in_box`](@ref)
 """
 function read_particles_in_volume(filename::String, blocks::Vector{String},
                                   center_pos::Array{<:Real}, radius::Real;
-                                  parttype::Integer=0, verbose::Bool=true,
-                                  use_keys::Bool=true)
+                                  kwargs...)
 
     # calculate lower left and upper right corner
     x0 = center_pos .- radius
     x1 = center_pos .+ radius
 
-    return read_particles_in_box(filename, blocks, x0, x1, parttype=parttype, verbose=verbose, use_keys=use_keys)
+    return read_particles_in_box(filename, blocks, x0, x1; kwargs...)
 end
 
 """
-    read_particles_in_volume(filename::String, blocks::String,
+    read_particles_in_volume(filename::String, block::String,
                              center_pos::Array{<:Real}, radius::Real;
-                             parttype::Integer=0, verbose::Bool=true,
-                             use_keys::Bool=true)
+                             kwargs...)
 
 Like `read_particles_in_volume` but for a single block. Returns the block as an array.
 
 See also: [`read_particles_in_volume`](@ref)
 """
-function read_particles_in_volume(filename::String, blocks::String,
+function read_particles_in_volume(filename::String, block::String,
                                   center_pos, radius;
-                                  parttype::Integer=0, verbose::Bool=true,
-                                  use_keys::Bool=true)
+                                  kwargs...)
 
-    d = read_particles_in_volume(filename, [blocks], center_pos, radius,
-                                 parttype=parttype, verbose=verbose,
-                                 use_keys=use_keys)
+    d = read_particles_in_volume(filename, [block], center_pos, radius, kwargs...)
 
-    return d[blocks]
+    return d[block]
 end
 
 """
     read_particles_in_sphere(filename::String, blocks::Vector{String},
                              center_pos::Array{<:Real}, radius::Real;
-                             parttype::Integer=0, verbose::Bool=true,
-                             use_keys::Bool=true)
+                             kwargs...)
 
 Reads all particles within a sphere around the center position with the specified
 radius for a given particle type. Returns a dictionary with all requested blocks.
@@ -297,7 +287,7 @@ function read_particles_in_sphere(filename::String, blocks::Vector{String},
                                   kwargs...)
 
     # make sure position is read - needed for determining if in sphere or not
-    if !("POS" in blocks)
+    if !("POS" ∈ blocks)
         @info "POS not found in blocks, adding POS..."
         append!(blocks, "POS")
     end
@@ -306,14 +296,16 @@ function read_particles_in_sphere(filename::String, blocks::Vector{String},
 
     # determine particles within radius
     radius² = radius^2
-    mask = @views @. (center_pos[1] - d["POS"][1,:])^2 + (center_pos[2] - d["POS"][2,:])^2 + (center_pos[3] - d["POS"][3,:])^2 ≤ radius²
+    mask = @views @. (d["POS"][1,:] - center_pos[1])^2 + (d["POS"][2,:] - center_pos[2])^2 + (d["POS"][3,:] - center_pos[3])^2 ≤ radius²
 
     # iterate blocks of dict to remove filtered out particles
-    for block in keys(d)
+    for block ∈ keys(d)
         # get all dimensions but the last (the last is masked)
+        # creates array [:,...,:] with ndims-1 elements
         colons = repeat([:], ndims(d[block]) - 1)
 
-        d[block] = d[block][colons..., mask]        
+        # equivalent to [:,:,mask] for three dimensions for example
+        d[block] = d[block][colons..., mask]
     end
 
     return d
@@ -321,18 +313,17 @@ end
 
 
 """
-    read_particles_in_sphere(filename::String, blocks::String,
+    read_particles_in_sphere(filename::String, block::String,
                              center_pos::Array{<:Real}, radius::Real;
-                             parttype::Integer=0, verbose::Bool=true,
-                             use_keys::Bool=true)
+                             kwargs...)
 
 Like `read_particles_in_sphere` but for a single block. Returns the block as an array.
 
 See also: [`read_particles_in_sphere`](@ref)
 """
-function read_particles_in_sphere(filename::String, blocks::String,
+function read_particles_in_sphere(filename::String, block::String,
                                   center_pos::Array{<:Real}, radius::Real;
                                   kwargs...)
-    d = read_particles_in_sphere(filename, [blocks], center_pos, radius; kwargs...)
-    return d[blocks]
+    d = read_particles_in_sphere(filename, [block], center_pos, radius; kwargs...)
+    return d[block]
 end
