@@ -118,7 +118,7 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
         pos       = read_block(snap_file, "POS"; parttype)
 
         # find positions of particles that are contained in the geometry
-        sel         = get_geometry_mask(pos, geometry)
+        sel         = get_geometry_mask(geometry, pos)
         N_this_file = size(sel,1)
 
         # store read positions of particles are in the file
