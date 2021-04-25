@@ -72,6 +72,22 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             # to do: use key files!
         end
 
+        @testset "Read particles in geometry" begin
+            center = [3978.9688, -95.40625, -8845.25]
+            rvir   = 118.76352
+
+            sphere = GadgetSphere(center, rvir)
+
+            @test_nowarn read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
+
+            cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
+                                      0.5rvir)
+
+            @test_nowarn read_particles_in_geometry("snap_002", "POS", cylinder, use_keys=false, parttype=1)
+
+            # to do: use key files!
+        end
+
         @testset "Read particles in halo" begin
             pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0,4), use_keys=false)
 
