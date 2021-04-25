@@ -27,6 +27,7 @@ module GadgetIO
     include(joinpath("read_snapshot", "particles_in_geometry", "abstract_geometry.jl"))
     include(joinpath("read_snapshot", "particles_in_geometry", "cylinder.jl"))
     include(joinpath("read_snapshot", "particles_in_geometry", "sphere.jl"))
+    include(joinpath("read_snapshot", "particles_in_geometry", "cube.jl"))
     include(joinpath("read_snapshot", "particles_in_geometry", "read_particles_in_geometry.jl"))
     include(joinpath("read_snapshot", "particles_in_halo", "read_particles_by_id.jl"))
     include(joinpath("read_snapshot", "particles_in_halo", "read_particles_in_halo.jl"))
@@ -64,6 +65,7 @@ module GadgetIO
            AbstractGadgetGeometry,
            GadgetCylinder,
            GadgetSphere,
+           GadgetCube,
 
            # domain slices
            filter_cube,
