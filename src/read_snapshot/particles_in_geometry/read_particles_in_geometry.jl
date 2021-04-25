@@ -23,7 +23,7 @@ function read_particles_in_geometry(filename::String, blocks::Vector{String},
     corner_lowerleft, corner_upperright = get_geometry_box_corners(geometry)
 
     # read the box
-    d = read_particles_in_box(filename, blocks, center_pos, radius; kwargs...)
+    d = read_particles_in_box(filename, blocks, corner_lowerleft, corner_upperright; parttype, verbose, use_keys)
 
     # determine particles within geometry
     mask = get_geometry_mask(geometry, d["POS"])
@@ -55,5 +55,5 @@ function read_particles_in_geometry(filename::String, block::String,
                                     parttype::Integer=0, verbose::Bool=true,
                                     use_keys::Bool=true)
 
-    return read_particles_in_geometry(filename, [block], geometry, kwargs...)
+    return read_particles_in_geometry(filename, [block], geometry; parttype, verbose, use_keys)
 end

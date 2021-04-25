@@ -32,10 +32,17 @@ Returns the indices of all particles contained in the `sphere`.
 """
 function get_geometry_mask(cylinder::GadgetCylinder, pos::Matrix{T}) where T
 
-    check_in_cylinder_helper(x) = check_in_cylinder(x, 
-                                                    cylinder.pos_start, 
-                                                    cylinder.pos_end, 
-                                                    cylinder.radius)
+    # allocate mask array
+    mask = Vector{Bool}(undef, size(pos,2))
 
-    return mapslices(check_in_cylinder_helper, pos, dims=1)
+    # check every position array if it's contained in the cylinder 
+    # and update the mask array
+    @inbounds for i = 1:size(pos,2)
+        mask[i] = check_in_cylinder(pos[:,i], 
+                                    cylinder.pos_start, 
+                                    cylinder.pos_end, 
+                                    cylinder.radius)
+    end
+   
+    return mask
 end
