@@ -16,6 +16,13 @@ end
 
 
 """
+    function get_geometry_center(cylinder::GadgetCylinder)
+
+Returns the center of `cylinder`.
+"""
+get_geometry_center(cylinder::GadgetCylinder) = 1 // 2 .* cylinder.pos_start .+ cylinder.pos_end
+
+"""
     get_geometry_box_corners(cylinder::GadgetCylinder)
 
 Returns a touple with the lower left and upper right corner of a box which contains the `cylinder`.
@@ -28,7 +35,7 @@ end
 """
     get_geometry_mask(cylinder::GadgetCylinder, pos::Matrix{T}) where T
 
-Returns the indices of all particles contained in the `sphere`.
+Returns the indices of all particles contained in the `cylinder`.
 """
 function get_geometry_mask(cylinder::GadgetCylinder, pos::Matrix{T}) where T
 
