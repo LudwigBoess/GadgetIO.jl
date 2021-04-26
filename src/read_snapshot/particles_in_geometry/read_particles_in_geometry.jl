@@ -6,8 +6,9 @@
 
 Reads all particles within a space defined by an `AbstractGeometry` struct for a given particle type. 
 Returns a dictionary with all requested blocks.
-If `origin_to_geometry` is `true`, the origin is moved to the geometry's defined center, respecting any
-periodicity of the box.
+If `shift_across_box_border` is `true`, the particles are moved beyond the borders of a periodic box,
+if `false`, the periodicity of the box is still accounted for, but the particles' positions are not
+shifted.
 """
 function read_particles_in_geometry(filename::String, blocks::Vector{String},
                                     geometry::AbstractGadgetGeometry;
