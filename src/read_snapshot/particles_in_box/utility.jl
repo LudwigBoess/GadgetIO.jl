@@ -389,9 +389,9 @@ like `Dict`, just faster.
 """
 @inline function get_index_list_set(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
-    set = Set(list_to_check)
+    set = Set(list_to_find)
 
-    return findall(in.(list_to_find, (set,)))
+    return findall(in.(list_to_check, (set,)))
 end
 
 
