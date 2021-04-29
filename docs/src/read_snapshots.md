@@ -265,7 +265,7 @@ save_read_positions(save_file, read_positions)
 ```
 where `save_file` is the filename you specified for storage.
 
-This also works with an [`AbstractGadgetGeometry`](@ref) by calling the [`find_read_positions`](@ref) with
+This also works with an [`AbstractGadgetGeometry`](@ref) by calling [`find_read_positions`](@ref) with
 
 ```julia
 find_read_positions( snap_base::String, geometry::AbstractGadgetGeometry;
