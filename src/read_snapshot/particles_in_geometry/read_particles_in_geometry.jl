@@ -2,7 +2,7 @@
     read_particles_in_geometry( filename::String, blocks::Vector{String},
                                 geometry::AbstractGadgetGeometry;
                                 parttype::Integer=0, verbose::Bool=true,
-                                use_keys::Bool=true, shift_across_box_border::Bool=true)
+                                use_keys::Bool=true, do_shift_across_box_border::Bool=true)
 
 Reads all particles within a space defined by an `AbstractGeometry` struct for a given particle type. 
 Returns a dictionary with all requested blocks.
@@ -13,7 +13,7 @@ shifted.
 function read_particles_in_geometry(filename::String, blocks::Vector{String},
                                     geometry::AbstractGadgetGeometry;
                                     parttype::Integer=0, verbose::Bool=true,
-                                    use_keys::Bool=true, shift_across_box_border::Bool=true)
+                                    use_keys::Bool=true, do_shift_across_box_border::Bool=true)
 
     h = read_header(filename * ".0")
 
@@ -32,7 +32,7 @@ function read_particles_in_geometry(filename::String, blocks::Vector{String},
 
     # determine particles within geometry, shifting the particles across periodic boundaries
     r₀ = get_geometry_center(geometry)
-    if shift_across_box_border
+    if do_shift_across_box_border
         d["POS"] .= shift_across_box_border.(d["POS"], r₀, h.boxsize, 1 // 2 * h.boxsize)
         mask = get_geometry_mask(geometry, d["POS"])
     else
