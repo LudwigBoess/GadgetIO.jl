@@ -1,7 +1,7 @@
 name = "GadgetIO"
 uuid = "826b50da-1eb7-48f3-bd4b-d2350582c309"
 authors = ["LudwigBoess <lboess@usm.lmu.de>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

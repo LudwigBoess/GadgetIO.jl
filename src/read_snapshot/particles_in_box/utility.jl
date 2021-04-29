@@ -223,7 +223,7 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
 
     index_bounds = get_index_bounds(keylist[key_sort], low_list, high_list)
 
-    file_sort = sort(file_list[index_bounds])
+    file_sort = file_list[index_bounds] |> unique! |> sort!
 
     return Int64.(file_sort)
 end
@@ -267,7 +267,7 @@ function get_index_list(list_to_find::Array{<:Integer}, list_to_check::Array{<:I
     if ( issorted(list_to_find) && issorted(list_to_check) )
         return get_index_list_arr(list_to_find, list_to_check)
     else
-        return get_index_list_dict(list_to_find, list_to_check)
+        return get_index_list_set(list_to_find, list_to_check)
     end
 end
 
@@ -378,6 +378,20 @@ Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. U
         end
     end
     return resize!(result, len)
+end
+
+"""
+    get_index_list_set(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`.
+Uses a `Set` for lookup -> slower than the array search, but works on unsorted arrays
+like `Dict`, just faster.
+"""
+@inline function get_index_list_set(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+    set = Set(list_to_find)
+
+    return findall(in.(list_to_check, (set,)))
 end
 
 
