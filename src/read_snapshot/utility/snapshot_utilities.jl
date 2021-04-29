@@ -202,3 +202,17 @@ function select_file(filebase::String, filenum::Integer)
         return filebase
     end
 end
+
+""" 
+    shift_across_box_border(x::Real, x_halo::Real, boxsize::Real, boxsize_half::Real)
+
+Shift coordinate `x` across the box border if the zero coordinate `x₀` is on the other side.
+"""
+@inline function shift_across_box_border(x::Real, x₀::Real, boxsize::Real, boxsize_half::Real)
+    if x - x₀ > boxsize_half
+        return x - boxsize
+    elseif x₀ - x > boxsize_half
+        return x + boxsize
+    end
+    return x
+end

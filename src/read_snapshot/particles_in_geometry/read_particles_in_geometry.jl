@@ -33,10 +33,10 @@ function read_particles_in_geometry(filename::String, blocks::Vector{String},
     # determine particles within geometry, shifting the particles across periodic boundaries
     r₀ = get_geometry_center(geometry)
     if shift_across_box_border
-        d["POS"] .= GadgetIO.shift_across_box_border.(d["POS"], r₀, h.boxsize, 1 // 2 * h.boxsize)
+        d["POS"] .= shift_across_box_border.(d["POS"], r₀, h.boxsize, 1 // 2 * h.boxsize)
         mask = get_geometry_mask(geometry, d["POS"])
     else
-        pos = GadgetIO.shift_across_box_border.(d["POS"], r₀, h.boxsize, 1 // 2 * h.boxsize)
+        pos = shift_across_box_border.(d["POS"], r₀, h.boxsize, 1 // 2 * h.boxsize)
         mask = get_geometry_mask(geometry, pos)
     end
 
@@ -68,19 +68,4 @@ function read_particles_in_geometry(filename::String, block::String,
                                     use_keys::Bool=true)
 
     return read_particles_in_geometry(filename, [block], geometry; parttype, verbose, use_keys)
-end
-
-
-""" 
-    shift_across_box_border(x::Real, x_halo::Real, boxsize::Real, boxsize_half::Real)
-
-Shift coordinate `x` across the box border if the zero coordinate `x₀` is on the other side.
-"""
-function shift_across_box_border(x::Real, x₀::Real, boxsize::Real, boxsize_half::Real)
-    if x - x₀ > boxsize_half
-        return x - boxsize
-    elseif x₀ - x > boxsize_half
-        return x + boxsize
-    end
-    return x
 end
