@@ -223,7 +223,7 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
 
     index_bounds = get_index_bounds(keylist[key_sort], low_list, high_list)
 
-    file_sort = sort(file_list[index_bounds])
+    file_sort = file_list[index_bounds] |> unique! |> sort!
 
     return Int64.(file_sort)
 end
