@@ -23,7 +23,7 @@ get_geometry_center(sphere::GadgetSphere) = sphere.center
 """
     get_geometry_box_corners(sphere::GadgetSphere)
 
-Returns a touple with the lower left and upper right corner of a box which contains the `sphere`.
+Returns a tuple with the lower left and upper right corner of a box which contains the `sphere`.
 """
 function get_geometry_box_corners(sphere::GadgetSphere)
     sphere.center .- sphere.radius, sphere.center .+ sphere.radius

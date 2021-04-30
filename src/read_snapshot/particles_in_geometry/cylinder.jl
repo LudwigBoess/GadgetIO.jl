@@ -25,7 +25,7 @@ get_geometry_center(cylinder::GadgetCylinder) = 1 // 2 .* cylinder.pos_start .+ 
 """
     get_geometry_box_corners(cylinder::GadgetCylinder)
 
-Returns a touple with the lower left and upper right corner of a box which contains the `cylinder`.
+Returns a tuple with the lower left and upper right corner of a box which contains the `cylinder`.
 """
 function get_geometry_box_corners(cylinder::GadgetCylinder)
     minimum.(cylinder.pos_start, cylinder.pos_end) .- cylinder.radius,
