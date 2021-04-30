@@ -52,5 +52,5 @@ function get_geometry_mask(cylinder::GadgetCylinder, pos::Matrix{T}) where T
                                     cylinder.radius)
     end
    
-    return collect(1:size(pos,2))[mask]
+    return findall(mask)
 end
