@@ -19,7 +19,7 @@ end
 Returns a `Tuple` with the lower left and upper right corner of a box which contains the `cube`.
 """
 function get_geometry_box_corners(cube::GadgetCube)
-    cylinder.pos_start .- cylinder.radius, cylinder.pos_end .+ cylinder.radius
+    cube.pos_start .- cube.radius, cube.pos_end .+ cube.radius
 end
 
 
