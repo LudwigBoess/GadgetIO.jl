@@ -125,7 +125,6 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     end
     # read all IDs of the particles contained in a halo
     halo_ids = read_pids(sub_base, N_ids, offset)
-    println(N_ids, " ", offset, " ", N_ids + offset)
 
     if verbose
         t2 = Dates.now()
