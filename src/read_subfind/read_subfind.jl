@@ -70,10 +70,11 @@ end
 """
     read_subfind_header(filename::String)
 
-Reads the header of a subfind file into a SubfindHeader struct.
+Reads the header of a subfind file or file base (without .0, .1, etc.) into a SubfindHeader struct.
 """
 function read_subfind_header(filename::String)
 
+    filename = select_file(filename, 0)
     f = open(filename)
     blocksize = read(f, Int32)
 
