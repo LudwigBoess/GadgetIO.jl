@@ -277,6 +277,9 @@ end
 Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses forward-searching in sorted array.
 """
 @inline function get_index_list_arr(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+    if isempty(list_to_find) || isempty(list_to_check)
+        return Int64[]
+    end
 
     narr1 = size(list_to_find,1)
     narr2 = size(list_to_check,1)
