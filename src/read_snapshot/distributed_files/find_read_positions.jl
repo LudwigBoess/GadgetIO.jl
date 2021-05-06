@@ -85,6 +85,67 @@ function find_read_positions( snap_base::String, filter_function::Function;
 
 end
 
+
+"""
+    find_read_positions( snap_base::String, geometry::AbstractGadgetGeometry;
+                         parttype::Integer=0,
+                         verbose::Bool=true )
+
+Finds the number of particles and their storage location in a snapshot directory that are contained in the space defined by `geometry`.
+"""
+function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometry;
+                              parttype::Integer=0,
+                              verbose::Bool=true)
+
+    if verbose
+        @info "Getting number of particles to read..."
+        t1 = time_ns()
+    end
+
+    # read the header of the zero'th file 
+    h = read_header(select_file(snap_base, 0))
+
+    # number of particles that fulfill the filter criteria
+    N_part = 0
+
+    # storage dictionary
+    d = Dict()
+
+    for sub_snap = 0:(h.num_files-1)
+        snap_file = select_file(snap_base, sub_snap)
+
+        # read the position block
+        pos       = read_block(snap_file, "POS"; parttype)
+
+        # find positions of particles that are contained in the geometry
+        sel         = get_geometry_mask(geometry, pos)
+        N_this_file = size(sel,1)
+
+        # store read positions of particles are in the file
+        if N_this_file > 0
+            index, n_to_read = reduce_read_positions(sel)
+
+            d[sub_snap] = Dict( "index" => index, "n_to_read" => n_to_read)
+        end
+
+        if verbose
+            @info "sub-snap $sub_snap: $N_this_file particles"
+        end
+        N_part   += N_this_file
+    end
+
+    if verbose
+        t2 = time_ns()
+        @info "Need to read $N_part particles"
+        @info "  elapsed: $(output_time(t1,t2)) s"
+    end
+
+    d["N_part"] = N_part
+
+    return d
+
+end
+
 """
     save_read_positions(read_positions_file::String, data)
 

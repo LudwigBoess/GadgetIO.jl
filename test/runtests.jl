@@ -92,6 +92,34 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
             # to do: use key files!
         end
 
+        @testset "Read particles in geometry" begin
+            center = [3978.9688, -95.40625, -8845.25]
+            rvir   = 118.76352
+
+            @testset "Cube" begin
+                
+                cube = GadgetCube(center .- rvir, center .+ rvir)
+                pos  = read_particles_in_geometry("snap_002", "POS", cube, use_keys=false, parttype=1)
+                
+                @test pos["POS"][:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            end
+
+            @testset "Sphere" begin
+                sphere = GadgetSphere(center, rvir)
+
+                @test_nowarn read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
+            end
+
+            @testset "Cylinder" begin
+                cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
+                                        0.5rvir)
+
+                @test_nowarn read_particles_in_geometry("snap_002", "POS", cylinder, use_keys=false, parttype=1)
+            end
+
+            # to do: use key files!
+        end
+
         @testset "Read particles in halo" begin
             pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0,4), use_keys=false)
 
@@ -213,6 +241,12 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @test haskey(d, "MASS")
 
         @test_throws ErrorException("File dummy_snap.0 not present!") GadgetIO.select_file("dummy_snap", 0)  
+        
+        # shift across box border
+        boxsize, boxsize_half = 10, 5
+        @test GadgetIO.shift_across_box_border(1, 2, boxsize, boxsize_half) == 1
+        @test GadgetIO.shift_across_box_border(8, 2, boxsize, boxsize_half) == -2
+        @test GadgetIO.shift_across_box_border(2, 8, boxsize, boxsize_half) == 12
     end
 
     @testset "Peano-Hilbert" begin

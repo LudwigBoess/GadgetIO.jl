@@ -146,8 +146,35 @@ function read_particles_in_volume( filename::String, blocks::Vector{String},
 end
 ```
 
-In both functions `parttype` defines the particle type to be read, as in the previous read functions and `verbose` gives console output.
-There are also multiple dispatch versions of both functions available that only take a single `block` as input and return an array with the values instead of a dictionary.
+For reading particles in more complex geometries you can use [`read_particles_in_geometry`](@ref).
+
+```julia
+read_particles_in_geometry( filename::String, blocks::Vector{String},
+                            geometry::AbstractGadgetGeometry;
+                            parttype::Integer=0, verbose::Bool=true,
+                            use_keys::Bool=true)
+```
+
+You can use built-in geometries like [`GadgetCube`](@ref), [`GadgetSphere`](@ref) and [`GadgetCylinder`](@ref).
+
+If you want to extend the functionality you can define your own geometry as
+
+```julia
+struct YourGeometry{T} <: AbstractGadgetGeometry
+    prop1::Vector{T}
+    prop2::Vector{T}
+    prop3::T
+    (...)
+end
+```
+
+and define the functions [`get_geometry_box_corners`](@ref) and [`get_geometry_mask`](@ref).
+[`get_geometry_box_corners`](@ref) has to return a `Tuple` of two vectors which define the lower left and upper right corner of a box that contains the `geometry`. [`get_geometry_mask`](@ref) has to return an array of indices for which `pos` is contained in the `geometry`.
+
+In all functions `parttype` defines the particle type to be read, as in the previous read functions and `verbose` gives console output.
+There are also multiple dispatch versions of all functions available that only take a single `block` as input and return an array with the values instead of a dictionary.
+
+
 
 ### Peano-Hilbert key based reading
 
@@ -237,6 +264,7 @@ This requiers `GadgetIO.jl` v0.5 though.
 
 To avoid having to filter all files each time you want to read a snapshot you can also split the steps.
 You can first filter the particles to find the positions of the particles within the data blocks with [`find_read_positions`](@ref)
+
 ```julia
 read_positions = find_read_positions(snap_base, filter_function)
 ```
@@ -246,6 +274,15 @@ and then save the result as a binary file with [`save_read_positions`](@ref)
 save_read_positions(save_file, read_positions)
 ```
 where `save_file` is the filename you specified for storage.
+
+This also works with an [`AbstractGadgetGeometry`](@ref) by calling [`find_read_positions`](@ref) with
+
+```julia
+find_read_positions( snap_base::String, geometry::AbstractGadgetGeometry;
+                     parttype::Integer=0,
+                     verbose::Bool=true )
+```
+
 
 To re-use the `read_positions` you can load them from file using [`load_read_positions`](@ref)
 
