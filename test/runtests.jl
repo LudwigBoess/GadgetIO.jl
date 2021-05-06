@@ -76,14 +76,26 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             center = [3978.9688, -95.40625, -8845.25]
             rvir   = 118.76352
 
-            sphere = GadgetSphere(center, rvir)
+            @testset "Cube" begin
+                
+                cube = GadgetCube(center .- rvir, center .+ rvir)
+                pos  = read_particles_in_geometry("snap_002", "POS", cube, use_keys=false, parttype=1)
+                
+                @test pos["POS"][:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            end
 
-            @test_nowarn read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
+            @testset "Sphere" begin
+                sphere = GadgetSphere(center, rvir)
 
-            cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
-                                      0.5rvir)
+                @test_nowarn read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
+            end
 
-            @test_nowarn read_particles_in_geometry("snap_002", "POS", cylinder, use_keys=false, parttype=1)
+            @testset "Cylinder" begin
+                cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
+                                        0.5rvir)
+
+                @test_nowarn read_particles_in_geometry("snap_002", "POS", cylinder, use_keys=false, parttype=1)
+            end
 
             # to do: use key files!
         end
