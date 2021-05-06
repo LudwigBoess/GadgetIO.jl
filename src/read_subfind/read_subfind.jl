@@ -159,6 +159,12 @@ end
 Reads a block of a subfind file.
 """
 function read_subfind(filename::String, blockname::String)
+    
+    # the file is actually a filebase -> return concatenated arrays
+    if !isfile(filename)
+        filebase = filename
+        return read_all_subfind(filebase::String, blockname::String)
+    end
 
     # read the info block
     info = read_info(filename)
@@ -180,3 +186,20 @@ function read_subfind(filename::String, blockname::String)
     return read_block(filename, blockname, info = info_selected, parttype = parttype)
 end
 
+"""
+    read_all_subfind(filebase::String, blockname::String)
+
+Reads a block from all subfind files which is concatenated to one array.
+Not exported, users should use [`read_subfind`](@ref), which calls this when only
+the subfind file base is given as an argument.
+"""
+function read_all_subfind(filebase::String, blockname::String)
+    h = read_subfind_header(filebase)
+
+    # read block from all files
+    filenames = ["$filebase.$i" for i = 0:h.num_files-1]
+    arrays = read_subfind.(filenames, blockname)
+
+    # concatenate along correct dimension
+    return cat(arrays...; dims=ndims(arrays[1]))
+end
