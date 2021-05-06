@@ -153,7 +153,7 @@ read_particles_in_geometry( filename::String, blocks::Vector{String},
                             use_keys::Bool=true)
 ```
 
-You can use built-in geometries like [`GadgetCube`](@ref), [`GadgetSphere`](@ref) and [`GadgetCube`](@ref).
+You can use built-in geometries like [`GadgetCube`](@ref), [`GadgetSphere`](@ref) and [`GadgetCylinder`](@ref).
 
 If you want to extend the functionality you can define your own geometry as
 
