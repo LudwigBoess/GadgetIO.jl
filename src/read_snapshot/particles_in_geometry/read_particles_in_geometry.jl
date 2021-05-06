@@ -57,7 +57,7 @@ end
     read_particles_in_geometry( filename::String, block::String,
                                 geometry::AbstractGadgetGeometry;
                                 parttype::Integer=0, verbose::Bool=true,
-                                use_keys::Bool=true)
+                                use_keys::Bool=true, do_shift_across_box_border::Bool=true)
 
 Reads all particles within a space defined by an `AbstractGeometry` struct for a given particle type. 
 Returns a dictionary with the requested block.
@@ -65,7 +65,7 @@ Returns a dictionary with the requested block.
 function read_particles_in_geometry(filename::String, block::String,
                                     geometry::AbstractGadgetGeometry;
                                     parttype::Integer=0, verbose::Bool=true,
-                                    use_keys::Bool=true)
+                                    use_keys::Bool=true, do_shift_across_box_border::Bool=true)
 
     return read_particles_in_geometry(filename, [block], geometry; parttype, verbose, use_keys)
 end
