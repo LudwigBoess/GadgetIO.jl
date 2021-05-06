@@ -328,6 +328,8 @@ Both arrays have to be sorted.
 
     if icountall > 1
         return ind_all[1:icountall-1]
+    else
+        return Int64[]
     end
 end
 
