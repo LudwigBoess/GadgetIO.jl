@@ -232,10 +232,12 @@ end
 """
     read_header(filename::String)
 
-Reads the header of a snapshot and returns a SnapshotHeader object.
+Reads the header of a snapshot file or file base (without .0, .1, etc.)
+and returns a SnapshotHeader object.
 
 See also: [`head_to_obj`](@ref)
 """
 function read_header(filename::String)
+    filename = select_file(filename, 0)
     return head_to_obj(filename)
 end
