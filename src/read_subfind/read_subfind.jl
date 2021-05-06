@@ -25,7 +25,7 @@ Contains the data of the `HEAD` block in the subfind output
 | `totsubhalos::UInt32`                | total number of subhalos over all output files                                         |
 | `totfof::UInt32`                     | total number of particles in the FoF                                                   |
 | `totgroups::UInt32`                  | 1 if simulation was run with cooling, else 0                                           |
-| `num_colors::Int32`                  | number of colors                                                                       |
+| `num_files::Int32`                   | number of files over which subfind data is distributed                                 |
 | `boxsize::Float64`                   | total size of the simulation box                                                       |
 | `omega_0::Float64`                   | Omega matter                                                                           |
 | `omega_l::Float64`                   | Omega dark enery                                                                       |
@@ -45,7 +45,7 @@ struct SubfindHeader
     totsubhalos::UInt32                 # total number of subhalos over all output files
     totfof::UInt32                      # total number of particles in the FoF
     totgroups::UInt32                   # total number of large groups over all output files
-    num_colors::Int32                   # number of colors
+    num_files::Int32                    # number of files
     boxsize::Float64                    # total size of the simulation box
     omega_0::Float64                    # Omega matter
     omega_l::Float64                    # Omega dark enery
