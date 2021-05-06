@@ -25,7 +25,7 @@ Contains the data of the `HEAD` block in the subfind output
 | `totsubhalos::UInt32`                | total number of subhalos over all output files                                         |
 | `totfof::UInt32`                     | total number of particles in the FoF                                                   |
 | `totgroups::UInt32`                  | 1 if simulation was run with cooling, else 0                                           |
-| `num_colors::Int32`                  | number of colors                                                                       |
+| `num_files::Int32`                   | number of files over which subfind data is distributed                                 |
 | `boxsize::Float64`                   | total size of the simulation box                                                       |
 | `omega_0::Float64`                   | Omega matter                                                                           |
 | `omega_l::Float64`                   | Omega dark enery                                                                       |
@@ -45,7 +45,7 @@ struct SubfindHeader
     totsubhalos::UInt32                 # total number of subhalos over all output files
     totfof::UInt32                      # total number of particles in the FoF
     totgroups::UInt32                   # total number of large groups over all output files
-    num_colors::Int32                   # number of colors
+    num_files::Int32                    # number of files
     boxsize::Float64                    # total size of the simulation box
     omega_0::Float64                    # Omega matter
     omega_l::Float64                    # Omega dark enery
@@ -70,10 +70,11 @@ end
 """
     read_subfind_header(filename::String)
 
-Reads the header of a subfind file into a SubfindHeader struct.
+Reads the header of a subfind file or file base (without .0, .1, etc.) into a SubfindHeader struct.
 """
 function read_subfind_header(filename::String)
 
+    filename = select_file(filename, 0)
     f = open(filename)
     blocksize = read(f, Int32)
 
@@ -158,21 +159,23 @@ end
 Reads a block of a subfind file.
 """
 function read_subfind(filename::String, blockname::String)
-
+    
     # read the info block
     info = read_info(filename)
 
+    blocknames = getfield.(info, :block_name)
+    ind = findfirst(==(blockname), blocknames)
+
     # the the block is not contained in the file throw and error
-    if size(info[getfield.(info, :block_name) .== blockname],1) == 0
+    if isnothing(ind)
         error("Block $blockname not present!")
     end
 
     # get the relevant entry
-    info_selected = info[getfield.(info, :block_name) .== blockname][1]
+    info_selected = info[ind]
 
     # blocks are type specific so we can use this to make our life easier
-    parttype = findall(info_selected.is_present .== 1)[1] - 1
+    parttype = findfirst(==(1), info_selected.is_present) - 1
 
     return read_block(filename, blockname, info = info_selected, parttype = parttype)
 end
-

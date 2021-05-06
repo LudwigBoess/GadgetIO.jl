@@ -60,6 +60,7 @@ module GadgetIO
 
            # subfind read
            HaloID,
+           SubfindHeader, 
            read_subfind_header,
            read_subfind,
            find_most_massive_halo,
