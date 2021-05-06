@@ -229,6 +229,12 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @test haskey(d, "MASS")
 
         @test_throws ErrorException("File dummy_snap.0 not present!") GadgetIO.select_file("dummy_snap", 0)  
+        
+        # shift across box border
+        boxsize, boxsize_half = 10, 5
+        @test GadgetIO.shift_across_box_border(1, 2, boxsize, boxsize_half) == 1
+        @test GadgetIO.shift_across_box_border(8, 2, boxsize, boxsize_half) == -2
+        @test GadgetIO.shift_across_box_border(2, 8, boxsize, boxsize_half) == 12
     end
 
     @testset "Peano-Hilbert" begin
