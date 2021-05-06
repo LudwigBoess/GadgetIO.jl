@@ -32,7 +32,7 @@ module GadgetIO
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
 
-    export SnapshotHeader, SubfindHeader, InfoLine,       # types
+    export SnapshotHeader, InfoLine,       # types
            head_to_dict,
            snap_to_dict,
            head_to_obj,
@@ -60,6 +60,7 @@ module GadgetIO
 
            # subfind read
            HaloID,
+           SubfindHeader, 
            read_subfind_header,
            read_subfind,
            find_most_massive_halo,
