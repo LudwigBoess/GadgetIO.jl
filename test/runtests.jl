@@ -8,6 +8,11 @@ function filter_dummy(filename::String)
     return findall(mtop .> 7.0)
 end
 
+function pass_all(snap_file)
+    h = read_header(snap_file)
+    return collect(1:h.npart[1])
+end
+
 @info "downloading test data..."
 download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_sedov", "./snap_sedov")
 download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/pos_sedov.dat", "./pos_sedov.dat")
@@ -28,6 +33,8 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2.key", "./sn
 download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3.key", "./snap_002.3.key")
 
 download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "./snap_002.key.index")
+
+
 
 @info "done!"
 
@@ -55,6 +62,17 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             # check if read to dict works
             @test_nowarn d = read_snap(snap_file)
             @test d["PartType0"]["POS"] == d_ideal
+
+            blocks = ["POS", "RHO"]
+            data = read_blocks_over_all_files(snap_base, blocks, filter_function=pass_all, parttype=0)
+
+            rho = read_block(snap_base, "RHO", parttype=0)
+
+            @test data["RHO"] == rho
+
+            pos = read_block(snap_base, "POS", parttype=0)
+
+            @test data["POS"] == pos
         end
 
         @testset "Read particles in box" begin
