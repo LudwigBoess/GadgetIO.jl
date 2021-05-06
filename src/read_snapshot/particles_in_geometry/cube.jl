@@ -19,9 +19,15 @@ end
 Returns a `Tuple` with the lower left and upper right corner of a box which contains the `cube`.
 """
 function get_geometry_box_corners(cube::GadgetCube)
-    cube.pos_start .- cube.radius, cube.pos_end .+ cube.radius
+    cube.corner_lower_left, cube.corner_upper_right
 end
 
+"""
+    function get_geometry_center(sphere::GadgetCube)
+
+Returns the center of `cube`.
+"""
+get_geometry_center(cube::GadgetCube) =  1 // 2 .* cube.corner_lower_left .+ cube.corner_upper_right
 
 """
     get_geometry_mask(cube::GadgetCube, pos::Matrix{T}) where T
