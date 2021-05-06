@@ -106,6 +106,8 @@ where `pos_info` is an [`InfoLine`](@ref) object.
 
 I will collect some example `InfoLine` objects in a later release to be able to read some common blocks even without an `INFO` block.
 
+Since `v0.5` [`read_snap`](@ref) and [`read_block`](@ref) also work if you pass them a `file_base`.
+
 
 
 ## Read Subvolumes
@@ -210,7 +212,7 @@ data["RHO"]  # array of densities
 
 ## Read distributed snapshotfiles
 
-If you want to read in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
+If you want to read multiple blocks in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
 
 ```julia
 read_blocks_over_all_files( snap_base::String, blocks::Array{String};
@@ -249,6 +251,14 @@ As an example, to read positions, velocity and ID of all shocked particles from 
 blocks = ["POS", "VEL", "ID"]
 data = read_blocks_over_all_files(snap_base, blocks, filter_function=mach_gt_1, parttype=0)
 ```
+
+Just as a reminder from above you can read single blocks into an array by using [`read_snap`](@ref) and [`read_block`](@ref):
+
+```julia
+pos = read_block(snap_base, "POS", parttype=0)
+```
+
+This requiers `GadgetIO.jl` v0.5 though.
 
 ### Read positions
 

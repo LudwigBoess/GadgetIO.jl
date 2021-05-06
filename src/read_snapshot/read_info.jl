@@ -40,6 +40,10 @@ If `verbose=true` the blocknames are also printed to console.
 """
 function read_info(filename::String; verbose::Bool=false)
 
+    if !isfile(filename)
+        filename = select_file(filename, 0)
+    end
+
     f = open(filename)
     blocksize = read(f, Int32)
 
