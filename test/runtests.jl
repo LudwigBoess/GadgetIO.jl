@@ -1,4 +1,4 @@
-using GadgetIO, Test, DelimitedFiles, HTTP
+using GadgetIO, Test, DelimitedFiles, Downloads
 
 
 @testset "GadgetIO" begin
@@ -8,26 +8,33 @@ function filter_dummy(filename::String)
     return findall(mtop .> 7.0)
 end
 
+function pass_all(snap_file)
+    h = read_header(snap_file)
+    return collect(1:h.npart[1])
+end
+
 @info "downloading test data..."
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_sedov", "./snap_sedov")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/pos_sedov.dat", "./pos_sedov.dat")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_sedov", "./snap_sedov")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/pos_sedov.dat", "./pos_sedov.dat")
 
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.0", "./sub_002.0")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.1", "./sub_002.1")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.2", "./sub_002.2")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.3", "./sub_002.3")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.0", "./sub_002.0")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.1", "./sub_002.1")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.2", "./sub_002.2")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.3", "./sub_002.3")
 
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.0", "./snap_002.0")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.1", "./snap_002.1")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2", "./snap_002.2")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3", "./snap_002.3")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.0", "./snap_002.0")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.1", "./snap_002.1")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2", "./snap_002.2")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3", "./snap_002.3")
 
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.0.key", "./snap_002.0.key")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.1.key", "./snap_002.1.key")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2.key", "./snap_002.2.key")
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3.key", "./snap_002.3.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.0.key", "./snap_002.0.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.1.key", "./snap_002.1.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2.key", "./snap_002.2.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3.key", "./snap_002.3.key")
 
-download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "./snap_002.key.index")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "./snap_002.key.index")
+
+
 
 @info "done!"
 
@@ -48,13 +55,26 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             d = read_snap(snap_file, "POS", 0)
 
             ideal_file = joinpath(dirname(@__FILE__), "pos_sedov.dat")
-            d_ideal = Float32.(readdlm(ideal_file))
+            d_ideal = copy(transpose(Float32.(readdlm(ideal_file))))
 
             @test d == d_ideal
 
             # check if read to dict works
             @test_nowarn d = read_snap(snap_file)
             @test d["PartType0"]["POS"] == d_ideal
+
+            snap_base = "snap_002"
+
+            blocks = ["POS", "RHO"]
+            data = read_blocks_over_all_files(snap_base, blocks, filter_function=pass_all, parttype=0)
+
+            rho = read_block(snap_base, "RHO", parttype=0)
+
+            @test data["RHO"] == rho
+
+            pos = read_block(snap_base, "POS", parttype=0)
+
+            @test data["POS"] == pos
         end
 
         @testset "Read particles in box" begin
@@ -62,12 +82,40 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
             rvir   = 118.76352
             pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false, parttype=1)
 
-            @test pos[1,:] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
 
             pos = read_particles_in_box("snap_002", "POS", center .- rvir, center .+ rvir, 
                                         use_keys=false, parttype=1, verbose=false)
 
-            @test pos[1,:] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+
+            # to do: use key files!
+        end
+
+        @testset "Read particles in geometry" begin
+            center = [3978.9688, -95.40625, -8845.25]
+            rvir   = 118.76352
+
+            @testset "Cube" begin
+                
+                cube = GadgetCube(center .- rvir, center .+ rvir)
+                pos  = read_particles_in_geometry("snap_002", "POS", cube, use_keys=false, parttype=1)
+                
+                @test pos["POS"][:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            end
+
+            @testset "Sphere" begin
+                sphere = GadgetSphere(center, rvir)
+
+                @test_nowarn read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
+            end
+
+            @testset "Cylinder" begin
+                cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
+                                        0.5rvir)
+
+                @test_nowarn read_particles_in_geometry("snap_002", "POS", cylinder, use_keys=false, parttype=1)
+            end
 
             # to do: use key files!
         end
@@ -75,18 +123,18 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
         @testset "Read particles in halo" begin
             pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0,4), use_keys=false)
 
-            @test pos[1,:] ≈ Float32[3909.1545, -189.9392, -8845.135]
+            @test pos[:,1] ≈ Float32[3909.1545, -189.9392, -8845.135]
 
             ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
             pos = read_particles_by_id("snap_002", ids, "POS")
 
-            @test pos ≈ Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]
+            @test pos ≈ copy(transpose(Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]))
         end
 
         @testset "Read positions" begin
             center = Float32[3978.9688, -95.40625, -8845.25]
             rvir   = 118.76352
-            ff(filename) = filter_positions(filename, center .- rvir, center .+ rvir, 1) 
+            ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1) 
             read_positions = find_read_positions("snap_002", ff)
 
             @test read_positions["N_part"] == 87
@@ -193,6 +241,12 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
         @test haskey(d, "MASS")
 
         @test_throws ErrorException("File dummy_snap.0 not present!") GadgetIO.select_file("dummy_snap", 0)  
+        
+        # shift across box border
+        boxsize, boxsize_half = 10, 5
+        @test GadgetIO.shift_across_box_border(1, 2, boxsize, boxsize_half) == 1
+        @test GadgetIO.shift_across_box_border(8, 2, boxsize, boxsize_half) == -2
+        @test GadgetIO.shift_across_box_border(2, 8, boxsize, boxsize_half) == 12
     end
 
     @testset "Peano-Hilbert" begin
@@ -239,6 +293,32 @@ download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "
         close(f)
 
         rm(output_file)
+    end
+
+    @testset "Find Index Locations" begin
+
+        # create find and check arrays
+        list_to_find = [2, 56, 354, 254, 653, 452, 7523, 45, 42, 742, 5423, 942, 105, 425, 815, 7821]
+        list_to_check = [523, 9, 254, 653, 452, 2, 923, 815, 7821, 742, 354, 543, 942, 15, 25]
+
+        # create sorted versions for forward search
+        list_to_find_sorted = sort(list_to_find)
+        list_to_check_sorted = sort(list_to_check)
+
+        # correct indices of unsorted and sorted arrays
+        indices = [3, 4, 5, 6, 8, 9, 10, 11, 13]
+        indices_sorted = [1, 5, 6, 7, 10, 11, 12, 14, 15]
+
+        # check methods
+        @test issetequal(GadgetIO.get_index_list_arr(list_to_find_sorted, list_to_check_sorted), indices_sorted)
+        @test issetequal(GadgetIO.get_index_list_dict(list_to_find, list_to_check), indices)
+        @test issetequal(GadgetIO.get_index_list_dict(list_to_find_sorted, list_to_check_sorted), indices_sorted)
+        @test issetequal(GadgetIO.get_index_list_set(list_to_find, list_to_check), indices)
+        @test issetequal(GadgetIO.get_index_list_set(list_to_find_sorted, list_to_check_sorted), indices_sorted)
+
+        # check that right methods are called
+        @test GadgetIO.get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
+        @test GadgetIO.get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
     end
 
 @info "delete test data..."

@@ -172,7 +172,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
 
     # finally construct masses of no mass block present
     if no_mass_block
-        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read, 1)
+        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read)
     end
 
     if verbose
@@ -207,7 +207,7 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
         if verbose
             @info "Brute-force read-in."
         end
-        filter_function(snap_file) = filter_positions(snap_file, corner_lowerleft, corner_upperright, parttype)
+        filter_function(snap_file) = filter_cube(snap_file, corner_lowerleft, corner_upperright, parttype=parttype)
         d = read_blocks_over_all_files(filename, blocks, filter_function = filter_function, parttype = parttype, verbose = verbose )
     end
 

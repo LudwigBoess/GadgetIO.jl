@@ -44,7 +44,7 @@ function find_read_positions(files::Array{<:Integer}, filebase::String,
             t1 = Dates.now()
         end
 
-        index_list = get_index_list_dict(keylist, keys_in_file)
+        index_list = get_index_list(keylist, keys_in_file)
 
         if verbose
             t2 = Dates.now()
@@ -124,9 +124,9 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
                 else # ids[icountids] > high_bounds[icountbounds]
                     icountids += 1
 
-                    if icountids >= nids
+                    if icountids > nids
                         lend2 = true
-                    end # icountids >= nids
+                    end # icountids > nids
                 end # ids[icountids] > high_bounds[icountbounds]
             end # while !lend2
 
@@ -148,44 +148,19 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
                         else # ids[icountids] >= low_bounds[icountbounds]
                             icountids += 1
 
-                            if icountids >= nids
+                            if icountids > nids
                                 lend2 = true
                             end
                         end # if ids[icountids] >= low_bounds[icountbounds]
 
                     end # while !lend2
 
-                else # if icountids < nids
+                end # if icountids <= nids
 
-                    if ids[icountids] > high_bounds[icountbounds]
-
-                        icountbounds += 1
-
-                        if icountbounds < nbounds
-
-                            lend2 = false
-
-                            while !lend2
-
-                                if ids[icountids] <= high_bounds[icountbounds]
-                                    lend2 = true
-                                else # if ids[icountids] <= high_bounds[icountbounds]
-                                    icountbounds += 1
-                                    if icountbounds >= nbounds
-                                        lend2 = true
-                                    end
-                                end # if ids[icountids] <= high_bounds[icountbounds]
-                            end # while !lend2
-                        end # if icountbounds < nbounds
-
-                    end # if ids[icountids] > high_bounds[icountbounds]
-
-                end # if icountids < nids
-
-            else # if ids[icountids] < low_bounds[icountbounds]
+            elseif ids[icountids] > high_bounds[icountbounds] # if ids[icountids] < low_bounds[icountbounds]
                 icountbounds += 1
 
-                if icountbounds < nbounds
+                if icountbounds <= nbounds
                     lend2 = false
 
                     while !lend2
@@ -193,22 +168,22 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
                             lend2 = true
                         else # ids[icountids] <= high_bounds[icountbounds]
                             icountbounds += 1
-                            if icountbounds >= nbounds
+                            if icountbounds > nbounds
                                 lend2 = true
-                            end # icountbounds >= nbounds
+                            end # icountbounds > nbounds
                         end # ids[icountids] <= high_bounds[icountbounds]
                     end # while !lend2
 
-                end # icountbounds < nbounds
+                end # icountbounds <= nbounds
 
             end # if ids[icountids] < low_bounds[icountbounds]
 
         end # if low_bounds[icountbounds] <= ids[icountids] <= high_bounds[icountbounds]
 
-        if icountids >= nids
+        if icountids > nids
             lend = true
         end
-        if icountbounds >= nbounds
+        if icountbounds > nbounds
             lend = true
         end
 
@@ -219,12 +194,8 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
     end # while !lend
 
     if icountall > 1
-        ind_out = ind_all[1:icountall]
-        if ind_out[end] == 0
-            return ind_out[1:end-1]
-        else
-            return ind_out
-        end
+        ind_out = ind_all[1:icountall-1]
+        return ind_out
     else
         return -1
     end
@@ -252,13 +223,7 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
 
     index_bounds = get_index_bounds(keylist[key_sort], low_list, high_list)
 
-    # bug fix for case when get_index_bounds returns -1:
-    # treat as if no index file existed
-    if index_bounds == -1
-        return collect(0:nfiles-1)
-    end
-
-    file_sort = sort(file_list[index_bounds])
+    file_sort = file_list[index_bounds] |> unique! |> sort!
 
     return Int64.(file_sort)
 end
@@ -291,81 +256,126 @@ end
 
 
 """
-    get_index_list(idarr1::Array{<:Integer}, idarr2::Array{<:Integer})
+    get_index_list(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
-Get positions in `idarr2` where `idarr2` matches `idarr1`.
+Finds the indices at which `list_to_check` contains elements from `list_to_find`.
+If both either of the lists are not sorted it uses a `Dict` lookup, otherwise it uses a `Array` forward-search.
 """
-@inline function get_index_list(idarr1::Array{<:Integer}, idarr2::Array{<:Integer})
+function get_index_list(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
-    narr1 = size(idarr1,1)
-    narr2 = size(idarr2,1)
+    # check if the lists are sorted
+    if ( issorted(list_to_find) && issorted(list_to_check) )
+        return get_index_list_arr(list_to_find, list_to_check)
+    else
+        return get_index_list_set(list_to_find, list_to_check)
+    end
+end
+
+"""
+    get_index_list_arr(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses forward-searching in sorted array.
+"""
+@inline function get_index_list_arr(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+    if isempty(list_to_find) || isempty(list_to_check)
+        return Int64[]
+    end
+
+    narr1 = size(list_to_find,1)
+    narr2 = size(list_to_check,1)
 
     ind_all   = zeros(Int64, narr1)
-    not_arr2t = zeros(Int64, narr1)
-    not_arr1t = zeros(Int64, narr2)
 
     icountall     = 1
     icountarr1    = 1
     icountarr2    = 1
-    icountnotarr1 = 1
-    icountnotarr2 = 1
 
     lend = false
 
-    iiarr2 = sortperm(idarr2[:,1])
+    while !lend
+
+        if list_to_check[icountarr2] == list_to_find[icountarr1]
+
+            ind_all[icountall] = icountarr2
+            icountall  += 1
+            icountarr1 += 1
+            icountarr2 += 1
+        else  # list_to_check[icountnotarr2] == list_to_find[icountnotar1]
+            if list_to_check[icountarr2] < list_to_find[icountarr1]
+                icountarr2    += 1
+            else # list_to_check[icountnotarr2] < list_to_find[icountnotar1]
+                icountarr1    += 1
+            end # list_to_check[icountnotarr2] < list_to_find[icountnotar1]
+        end # list_to_check[icountnotarr2] == list_to_find[icountnotar1]
+        if (icountarr2 > narr2 ) || (icountarr1 > narr1)
+            lend = true
+        end
+    end # while !lend
+
+    if icountall > 1
+        return ind_all[1:icountall-1]
+    else
+        return Int64[]
+    end
+end
+
+"""
+    get_index_list_arr(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses forward-searching in sorted array.
+"""
+@inline function get_index_list_arr_sort(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+    narr1 = size(list_to_find,1)
+    narr2 = size(list_to_check,1)
+
+    ind_all   = zeros(Int64, narr1)
+
+    icountall     = 1
+    icountarr1    = 1
+    icountarr2    = 1
+
+    iiarr2 = sortperm(idarr2[:,1], alg=QuickSort)
+
+    lend = false
 
     while !lend
 
-        if idarr2[iiarr2[icountarr2]] == idarr1[icountarr1]
+        if list_to_check[iiarr2[icountarr2]] == list_to_find[icountarr1]
 
             ind_all[icountall] = iiarr2[icountarr2]
             icountall  += 1
             icountarr1 += 1
             icountarr2 += 1
-        else  # idarr2[iiarr2[icountnotarr2]] == idarr1[icountnotar1]]
-            if idarr2[iiarr2[icountarr2]] < idarr1[icountarr1]
-                not_arr1t[icountnotarr1] = iiarr2[icountarr2]
+        else  # list_to_check[icountnotarr2] == list_to_find[icountnotar1]
+            if list_to_check[iiarr2[icountarr2]] < list_to_find[icountarr1]
                 icountarr2    += 1
-                icountnotarr1 += 1
-            else # idarr2[iiarr2[icountnotarr2]] < idarr1[icountnotar1]]
-                not_arr2t[icountnotarr2] = icountarr1
+            else # list_to_check[icountnotarr2] < list_to_find[icountnotar1]
                 icountarr1    += 1
-                icountnotarr2 += 1
-            end # idarr2[iiarr2[icountnotarr2]] < idarr1[icountnotar1]]
-        end # idarr2[iiarr2[icountnotarr2]] == idarr1[icountnotar1]]
-        if (icountarr2 >= narr2 ) || (icountarr1 >= narr1)
+            end # list_to_check[icountnotarr2] < list_to_find[icountnotar1]
+        end # list_to_check[icountnotarr2] == list_to_find[icountnotar1]
+        if (icountarr2 > narr2 ) || (icountarr1 > narr1)
             lend = true
         end
     end # while !lend
 
-    rest = narr1 - icountarr1
-    if rest > 0
-        not_arr2t[icountnotarr2:icountnotarr2+rest] = icountarr1:icountarr1+rest
-        icountnotarr2 += rest
-    end # rest > 0
-
     if icountall > 1
-        ind_out = ind_all[1:icountall-1]
-    # else
-    #     error("Not enough data found!")
+        return ind_all[1:icountall-1]
     end
-
-    return ind_out
 end
 
-
 """
-    get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+    get_index_list_dict(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
-Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `Dict` for lookup -> slower than the normal version.
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses a `Dict` for lookup -> slower than the array search, but works on unsorted arrays.
 """
-@inline function get_index_list_dict(keylist::Array{<:Integer}, keys_in_file::Array{<:Integer})
+@inline function get_index_list_dict(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
 
-    dict = Dict((n, i) for (i, n) in enumerate(keys_in_file))
-    result = Vector{Int}(undef, size(keylist,1))
+    dict = Dict((n, i) for (i, n) in enumerate(list_to_check))
+    result = Vector{Int}(undef, size(list_to_find,1))
     len = 0
 
-    for k in keylist
+    for k in list_to_find
         i = get(dict, k, nothing)
         if i !== nothing
             len += 1
@@ -373,6 +383,20 @@ Get positions in `keys_in_file` where `keys_in_file` matches `keylist`. Uses a `
         end
     end
     return resize!(result, len)
+end
+
+"""
+    get_index_list_set(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+Get positions in `list_to_check` where `list_to_check` matches `list_to_find`.
+Uses a `Set` for lookup -> slower than the array search, but works on unsorted arrays
+like `Dict`, just faster.
+"""
+@inline function get_index_list_set(list_to_find::Array{<:Integer}, list_to_check::Array{<:Integer})
+
+    set = Set(list_to_find)
+
+    return findall(in.(list_to_check, (set,)))
 end
 
 

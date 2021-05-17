@@ -29,7 +29,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
         # the remainig offset
         offset_remaining = offset
 
-        # loop over sub files untiul all IDs are read
+        # loop over sub files until all IDs are read
         while ids_read < N_ids
 
             sub_file = select_file(sub_base, files_read)
@@ -42,7 +42,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
             sub_header = read_subfind_header(sub_file)
 
             # if the offset is larger than the number of IDs in this file
-            if (sub_header.nfof - offset_remaining) < 0.0
+            if offset_remaining >= sub_header.nfof
                 # read next file
                 files_read += 1
                 # subtract IDs in this file from offset
