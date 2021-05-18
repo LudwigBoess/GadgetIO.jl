@@ -1,3 +1,10 @@
+```@meta
+CurrentModule = GadgetIO
+DocTestSetup = quote
+    using GadgetIO
+end
+```
+
 # Table of Contents
 
 ```@contents
