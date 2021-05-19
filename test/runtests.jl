@@ -263,6 +263,15 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @test GadgetIO.peano_hilbert_key(h_key.bits, 0, 1, 1) == 6
 
         @test GadgetIO.get_int_pos( 1000.5, h_key.domain_corners[1], h_key.domain_fac ) == 1
+
+        @testset "Get Index Bounds" begin
+            low_bounds, high_bounds = [0, 4, 7, 10], [1, 5, 8, 16]
+
+            @test GadgetIO.get_index_bounds([1, 2, 3], low_bounds, high_bounds) == [1]
+            @test GadgetIO.get_index_bounds([1, 2, 3, 10], low_bounds, high_bounds) == [1, 4]
+            @test GadgetIO.get_index_bounds([1, 2, 10, 17], low_bounds, high_bounds) == [1, 4]
+            @test GadgetIO.get_index_bounds([4, 5, 8, 12, 15], low_bounds, high_bounds) == [2, 3, 4]
+        end
     end
 
     @testset "Write Snapshot" begin
@@ -317,8 +326,8 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @test issetequal(GadgetIO.get_index_list_set(list_to_find_sorted, list_to_check_sorted), indices_sorted)
 
         # check that right methods are called
-        @test GadgetIO.get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
-        @test GadgetIO.get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
+        @test get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
+        @test get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
     end
 
 @info "delete test data..."

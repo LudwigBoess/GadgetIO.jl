@@ -131,32 +131,34 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
         @info "IDs read. Took: $(t2 - t1)"
     end
 
-    return sort(halo_ids)
+    return halo_ids
 end
 
-
 """
-    read_particles_in_halo(snap_base::String, blocks::Array{String},
-                                sub_base::String, halo::HaloID; 
-                                rad_scale::Real=1.0, halo_type::Integer=1,
-                                parttype::Integer=0, verbose::Bool=true)
+    function get_pos_block_name(sub_file, halo_type)
 
-Reads all particles of type `parttype` that are contained in a halo defined by its `HaloID`.
-Returns a `Dict` with each of the `blocks` as entries.
+Returns the position block name depending on the halo type.
 """
-function read_particles_in_halo(snap_base::String, blocks::Array{String},
-                                sub_base::String, halo::HaloID; 
-                                rad_scale::Real=1.0, halo_type::Integer=1,
-                                parttype::Integer=0, verbose::Bool=true,
-                                use_keys::Bool=true)
-
-    # select subfind file to read
-    sub_file = select_file(sub_base, halo.file)
-
-    # select block with number of particles in fof for
+function get_pos_block_name(sub_file, halo_type)
     if halo_type == 1
         # halos
-        pos_block = "GPOS"
+        return "GPOS"
+    elseif halo_type == 2
+        # subhalos
+        return "SPOS"
+    else
+        error("No position block for halo type $halo_type")
+    end
+end
+
+"""
+    function get_rad_block_name(sub_file, halo_type)
+
+Returns the radius block name depending on the halo type.
+"""
+function get_rad_block_name(sub_file, halo_type)
+    if halo_type == 1
+        # halos
         rad_block = "R200"
         if !block_present(sub_file, rad_block)
             rad_block = "RMEA"
@@ -164,21 +166,50 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
             if !block_present(sub_file, rad_block)
                 error("Neither R200 nor RMEA present!")
             end
-        end
 
+        end
+        return rad_block
     elseif halo_type == 2
         # subhalos
-        pos_block = "SPOS"
-        rad_block = "RHMS"
+        return "RHMS"
+    else
+        error("No radius block for halo type $halo_type")
     end
+end
+
+
+"""
+    read_particles_in_halo(snap_base::String, blocks::Array{String},
+                                sub_base::String, halo::HaloID; 
+                                radius::Union{Real,Nothing}=nothing,
+                                rad_scale::Real=1.0, halo_type::Integer=1,
+                                parttype::Integer=0, verbose::Bool=true,
+                                use_keys::Bool=true)
+
+Reads all particles of type `parttype` that are contained in a halo defined by its `HaloID`.
+If `radius` is given (in simulation units), particles are read within at least this radius
+times `rad_scale`. Otherwise, R200, RMEA, or RHMS times `rad_scale` is used depending on
+`halo_type` (1, 1, and 2, respectively).
+Returns a `Dict` with each of the `blocks` as entries.
+"""
+function read_particles_in_halo(snap_base::String, blocks::Array{String},
+                                sub_base::String, halo::HaloID; 
+                                radius::Union{Real,Nothing}=nothing,
+                                rad_scale::Real=1.0, halo_type::Integer=1,
+                                parttype::Integer=0, verbose::Bool=true,
+                                use_keys::Bool=true)
+
+    # select subfind file to read
+    sub_file = select_file(sub_base, halo.file)
+    h = read_header(sub_file)
 
     if verbose
         @info "Reading IDs in halo..."
         t1 = Dates.now()
     end
+
     # read all IDs of the particles contained in a halo
-    halo_ids = read_ids_in_halo(sub_base, halo, 
-                                halo_type=halo_type, verbose=verbose)
+    halo_ids = read_ids_in_halo(sub_base, halo, halo_type=halo_type, verbose=verbose)
 
     if verbose
         t2 = Dates.now()
@@ -189,10 +220,16 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
     end
 
     # position of halo
+    pos_block = get_pos_block_name(sub_file, halo_type)
     halo_pos = read_subfind(sub_file, pos_block)[:,halo.id]
 
     # initial search radius for read-in
-    initial_radius = rad_scale * read_subfind(sub_file, rad_block)[halo.id]
+    if isnothing(radius)
+        rad_block = get_rad_block_name(sub_file, halo_type)
+        initial_radius = rad_scale * read_subfind(sub_file, rad_block)[halo.id]
+    else
+        initial_radius = rad_scale * radius
+    end
 
     # read ids in the halo 
     data = read_particles_by_id(snap_base, halo_ids, blocks,
@@ -216,23 +253,19 @@ end
 """
     read_particles_in_halo( snap_base::String, block::String,
                             sub_base::String, halo::HaloID; 
-                            rad_scale::Real=1.0, halo_type::Integer=1,
-                            parttype::Integer=0, verbose::Bool=true )
+                            kwargs...)
 
 Reads all particles of type `parttype` that are contained in a halo defined by its `HaloID`.
+If `radius` is given (in simulation units), particles are read within at least this radius
+times `rad_scale`. Otherwise, R200, RMEA, or RHMS times `rad_scale` is used depending on
+`halo_type` (1, 1, and 2, respectively).
 Returns an `Array` with the requested `block`.
 """
 function read_particles_in_halo(snap_base::String, block::String,
                                 sub_base::String, halo::HaloID; 
-                                rad_scale::Real=1.0, halo_type::Integer=1,
-                                parttype::Integer=0, verbose::Bool=true,
-                                use_keys::Bool=true)
+                                kwargs...)
 
-    data = read_particles_in_halo(snap_base, [block],
-                                  sub_base, halo, 
-                                  rad_scale=rad_scale, halo_type=halo_type,
-                                  parttype=parttype, verbose=verbose,
-                                  use_keys=use_keys)
+    data = read_particles_in_halo(snap_base, [block], sub_base, halo; kwargs...) 
 
     return data[block]
 end

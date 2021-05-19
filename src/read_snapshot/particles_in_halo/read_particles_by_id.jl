@@ -102,10 +102,6 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                               r0::Real=0.0,
                               use_keys::Bool=true)
 
-    # sort the IDs if they are not already sorted
-    if !issorted(selected_ids)
-        sort!(selected_ids)
-    end
     # try reading the first of the distributed snapshots
     filename = select_file(snap_base, 0)
 
