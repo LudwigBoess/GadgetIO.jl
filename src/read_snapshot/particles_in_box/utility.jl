@@ -20,7 +20,7 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
     # allocate arrys to store reading information
     file_offset_key      = Vector{Vector{<:Integer}}(undef, N_files)
     file_part_per_key    = Vector{Vector{<:Integer}}(undef, N_files)
-    file_block_positions = Vector{Dict{String,Integer}}(undef, N_files)
+    file_block_positions = Vector{Dict{String,<:Integer}}(undef, N_files)
 
     @inbounds for i = 1:N_files
 
@@ -37,9 +37,6 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
 
         # Vector of field names (KEY, NKEY, OKEY)
         fields = getfield.(key_info, :block_name)
-
-        # key header, but is not further used
-        # h_key = read_keyheader(filename_keyfile)
 
         # Reads the following in, respectively:
         # - key file data
@@ -92,34 +89,36 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
             end
         end
 
-    end # for i = 1:size(files,1)
+    end # for i = 1:N_files
 
     return file_offset_key, file_part_per_key, file_block_positions
 end
 
 """
-    read_key_block(filename_keyfile::String, fields::Vector{String}, key::String, parttype::Integer)
+    read_key_block( filename_keyfile::String, key_info::Vector{InfoLine}, 
+                    fields::Vector{String}, key::String, parttype::Integer)
 
 Returns key block for different `key`. Valid values of `key`: KEY, NKEY, OKEY
 """
-function read_key_block(filename_keyfile::String, key_info::Vector{InfoLine}, fields::Vector{String}, key::String, parttype::Integer)
+function read_key_block(filename_keyfile::String, key_info::Vector{InfoLine}, 
+                        fields::Vector{String}, key::String, parttype::Integer)
     read_block(filename_keyfile, key,
                info = key_info[findfirst(==(key), fields)],
                parttype = parttype)
 end
 
 """
-    get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
+    get_index_bounds_Klaus(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
 
 Returns sorted `Vector` of indices `i`, for which `low_bounds[i] ≤ ids[j] ≤ high_bounds[i]` for any `j`.
 All parameters `ids`, `low_bounds`, and `high_bounds` have to already be sorted.
 """
-function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
+function get_index_bounds_Klaus(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
 
     nids = length(ids)
     nbounds = length(low_bounds)
 
-    ind_all = zeros(Int64, nids)
+    ind_all = Vector{Int64}(undef, nids)    
 
     icountall = 1
 
@@ -128,7 +127,7 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
 
     lend = false
 
-    while !lend
+    @inbounds while !lend
 
         if low_bounds[icountbounds] ≤ ids[icountids] ≤ high_bounds[icountbounds]
 
@@ -212,12 +211,47 @@ function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer},
     end # while !lend
 
     if icountall > 1
-        ind_out = ind_all[1:icountall-1]
-        return ind_out
+        return ind_all[1:icountall-1]
     else
         return Int64[]
     end
 end
+
+"""
+    get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
+
+Returns sorted `Vector` of indices `i`, for which `low_bounds[i] ≤ ids[j] ≤ high_bounds[i]` for any `j`.
+All parameters `ids`, `low_bounds`, and `high_bounds` have to already be sorted.
+"""
+function get_index_bounds(ids::Vector{<:Integer}, low_bounds::Vector{<:Integer}, high_bounds::Vector{<:Integer})
+    
+    nids    = length(ids)
+    nbounds = length(low_bounds)
+    ind_all = Vector{Int}(undef, min(nids, nbounds))
+
+    icountall = 1
+    icountids = 1
+    @inbounds for icountbounds = 1:length(low_bounds)
+
+        while icountids ≤ nids && ids[icountids] < low_bounds[icountbounds]
+            icountids += 1
+        end
+
+        if icountids ≤ nids && ids[icountids] ≤ high_bounds[icountbounds]
+            ind_all[icountall] = icountbounds
+            icountall += 1
+            icountids += 1
+        end
+
+    
+    end
+
+    return ind_all[1:(icountall-1)]
+end
+
+
+
+
 
 """
     find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
@@ -267,7 +301,7 @@ end
 Get positions in `list_to_check` where `list_to_check` matches `list_to_find`. Uses forward-searching in sorted array.
 Both arrays have to be sorted.
 """
-@inline function get_index_list_arr(list_to_find::Vector{<:Integer}, list_to_check::Array{<:Integer})
+@inline function get_index_list_arr(list_to_find::Vector{<:Integer}, list_to_check::Vector{<:Integer})
     if isempty(list_to_find) || isempty(list_to_check)
         return Int64[]
     end
@@ -352,7 +386,7 @@ end
     
 Joins neighboring blocks to simplify read-in.
 """
-@inline function join_blocks(offset_key, part_per_key)
+@inline function join_blocks(offset_key::Vector{<:Integer}, part_per_key::Vector{<:Integer})
 
     use_block = trues(length(offset_key))
 
