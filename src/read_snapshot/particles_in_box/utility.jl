@@ -18,8 +18,8 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
     N_files = length(files)
 
     # allocate arrys to store reading information
-    file_offset_key      = Vector{Array{<:Integer}}(undef, N_files)
-    file_part_per_key    = Vector{Array{<:Integer}}(undef, N_files)
+    file_offset_key      = Vector{Vector{<:Integer}}(undef, N_files)
+    file_part_per_key    = Vector{Vector{<:Integer}}(undef, N_files)
     file_block_positions = Vector{Dict{String,Integer}}(undef, N_files)
 
     @inbounds for i = 1:N_files
@@ -242,32 +242,6 @@ function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{
     file_sort = file_list[index_bounds] |> unique! |> sort!
 
     return Int64.(file_sort)
-end
-
-"""
-    find_files_for_keys_AR(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
-
-Selects the files in which the particles associated with the given Peano-Hilbert keys are stored. Version of Antonio. (Slower than Klaus' version!)
-"""
-function find_files_for_keys_AR(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
-
-    file_key_index = filebase * ".key.index"
-
-    # if index file does not exist all key files need to be read
-    if !isfile(file_key_index)
-        return collect(0:nfiles-1)
-    end
-
-    # get the data from the index file
-    low_list, high_list, file_list = read_key_index(file_key_index)
-
-    mask = falses(size(low_list,1))
-
-    for key in keylist
-        @. mask = mask | ( (key >= low_list ) & ( key <= high_list ))
-    end
-
-    return Int64.(unique!(sort!(file_list[mask])))
 end
 
 
