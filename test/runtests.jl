@@ -326,8 +326,8 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @test issetequal(GadgetIO.get_index_list_set(list_to_find_sorted, list_to_check_sorted), indices_sorted)
 
         # check that right methods are called
-        @test GadgetIO.get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
-        @test GadgetIO.get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
+        @test get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
+        @test get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
     end
 
 @info "delete test data..."
