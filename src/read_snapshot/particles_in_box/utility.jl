@@ -386,7 +386,7 @@ end
     
 Joins neighboring blocks to simplify read-in.
 """
-@inline function join_blocks(offset_key::Vector{<:Integer}, part_per_key::Vector{<:Integer})
+@inline function join_blocks(offset_key::AbstractVector{<:Integer}, part_per_key::AbstractVector{<:Integer})
 
     use_block = trues(length(offset_key))
 
