@@ -34,8 +34,6 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3.k
 
 Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "./snap_002.key.index")
 
-
-
 @info "done!"
 
     @testset "Objects" begin
@@ -89,7 +87,12 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
 
             @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
 
-            # to do: use key files!
+            # to do: proper tests!
+            # need proper box for that!
+            # x0 = [0.0, 0.0, 0.0]
+            # x1 = [2_000.0, 2_000.0, 2_000.0]
+            # @test_nowarn read_particles_in_box("snap_002", "POS", x0, x1, parttype=1)
+
         end
 
         @testset "Read particles in geometry" begin
@@ -118,6 +121,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
             end
 
             # to do: use key files!
+            
         end
 
         @testset "Read particles in halo" begin
@@ -272,6 +276,16 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
             @test GadgetIO.get_index_bounds([1, 2, 10, 17], low_bounds, high_bounds) == [1, 4]
             @test GadgetIO.get_index_bounds([4, 5, 8, 12, 15], low_bounds, high_bounds) == [2, 3, 4]
         end
+
+        keylist_ideal = UInt64[0x0000000000000000, 0x0000000000000001, 0x0000000000000002, 0x0000000000000003, 0x0000000000000004, 0x0000000000000005, 0x0000000000000006, 0x0000000000000007]
+
+        h_key = GadgetIO.read_keyheader("snap_002.0.key")
+        x0 = [-100.0, -100.0, -100.0]
+        x1 = [1_000.0, 1_000.0, 1_000.0]
+
+        keylist = GadgetIO.get_keylist(h_key, x0, x1)
+
+        @test keylist == keylist_ideal
     end
 
     @testset "Write Snapshot" begin
