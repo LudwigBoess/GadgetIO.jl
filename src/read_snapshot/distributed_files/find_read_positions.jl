@@ -56,8 +56,8 @@ function find_read_positions( snap_base::String, filter_function::Function;
     d = Dict()
 
     for sub_snap = 0:(h.num_files-1)
-        snap_file = select_file(snap_base, sub_snap)
-        sel       = filter_function(snap_file)
+        snap_file   = select_file(snap_base, sub_snap)
+        sel         = filter_function(snap_file)
         N_this_file = size(sel,1)
 
         # store read positions of particles are in the file
@@ -114,6 +114,9 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
     for sub_snap = 0:(h.num_files-1)
         snap_file = select_file(snap_base, sub_snap)
 
+        # read header
+        h_snap    = read_header(snap_file)
+
         # read the position block
         pos       = read_block(snap_file, "POS"; parttype)
 
@@ -129,7 +132,7 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
         end
 
         if verbose
-            @info "sub-snap $sub_snap: $N_this_file particles"
+            @info "sub-snap $sub_snap: $N_this_file / $(h_snap.npart[parttype+1]) particles"
         end
         N_part   += N_this_file
     end

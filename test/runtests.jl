@@ -309,6 +309,28 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         # check if we read the same thing we wrote
         @test x_check == x
 
+        # test info block write
+        @testset "Write INFO block" begin
+            ref_file = joinpath(dirname(@__FILE__), "snap_sedov")
+            info_snap = read_info(ref_file)
+
+            output_file = joinpath(dirname(@__FILE__), "write_test.dat")
+            f = open(output_file, "w")
+            write_info_block(f, info_snap)
+            close(f)
+
+            info_file = read_info(output_file)
+
+            for i = 1:length(info_snap)
+                
+                @test info_file[i].block_name == info_snap[i].block_name
+                @test info_file[i].data_type  == info_snap[i].data_type
+                @test info_file[i].n_dim      == info_snap[i].n_dim
+                @test info_file[i].is_present == info_snap[i].is_present
+                
+            end
+        end
+        # snap format 1
         f = open(output_file, "w")
         @test_nowarn write_block(f, x, "", snap_format=1)
 

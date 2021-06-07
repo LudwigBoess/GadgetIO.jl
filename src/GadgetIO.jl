@@ -56,6 +56,7 @@ module GadgetIO
            read_particles_in_halo,
            get_index_list,
            get_npart_to_read,
+           filter_ids,
            read_blocks_over_all_files,
            find_read_positions,
            save_read_positions,
@@ -85,7 +86,8 @@ module GadgetIO
 
            # write snapshot functions
            write_header,
-           write_block
+           write_block,
+           write_info_block
 
 
 
