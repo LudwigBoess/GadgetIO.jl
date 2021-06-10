@@ -19,13 +19,23 @@ For the header this is the struct [`Header`](@ref) and for data its usually `Arr
 You can then write an initial condition file by writing the header and the individual data blocks.
 
 ```julia
-write_header(filename, header)
-write_block(filename,  pos, "POS")
-write_block(filename,  vel, "VEL")
-write_block(filename,  id,  "ID")
+f = open(filename, "w")
+write_header(f, header)
+write_block( f,  pos, "POS")
+write_block( f,  vel, "VEL")
+write_block( f,  id,  "ID")
+close(f)
 ```
 
 Please note that you have to combine the arrays for individual particles in the correct order.
+
+If you want to write the `INFO` block as well you can use
+
+```julia
+write_info_block(f, info)
+```
+
+where `info` is a `Vector` of [`InfoLine`](@ref).
 
 Format 1
 --------
@@ -34,8 +44,10 @@ Writing in format 1 works the same as above, but you need different function val
 Also you need to make sure the blocks are in the order gadget expects them to be!
 
 ```julia
-write_header(filename, header, snap_format=1)
-write_block(filename,  pos,    snap_format=1)
-write_block(filename,  vel,    snap_format=1)
-write_block(filename,  id,     snap_format=1)
+f = open(filename, "w")
+write_header(f, header, snap_format=1)
+write_block( f,  pos,    snap_format=1)
+write_block( f,  vel,    snap_format=1)
+write_block( f,  id,     snap_format=1)
+close(f)
 ```

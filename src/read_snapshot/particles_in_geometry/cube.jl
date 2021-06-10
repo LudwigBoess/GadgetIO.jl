@@ -36,5 +36,10 @@ Returns the indices of all particles contained in the `cube`.
 """
 function get_geometry_mask(cube::GadgetCube, pos::Matrix{T}) where T
     # by definition all particles are in the cube
-    return collect(1:size(pos,2))
+    #return collect(1:size(pos,2))
+    mask = @views @. ( ( cube.corner_lower_left[1] <= pos[1,:] <= cube.corner_upper_right[1] ) &
+                       ( cube.corner_lower_left[2] <= pos[2,:] <= cube.corner_upper_right[2] ) &
+                       ( cube.corner_lower_left[3] <= pos[3,:] <= cube.corner_upper_right[3] ) )
+
+    return findall(mask)
 end

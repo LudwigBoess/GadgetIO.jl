@@ -18,6 +18,20 @@ function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, co
 end
 
 """
+    filter_ids(snap_file::String, selected_ids::Vector{<:Integer})
+
+Reads IDs from `snap_file` and returns the indices of particles matching the `selected_ids`
+"""
+function filter_ids(snap_file::String, selected_ids::Vector{<:Integer}, parttype::Integer)
+
+    # read ids in file
+    ids = read_snap(snap_file, "ID", parttype) 
+    
+    # check which IDs match
+    return filter_by_ids( selected_ids, ids)
+end
+
+"""
     read_blocks_over_all_files( snap_base::String, blocks::Array{String};
                                 filter_function::Union{Function, Nothing}=nothing, 
                                 read_positions::Union{Dict, Nothing}=nothing, 

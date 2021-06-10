@@ -1,13 +1,15 @@
 | **Documentation**                                                 | **Build Status**                                                                                | **License**                                                                                |
 |:-----------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:| :-----------------------------------------------------------------------------------------------:|
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://LudwigBoess.github.io/GadgetIO.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://LudwigBoess.github.io/GadgetIO.jl/dev) | [![Build Status](https://travis-ci.org/LudwigBoess/GadgetIO.jl.svg?branch=master)](https://travis-ci.org/LudwigBoess/GadgetIO.jl) [![codecov.io](https://codecov.io/gh/LudwigBoess/GadgetIO.jl/coverage.svg?branch=master)](https://codecov.io/gh/LudwigBoess/GadgetIO.jl?branch=master) | [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE.md) |
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://LudwigBoess.github.io/GadgetIO.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://LudwigBoess.github.io/GadgetIO.jl/dev) | [![Build status](https://github.com/LudwigBoess/GadgetIO.jl/actions/workflows/jlpkgbutler-ci-master-workflow.yml/badge.svg)](https://github.com/LudwigBoess/GadgetIO.jl/actions/workflows/jlpkgbutler-ci-master-workflow.yml) [![codecov.io](https://codecov.io/gh/LudwigBoess/GadgetIO.jl/coverage.svg?branch=master)](https://codecov.io/gh/LudwigBoess/GadgetIO.jl?branch=master) | [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE.md) |
 
 
 # GadgetIO.jl
 
-This package is a subproject of [GadJet.jl](https://github.com/LudwigBoess/GadJet.jl) and provides some basic IO functionality to work with the SPH code "Gadget" by Volker Springel (doi:10.1111/j.1365-2966.2005.09655.x).
+This package is a subproject of [GadJet.jl](https://github.com/LudwigBoess/GadJet.jl) and provides some basic IO functionality to work with the Smoothed-Particle Hydrodynamics code [Gadget](https://wwwmpa.mpa-garching.mpg.de/gadget/) by Volker Springel.
 
-Any help and contribution is greatly appreciated, as this is still a work in progress.
+It is taylored for working with the development version of P-Gadget3, specifically OpenGadget3 developed by Klaus Dolag. Development is focused on IO for Binary Format 2.
+
+Please see the [Documentation](https://ludwigboess.github.io/GadgetIO.jl/dev/) for details.
 
 Quickstart
 ==========
