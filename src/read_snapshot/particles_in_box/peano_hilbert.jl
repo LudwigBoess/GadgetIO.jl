@@ -4,7 +4,7 @@
 Computes the integer position along the PH line.
 """
 @inline function get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real )
-    return floor(Int64, ( pos - domain_corner ) * domain_fac) 
+    return trunc(Int64, ( pos - domain_corner ) * domain_fac) 
 end
 
 """
@@ -112,7 +112,9 @@ const global subpix3 = [0  7  1  6  3  4  2  5 ;
 """
     peano_hilbert_key(bits::Integer, x::Integer, y::Integer, z::Integer)
 
-Computes a Peano-Hilbert key for an integer triplet (x,y,z) with x,y,z in the range between 0 and 2^bits-1.
+Computes a Peano-Hilbert key for an integer triplet (x,y,z) with x,y,z typically in the range
+between 0 and 2^bits-1. Values outside this range can occur when reading across the
+periodic box borders.
 """
 function peano_hilbert_key(bits::Integer, x::Integer, y::Integer, z::Integer)
 
@@ -148,20 +150,20 @@ Get all Peano-Hilbert keys for domain defined by the corner points `x0` and `x1`
 """
 function get_keylist(h_key::KeyHeader, x0::Array{T}, x1::Array{T}) where T
 
-    ix0 = Vector{UInt}(undef, 3)
-    ix1 = Vector{UInt}(undef, 3)
-    dix = Vector{UInt}(undef, 3)
+    ix0 = Vector{Int}(undef, 3)
+    ix1 = Vector{Int}(undef, 3)
+    dix = Vector{Int}(undef, 3)
 
-    nkeys = UInt(1)
+    nkeys = 1
 
     @inbounds for i = 1:3
         ix0[i] = get_int_pos( x0[i], h_key.domain_corners[i], h_key.domain_fac )
         ix1[i] = get_int_pos( x1[i], h_key.domain_corners[i], h_key.domain_fac )
-        dix[i] = ix1[i] - ix0[i] + UInt(1)
+        dix[i] = ix1[i] - ix0[i] + 1
         nkeys *= dix[i]
     end
 
-    keylist = Vector{UInt}(undef, nkeys)
+    keylist = Vector{Int}(undef, nkeys)
 
     i = 1
     @inbounds for ix = ix0[1]:ix1[1], iy = ix0[2]:ix1[2], iz = ix0[3]:ix1[3]
