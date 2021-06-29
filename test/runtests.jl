@@ -1,8 +1,5 @@
 using GadgetIO, Test, DelimitedFiles, Downloads
 
-
-@testset "GadgetIO" begin
-
 function filter_dummy(filename::String)
     mtop = read_subfind(filename, "MTOP")
     return findall(mtop .> 7.0)
@@ -12,6 +9,7 @@ function pass_all(snap_file)
     h = read_header(snap_file)
     return collect(1:h.npart[1])
 end
+
 
 @info "downloading test data..."
 Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_sedov", "./snap_sedov")
@@ -34,7 +32,22 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3.k
 
 Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "./snap_002.key.index")
 
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.0", "./snap_144.0")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.1", "./snap_144.1")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.2", "./snap_144.2")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.3", "./snap_144.3")
+
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.0.key", "./snap_144.0.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.1.key", "./snap_144.1.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.2.key", "./snap_144.2.key")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.3.key", "./snap_144.3.key")
+
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key.index", "./snap_144.key.index")
+
 @info "done!"
+
+
+@testset "GadgetIO" begin
 
     @testset "Objects" begin
         @test_nowarn SnapshotHeader()
@@ -76,22 +89,35 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         end
 
         @testset "Read particles in box" begin
-            center = Float32[3978.9688, -95.40625, -8845.25]
-            rvir   = 118.76352
-            pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false, parttype=1)
 
-            @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            @testset "Brute-Force" begin
+                center = Float32[3978.9688, -95.40625, -8845.25]
+                rvir   = 118.76352
+                pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false, parttype=1)
 
-            pos = read_particles_in_box("snap_002", "POS", center .- rvir, center .+ rvir, 
-                                        use_keys=false, parttype=1, verbose=false)
+                @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
 
-            @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+                pos = read_particles_in_box("snap_002", "POS", center .- rvir, center .+ rvir, 
+                                            use_keys=false, parttype=1, verbose=false)
 
-            # to do: proper tests!
-            # need proper box for that!
-            # x0 = [0.0, 0.0, 0.0]
-            # x1 = [2_000.0, 2_000.0, 2_000.0]
-            # @test_nowarn read_particles_in_box("snap_002", "POS", x0, x1, parttype=1)
+                @test pos[:,1] ≈ Float32[3882.5537, -20.574343, -8768.669]
+            end
+
+            @testset "Peano-Hilbert reading" begin
+                
+                center = Float32[32572.607, 33825.95, 26314.158]
+                rvir   = 1138.885
+
+                pos = read_particles_in_volume("snap_144", "POS", center, rvir, use_keys=true, parttype=1)
+
+                # check if correct number of particles were read
+                @test size(pos,2) == 11981
+
+                # check if the positions are the same as in Klaus' IDL code
+                @test pos[:,1] ≈ Float32[ 31486.8, 33696.7, 25475.5 ]
+                @test pos[:,2] ≈ Float32[ 32027.1, 33818.6, 25249.8 ]
+                @test pos[:,3] ≈ Float32[ 31978.6, 33792.4, 25175.6 ]
+            end
 
         end
 
@@ -163,7 +189,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @testset "Error Handling" begin
             @test_throws ErrorException("Please specify particle type!") read_block("snap_002.0", "POS")  
             @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype=5, h=SnapshotHeader()) 
-            @test_throws ErrorException("Block not present!") read_block("snap_002.0", "ABCD", parttype=0)  
+            @test_throws ErrorException("Info for block ABCD not present!") read_block("snap_002.0", "ABCD", parttype=0)  
             @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")  
             @test_throws ErrorException("Please provide either a dictionary with read positions or a filter function!") read_blocks_over_all_files("snap_002", ["POS"]) 
         end
@@ -366,6 +392,8 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key
         @test get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
     end
 
+end
+
 @info "delete test data..."
 rm("snap_sedov")
 rm("pos_sedov.dat")
@@ -373,6 +401,7 @@ rm("sub_002.0")
 rm("sub_002.1")
 rm("sub_002.2")
 rm("sub_002.3")
+
 rm("snap_002.0")
 rm("snap_002.1")
 rm("snap_002.2")
@@ -382,6 +411,16 @@ rm("snap_002.1.key")
 rm("snap_002.2.key")
 rm("snap_002.3.key")
 rm("snap_002.key.index")
+
+rm("snap_144.0")
+rm("snap_144.1")
+rm("snap_144.2")
+rm("snap_144.3")
+rm("snap_144.0.key")
+rm("snap_144.1.key")
+rm("snap_144.2.key")
+rm("snap_144.3.key")
+rm("snap_144.key.index")
+
 @info "done!"
-end
 
