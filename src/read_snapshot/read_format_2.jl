@@ -213,7 +213,7 @@ function check_info(filename::String, blockname::String)
             if (blockname == "MASS")
                 return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
             else
-                error("Info for block $blockname not present!")
+                error("Block $blockname not present!")
             end
         end
     end # info == 1

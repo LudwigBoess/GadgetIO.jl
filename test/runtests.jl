@@ -189,7 +189,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         @testset "Error Handling" begin
             @test_throws ErrorException("Please specify particle type!") read_block("snap_002.0", "POS")  
             @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype=5, h=SnapshotHeader()) 
-            @test_throws ErrorException("Info for block ABCD not present!") read_block("snap_002.0", "ABCD", parttype=0)  
+            @test_throws ErrorException("Block ABCD not present!") read_block("snap_002.0", "ABCD", parttype=0)  
             @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")  
             @test_throws ErrorException("Please provide either a dictionary with read positions or a filter function!") read_blocks_over_all_files("snap_002", ["POS"]) 
         end
