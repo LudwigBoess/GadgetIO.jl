@@ -164,6 +164,8 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         @testset "Read positions" begin
             center = Float32[3978.9688, -95.40625, -8845.25]
             rvir   = 118.76352
+
+            # with filter function
             ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1) 
             read_positions = find_read_positions("snap_002", ff)
 
@@ -174,6 +176,18 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
             @test read_positions[0]["n_to_read"][1] == 2
             @test read_positions[0]["n_to_read"][4] == 74
+
+            # with gadget geometry
+            cube = GadgetCube(center .- rvir, center .+ rvir)
+            read_positions_geo = find_read_positions("snap_002", cube, parttype=1)
+
+            @test read_positions_geo["N_part"] == 87
+
+            @test read_positions_geo[0]["index"][1] == 2441
+            @test read_positions_geo[0]["index"][5] == 3966
+
+            @test read_positions_geo[0]["n_to_read"][1] == 2
+            @test read_positions_geo[0]["n_to_read"][4] == 74
 
             # test IO
             save_read_positions("dummy.bin", read_positions)
