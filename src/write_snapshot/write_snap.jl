@@ -52,11 +52,20 @@ function write_block(f::IOStream, data,
     # write blocksize
     dtype = typeof(data[1,1])
     dims = ndims(data)
+    # for a Matrix the real dimension to write is the column length
     if dims == 2
         dims = size(data,1)
     end
 
-    blocksize = UInt32(N * sizeof(dtype) * dims)
+    blocksize_test = N * sizeof(dtype) * dims
+
+    # check for integer overflow
+    if blocksize_test <= typemax(UInt32)
+        blocksize = UInt32(blocksize_test)
+    else
+        # avoid integer overflow
+        blocksize = UInt32(blocksize_test - 4294967296)
+    end
 
     if snap_format == 2
 
@@ -78,8 +87,7 @@ function write_block(f::IOStream, data,
     # write blocksize
     write(f, blocksize)
 
-    # write the block. Since Julia stores the arrays differently in memory
-    # they have to be transposed before the can be written.
+    # write the block
     write(f, data)
 
     @info "Writing block done."
