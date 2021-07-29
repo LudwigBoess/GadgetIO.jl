@@ -56,7 +56,7 @@ function read_block(filename::String, blockname::String;
                 block .= h.massarr[parttype+1]
                 return block
             else
-                error("Block $blockname not present!")
+                error("Block $blockname not present for particle type $parttype !")
             end
         end
     end
