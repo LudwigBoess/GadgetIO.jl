@@ -49,12 +49,14 @@ function read_block(filename::String, blockname::String;
 
         block_position = check_block_position(filename, blockname)
 
-        if block_position == -1
+        if block_position == -1 || (info.is_present[parttype+1] == 0)
             # if no mass block is present we can read it from the header
             if blockname == "MASS"
                 block = Array{info.data_type,1}(undef, h.npart[parttype+1])
                 block .= h.massarr[parttype+1]
                 return block
+            else
+                error("Block $blockname not present!")
             end
         end
     end
