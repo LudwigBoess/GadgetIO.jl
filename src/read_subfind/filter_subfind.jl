@@ -60,7 +60,7 @@ Selects entries in subfind block that fulfill the 'filter_funcion' requirements 
 returns a 'SubfindFilter' object.
 
 # Examples
-```jldoctest
+```julia
 julia> find_mass_gt_1e15(M) = ( (M > 1.e15) ? true : false )
 find_mass_gt_1e15 (generic function with 1 method)
 julia> filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
@@ -113,7 +113,7 @@ Selects entries in subfind block that fulfill the 'filter_funcion' requirements 
 returns a 'SubfindFilter' object.
 
 # Examples
-```jldoctest
+```julia
 julia> find_mass_gt_1e15(M) = ( (M > 1.e15) ? true : false )
 find_mass_gt_1e15 (generic function with 1 method)
 julia> filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)

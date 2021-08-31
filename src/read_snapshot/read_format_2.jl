@@ -6,7 +6,7 @@
 Reads a block in a snapshot with given name. Names are case sensitive.
 
 # Examples
-```jldoctest
+```julia
 julia> pos_info = InfoLine("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
 [...]
 julia> gas_pos = read_block(filename, "POS", info=pos_info, parttype=0)
@@ -92,7 +92,7 @@ end
 Reads a block over all sub-snapshots. Names are case sensitive.
 
 # Examples
-```jldoctest
+```julia
 julia> pos_info = InfoLine("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
 [...]
 julia> gas_pos = read_block(filename, "POS", info=pos_info, parttype=0)
