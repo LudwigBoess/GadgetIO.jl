@@ -28,7 +28,7 @@ Contains the data of the `HEAD` block of a Gadget snapshot.
 | `lpt_scalingfactor::Float32`         | factor to use second order ic generation                                               |
 | `fill::Vector{Int32}`                | the HEAD block needs to be filled with zeros to have a size of 256 bytes               |
 """
-mutable struct SnapshotHeader
+mutable struct SnapshotHeader <: AbstractGadgetHeader
     npart::Vector{Int32}                # an array of particle numbers per type in this snapshot
     massarr::Vector{Float64}            # an array of particle masses per type in this snapshot - if zero: MASS block present
     time::Float64                       # time / scale factor of the simulation

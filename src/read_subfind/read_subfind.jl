@@ -34,7 +34,7 @@ Contains the data of the `HEAD` block in the subfind output
 | `flag_ic_info::Int32`                | 1 if initial snapshot file contains an info block, else 0                              |
 
 """
-struct SubfindHeader
+struct SubfindHeader <: AbstractGadgetHeader
     nhalos::Int32                       # number of halos in the output file
     nsubhalos::Int32                    # number of subhalos in the output file
     nfof::Int32                         # number of particles in the FoF
