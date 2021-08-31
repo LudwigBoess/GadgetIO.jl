@@ -7,6 +7,13 @@ module GadgetIO
     function output_time(t1, t2)
         return @sprintf("%0.3e", Float64((t2-t1))*1.e-9)
     end
+
+    """
+        AbstractGadgetHeader
+
+    Abstract type to unify snapshot and subfind headers.
+    """
+    abstract type AbstractGadgetHeader end
     
     # functions to read snapshots
     include(joinpath("read_snapshot", "utility", "domain_slices.jl"))
@@ -37,57 +44,59 @@ module GadgetIO
     # functions to write snapshots
     include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
 
-    export SnapshotHeader, InfoLine,       # types
-           head_to_dict,
-           snap_to_dict,
-           head_to_obj,
-           print_blocks,
-           read_info,
-           block_present,
-           read_snap,
-           read_block,      # similar to readnew.pro by Klaus Dolag
-           read_header,
+    export  AbstractGadgetHeader, 
+            SnapshotHeader, SubfindHeader, 
+            InfoLine,       # types
+            head_to_dict,
+            snap_to_dict,
+            head_to_obj,
+            print_blocks,
+            read_info,
+            block_present,
+            read_snap,
+            read_block,      # similar to readnew.pro by Klaus Dolag
+            read_header,
 
 
-           # large simulations
-           read_particles_in_box,
-           read_particles_in_volume,
-           read_particles_in_geometry,
-           read_particles_in_halo,
-           get_index_list,
-           get_npart_to_read,
-           filter_ids,
-           read_blocks_over_all_files,
-           find_read_positions,
-           save_read_positions,
-           load_read_positions,
+            # large simulations
+            read_particles_in_box,
+            read_particles_in_volume,
+            read_particles_in_geometry,
+            read_particles_in_halo,
+            get_index_list,
+            get_npart_to_read,
+            filter_ids,
+            read_blocks_over_all_files,
+            find_read_positions,
+            save_read_positions,
+            load_read_positions,
 
-           # geometries
-           AbstractGadgetGeometry,
-           GadgetCylinder,
-           GadgetSphere,
-           GadgetCube,
+            # geometries
+            AbstractGadgetGeometry,
+            GadgetCylinder,
+            GadgetSphere,
+            GadgetCube,
 
-           # domain slices
-           filter_cube,
-           filter_cylinder,
+            # domain slices
+            filter_cube,
+            filter_cylinder,
 
-           # subfind read
-           HaloID,
-           SubfindHeader, 
-           read_subfind_header,
-           read_subfind,
-           find_most_massive_halo,
-           filter_subfind,
-           read_ids_in_halo,
-           read_particles_by_id,
-           read_halo_prop,
-           read_halo_prop_and_id,
+            # subfind read
+            HaloID,
+            SubfindHeader, 
+            read_subfind_header,
+            read_subfind,
+            find_most_massive_halo,
+            filter_subfind,
+            read_ids_in_halo,
+            read_particles_by_id,
+            read_halo_prop,
+            read_halo_prop_and_id,
 
-           # write snapshot functions
-           write_header,
-           write_block,
-           write_info_block
+            # write snapshot functions
+            write_header,
+            write_block,
+            write_info_block
 
 
 
