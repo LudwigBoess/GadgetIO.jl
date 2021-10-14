@@ -84,6 +84,51 @@ function read_block(filename::String, blockname::String;
 
 end
 
+function read_block!(a::AbstractArray, filename::String, blockname::String;
+                    parttype::Integer=-1,
+                    block_position::Integer=-1,
+                    info::Union{Nothing,InfoLine}=nothing,
+                    h::Union{Nothing,SnapshotHeader}=nothing)
+    # check if a block position is supplied
+    if block_position == -1
+
+        block_position = check_block_position(filename, blockname)
+
+        if block_position == -1 || (info.is_present[parttype+1] == 0)
+            # if no mass block is present we can read it from the header
+            if blockname == "MASS"
+                block = Array{info.data_type,1}(undef, h.npart[parttype+1])
+                block .= h.massarr[parttype+1]
+                return block
+            else
+                error("Block $blockname not present for particle type $parttype !")
+            end
+        end
+    end
+
+
+    f = open(filename)
+
+    seek(f,block_position)
+
+    for i ∈ 1:size(info.is_present,1)
+        p = position(f)
+
+        if info.is_present[i] == Int32(1)
+            if i == (parttype+1)
+                read_block_data!(a, f, info.data_type, info.n_dim, h.npart[i])
+                close(f)
+                return
+            else
+                seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
+            end # if i == (parttype+1)
+        end # info.is_present[i] == Int32(1)
+    end # i ∈ 1:size(info.is_present,1)
+
+    close(f)
+
+end
+
 """
     read_block_subsnaps(filename::String, blockname::String;
                                 info::InfoLine=InfoLine(),
@@ -123,6 +168,11 @@ function read_block_subsnaps(filebase::String, blockname::String;
     if isnothing(info)
         info = check_info(filebase * ".0", blockname)
     end
+    #
+    # check if particle type is present
+    if h.nall[parttype+1] == UInt32(0)
+        error("Particle Type $parttype not present in simulation!")
+    end
 
     return read_subsnaps(filebase, blockname, parttype, info, h)
 
@@ -161,11 +211,13 @@ function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
 
         # read the block
         if info.n_dim > 1
-            block[:, N_read+1:N_read+N_to_read] = read_block(filename, blockname;
-                                                            parttype, info, h)
+            # block[:, N_read+1:N_read+N_to_read] = read_block(filename, blockname;
+                                                            # parttype, info, h)
+            read_block!(@view(block[:, (N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         else
-            block[N_read+1:N_read+N_to_read]    = read_block(filename, blockname;
-                                                            parttype, info, h)
+            # block[N_read+1:N_read+N_to_read]    = read_block(filename, blockname;
+                                                            # parttype, info, h)
+            read_block!(@view(block[(N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         end
 
         # update number of read particles
@@ -190,6 +242,11 @@ function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart
         read!(f, Array{data_type,1}(undef, npart))
     end
 end
+
+function read_block_data!(a::AbstractArray, f::IOStream, data_type::DataType, n_dim::Integer, npart::Integer)
+    read!(f, a)
+end
+
 
 """
     check_info(filename::String, blockname::String)
@@ -269,6 +326,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
     # store position in file
     p = position(f)
 
+    n_read = Int64(n_read) # needed for reading into a view of an array
     n_this_key = n_read 
 
     for i = 1:size(offset_key,1)
@@ -278,9 +336,9 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
         n_this_key += part_per_key[i]
 
         if info.n_dim == 1
-            data[n_read+1:n_this_key]    = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
+            read_block_data!(@view(data[(n_read+1):n_this_key]), f, info.data_type, info.n_dim, part_per_key[i])
         else
-            data[:, n_read+1:n_this_key] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
+            read_block_data!(@view(data[:, (n_read+1):n_this_key]), f, info.data_type, info.n_dim, part_per_key[i])
         end
 
         n_read += part_per_key[i]
