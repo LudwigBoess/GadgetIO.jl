@@ -211,12 +211,8 @@ function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
 
         # read the block
         if info.n_dim > 1
-            # block[:, N_read+1:N_read+N_to_read] = read_block(filename, blockname;
-                                                            # parttype, info, h)
             read_block!(@view(block[:, (N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         else
-            # block[N_read+1:N_read+N_to_read]    = read_block(filename, blockname;
-                                                            # parttype, info, h)
             read_block!(@view(block[(N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         end
 
