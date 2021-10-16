@@ -54,6 +54,10 @@ function read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:I
         @info "Found $(size(matched,1)) matches. Took: $(t2 - t1)"
     end
 
+    if length(matched) == 0
+        return nothing
+    end
+
     # store block positions for faster read-in
     block_positions = get_block_positions(snap_file)
 
@@ -180,6 +184,10 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
 
                 # read data from file
                 data_file = read_particles_by_id_single_file(filename, selected_ids, blocks, parttype, verbose=verbose)
+
+                if isnothing(data_file)
+                    continue
+                end
 
                 N_this_file = size(data_file["ID"],1)
 
