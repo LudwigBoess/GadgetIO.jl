@@ -17,7 +17,8 @@ function read_block(filename::String, blockname::String;
                     parttype::Integer=-1,
                     block_position::Integer=-1,
                     info::Union{Nothing,InfoLine}=nothing,
-                    h::Union{Nothing,SnapshotHeader}=nothing)
+                    h::Union{Nothing,SnapshotHeader}=nothing,
+                    offset=0, nread=-1)
 
     # the file is actually a filebase -> return concatenated arrays
     if !isfile(filename)
@@ -44,6 +45,10 @@ function read_block(filename::String, blockname::String;
         info = check_info(filename, blockname)
     end
 
+    if nread == -1
+        nread = h.npart[parttype+1]
+    end
+
     # check if a block position is supplied
     if block_position == -1
 
@@ -52,7 +57,7 @@ function read_block(filename::String, blockname::String;
         if block_position == -1 || (info.is_present[parttype+1] == 0)
             # if no mass block is present we can read it from the header
             if blockname == "MASS"
-                block = Array{info.data_type,1}(undef, h.npart[parttype+1])
+                block = Array{info.data_type,1}(undef, nread)
                 block .= h.massarr[parttype+1]
                 return block
             else
@@ -71,7 +76,8 @@ function read_block(filename::String, blockname::String;
 
         if info.is_present[i] == Int32(1)
             if i == (parttype+1)
-                block = read_block_data(f, info.data_type, info.n_dim, h.npart[i])
+                skip(f, sizeof(info.data_type)*info.n_dim*offset)
+                block = read_block_data(f, info.data_type, info.n_dim, nread)
                 close(f)
                 return block
             else
