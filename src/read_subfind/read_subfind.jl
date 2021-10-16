@@ -158,7 +158,7 @@ end
 
 Reads a block of a subfind file.
 """
-function read_subfind(filename::String, blockname::String)
+function read_subfind(filename::String, blockname::String; offset=0, nread=-1)
     
     # read the info block
     info = read_info(filename)
@@ -177,7 +177,7 @@ function read_subfind(filename::String, blockname::String)
     # blocks are type specific so we can use this to make our life easier
     parttype = findfirst(==(1), info_selected.is_present) - 1
 
-    return read_block(filename, blockname, info = info_selected, parttype = parttype)
+    return read_block(filename, blockname; info = info_selected, parttype, offset, nread)
 end
 
 """
