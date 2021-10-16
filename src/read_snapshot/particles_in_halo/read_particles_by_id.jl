@@ -196,6 +196,9 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 # update number of read particles
                 N_read += N_this_file
 
+                if N_read == N_to_read
+                    break
+                end
             end
 
             # reduce array size
