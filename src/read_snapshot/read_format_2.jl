@@ -88,7 +88,8 @@ function read_block!(a::AbstractArray, filename::String, blockname::String;
                     parttype::Integer=-1,
                     block_position::Integer=-1,
                     info::Union{Nothing,InfoLine}=nothing,
-                    h::Union{Nothing,SnapshotHeader}=nothing)
+                    h::Union{Nothing,SnapshotHeader}=nothing,
+                    offset=0)
     # check if a block position is supplied
     if block_position == -1
 
@@ -97,7 +98,79 @@ function read_block!(a::AbstractArray, filename::String, blockname::String;
         if block_position == -1 || (info.is_present[parttype+1] == 0)
             # if no mass block is present we can read it from the header
             if blockname == "MASS"
-                block = Array{info.data_type,1}(undef, h.npart[parttype+1])
+                block = Vector{info.data_type}(undef, length(a))
+                block .= h.massarr[parttype+1]
+                return block
+            else
+                error("Block $blockname not present for particle type $parttype !")
+            end
+        end
+    end
+
+
+    f = open(filename)
+
+    seek(f,block_position)
+
+    for i ∈ 1:size(info.is_present,1)
+        p = position(f)
+
+        if info.is_present[i] == 1
+            if i == (parttype+1)
+                skip(f, sizeof(info.data_type) * info.n_dim * offset)
+                read_block_data!(a, f, info.data_type, info.n_dim, -1) # need to remove excess parameters
+                close(f)
+                return a
+            else
+                seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
+            end # if i == (parttype+1)
+        end # info.is_present[i] == Int32(1)
+    end # i ∈ 1:size(info.is_present,1)
+
+    close(f)
+
+end
+
+function read_block_prefiltered(filename::String, blockname::String, matched;
+                    parttype::Integer=-1,
+                    block_position::Integer=-1,
+                    info::Union{Nothing,InfoLine}=nothing,
+                    h::Union{Nothing,SnapshotHeader}=nothing)
+
+    # the file is actually a filebase -> return concatenated arrays
+    if !isfile(filename)
+        return read_block_subsnaps(filename, blockname; parttype, info, h)
+    end
+
+    # we need to know which particle to read
+    if parttype == -1
+        error("Please specify particle type!")
+    end
+
+    if isnothing(h)
+        # read header - super fast and needed for flexibility
+        h = head_to_obj(filename)
+    end
+
+    # check if particle type is present
+    if h.nall[parttype+1] == UInt32(0)
+        error("Particle Type $parttype not present in simulation!")
+    end
+
+    # check if info is present
+    if isnothing(info)
+        info = check_info(filename, blockname)
+    end
+
+    # check if a block position is supplied
+    if block_position == -1
+
+        block_position = check_block_position(filename, blockname)
+
+        if block_position == -1 || (info.is_present[parttype+1] == 0)
+            # if no mass block is present we can read it from the header
+            if blockname == "MASS"
+                block = Array{info.data_type,1}(undef, length(matched))
                 block .= h.massarr[parttype+1]
                 return block
             else
@@ -116,9 +189,9 @@ function read_block!(a::AbstractArray, filename::String, blockname::String;
 
         if info.is_present[i] == Int32(1)
             if i == (parttype+1)
-                read_block_data!(a, f, info.data_type, info.n_dim, h.npart[i])
+                block = read_block_data_prefiltered(f, info.data_type, info.n_dim, matched)
                 close(f)
-                return
+                return block
             else
                 seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
             end # if i == (parttype+1)
@@ -243,6 +316,20 @@ function read_block_data!(a::AbstractArray, f::IOStream, data_type::DataType, n_
     read!(f, a)
 end
 
+function read_block_data_prefiltered(f::IOStream, data_type::DataType, n_dim::Integer, matched)
+    firstind = first(matched)
+    lastind = last(matched)
+
+    if n_dim > 1
+        a = Matrix{data_type}(undef, n_dim, lastind - firstind + 1)
+    else
+        a = Vector{data_type}(undef, lastind - firstind + 1)
+    end
+
+    skip(f, sizeof(data_type) * n_dim * (firstind - 1))
+
+    return read!(f, a)
+end
 
 """
     check_info(filename::String, blockname::String)
