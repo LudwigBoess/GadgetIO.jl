@@ -20,10 +20,15 @@ function read_halo_prop(filebase::String, haloid::HaloID, blockname::String; ver
 
     # get full specified block for all halos in file
     sub_input = select_file(filebase, haloid.file)
-    block = read_subfind(sub_input, blockname)
 
-    # return array or scalar for given halo
-    return get_prop_from_block(block, haloid.id)
+    prop = read_subfind(sub_input, blockname; offset=haloid.id-1, nread=1)
+
+    # prop is either a length=1 vector or a dim×1 matrix, so it is extracted to scalar or vector
+    if ndims(prop) == 1
+        return prop[1]
+    else
+        return vec(prop)
+    end
 end
 
 
@@ -48,12 +53,19 @@ function read_halo_prop_and_id(filebase::String, i_global::Integer, blockname::S
             @info "Reading file $i of $(nfiles - 1)"
         end
 
-        block = read_subfind(sub_input, blockname)
-        len = size(block, ndims(block))
+        len = read_subfind_length(sub_input, blockname)
         if len ≤ i_global # halo is not in current file
             i_global -= len
         else
-            return get_prop_from_block(block, i_global + 1), HaloID(i, i_global + 1)
+            prop = read_subfind(sub_input, blockname; offset=i_global, nread=1)
+            haloid = HaloID(i, i_global + 1)
+
+            # prop is either a length=1 vector or a dim×1 matrix, so it is extracted to scalar or vector
+            if ndims(prop) == 1
+                return prop[1], haloid
+            else
+                return vec(prop), haloid
+            end
         end
     end
     error("Halo at index $i_global0 does not exist!")

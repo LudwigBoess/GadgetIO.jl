@@ -180,6 +180,30 @@ function read_subfind(filename::String, blockname::String; offset=0, nread=-1)
     return read_block(filename, blockname; info = info_selected, parttype, offset, nread)
 end
 
+function read_subfind_length(filename::String, blockname::String)
+    
+    # read the info block
+    info = read_info(filename)
+
+    blocknames = getfield.(info, :block_name)
+    ind = findfirst(==(blockname), blocknames)
+
+    # the the block is not contained in the file throw and error
+    if isnothing(ind)
+        error("Block $blockname not present!")
+    end
+
+    # get the relevant entry
+    info_selected = info[ind]
+
+    # blocks are type specific so we can use this to make our life easier
+    parttype = findfirst(==(1), info_selected.is_present) - 1
+
+    h = head_to_obj(filename)
+
+    return h.npart[parttype+1]
+end
+
 """
     read_subfind!(a::AbstractArray, filename, blockname::String)
 
