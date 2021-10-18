@@ -415,7 +415,7 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
     # store position in file
     p = position(f)
 
-    n_read = Int64(n_read) # needed for reading into a view of an array
+    n_read = Int(n_read) # needed for reading into a view of an array
     n_this_key = n_read 
 
     for i = 1:size(offset_key,1)
