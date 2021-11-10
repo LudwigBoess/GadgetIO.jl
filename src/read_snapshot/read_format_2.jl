@@ -159,13 +159,13 @@ function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
         # get number of particles for this sub-file
         N_to_read = h.npart[parttype+1]
 
-        # read the block
+        # read the block (info has to be read individually for each file)
         if info.n_dim > 1
             block[:, N_read+1:N_read+N_to_read] = read_block(filename, blockname;
-                                                            parttype, info, h)
+                                                            parttype, h)
         else
             block[N_read+1:N_read+N_to_read]    = read_block(filename, blockname;
-                                                            parttype, info, h)
+                                                            parttype, h)
         end
 
         # update number of read particles
