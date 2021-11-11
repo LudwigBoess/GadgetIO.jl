@@ -138,6 +138,11 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         # read header
         h = read_header(filename)
 
+        # no particles of parttype in the file
+        if h.npart[parttype+1] == 0
+            continue
+        end
+
         # read info block
         snap_info = read_info(filename)
 

@@ -26,11 +26,17 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
 
         filename = select_file(filebase, files[i])
 
-        # read header of the file
+        # read header and key info of the file
         h = head_to_obj(filename)
+        key_info  = read_info(filename * ".key")
 
         if h.npart[parttype+1] == 0
-            error("No particles of type $parttype in file!")
+            @info "No particles of type $parttype in file $(i)!"
+            # store the arrays for later reading
+            file_offset_key[i]   = Int[]
+            file_part_per_key[i] = Int[]
+            file_block_positions[i] = Dict{String,Int}()
+            continue
         end
 
         filename_keyfile = filename * ".key"
