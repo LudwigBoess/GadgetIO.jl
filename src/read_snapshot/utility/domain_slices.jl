@@ -8,6 +8,11 @@ Reads positions from `snap_file` and returns the indices of particles contained 
 """
 function filter_cube(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real}; parttype::Integer=0)
 
+    # parttype not in subfile
+    if check_info(snap_file, "POS").is_present[parttype+1] == 0
+        return Int[]
+    end
+
     # read positions from file
     pos = read_snap(snap_file, "POS", parttype)
 
