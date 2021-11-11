@@ -285,10 +285,15 @@ function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
         # read header of subfile
         h = read_header(filename)
 
+        info = check_info(filebase * ".$i", blockname)
+        if info.is_present[parttype+1] == 0
+            continue
+        end
+
         # get number of particles for this sub-file
         N_to_read = h.npart[parttype+1]
 
-        # read the block
+        # read the block (info has to be read individually for each file)
         if info.n_dim > 1
             read_block!(@view(block[:, (N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         else
