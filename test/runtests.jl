@@ -136,14 +136,18 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @testset "Sphere" begin
                 sphere = GadgetSphere(center, rvir)
 
-                @test_nowarn read_particles_in_geometry("snap_002", "POS", sphere, use_keys = false, parttype = 1)
+                data = read_particles_in_geometry("snap_002", "POS", sphere, use_keys = false, parttype = 1)
+
+                @test data["POS"][:, 1:3] ≈ Float32[3904.7957 3871.5486 4038.2986; -135.69522 -79.47088 -62.441578; -8837.774 -8831.329 -8873.304]
             end
 
             @testset "Cylinder" begin
                 cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
                     0.5rvir)
 
-                @test_nowarn read_particles_in_geometry("snap_002", "POS", cylinder, use_keys = false, parttype = 1)
+                data = read_particles_in_geometry("snap_002", "POS", cylinder, use_keys = false, parttype = 1)
+
+                @test data["POS"][:, 1:3] ≈ Float32[3904.7957 4049.4988 4035.499; -135.69522 -91.40538 -105.1906; -8837.774 -8828.907 -8844.973]
             end
 
             # to do: use key files!
@@ -372,7 +376,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         end
         # snap format 1
         f = open(output_file, "w")
-        @test_nowarn write_block(f, x, "", snap_format = 1)
+        @test_logs (:info, "Writing block done.") write_block(f, x, "", snap_format = 1)
 
         @test_throws ErrorException("Please specify blockname!") write_block(f, x, "")
         close(f)
