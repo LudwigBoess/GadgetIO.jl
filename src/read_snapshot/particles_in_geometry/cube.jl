@@ -27,7 +27,7 @@ end
 
 Returns the center of `cube`.
 """
-get_geometry_center(cube::GadgetCube) =  1 // 2 .* cube.corner_lower_left .+ cube.corner_upper_right
+get_geometry_center(cube::GadgetCube) =  1 // 2 .* (cube.corner_lower_left .+ cube.corner_upper_right)
 
 """
     get_geometry_mask(cube::GadgetCube, pos::Matrix{T}) where T
