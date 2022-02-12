@@ -154,11 +154,13 @@ function read_subfind_header(filename::String)
 end
 
 """
-    read_subfind(filename::String, blockname::String)
+    read_subfind(filename::String, blockname::String; return_haloid::Bool=false)
 
 Reads a block of a subfind file.
+
+If `return_haloid` is `true`, returns a tuple of the block array and the corresponding `HaloID`s.
 """
-function read_subfind(filename::String, blockname::String)
+function read_subfind(filename::String, blockname::String; return_haloid::Bool=false)
     
     # read the info block
     info = read_info(filename)
@@ -177,5 +179,110 @@ function read_subfind(filename::String, blockname::String)
     # blocks are type specific so we can use this to make our life easier
     parttype = findfirst(==(1), info_selected.is_present) - 1
 
-    return read_block(filename, blockname, info = info_selected, parttype = parttype)
+    return read_block(filename, blockname; info=info_selected, parttype, return_haloid)
+end
+
+
+"""
+    read_subfind(filename::String, blockname::String, ids::AbstractVector{<:Integer}; return_haloid::Bool=false)
+
+Reads the block at the given subfind ids (0-indexed).
+
+If `return_haloid` is `true`, returns a tuple of the block array and the corresponding `HaloID`s.
+"""
+function read_subfind(filename::String, blockname::String, ids::AbstractVector{<:Integer}; return_haloid::Bool=false)
+    # shift to 1-indexed
+    ind_ids = ids .+ 1
+    
+    # read the info block
+    info = read_info(filename)
+
+    blocknames = getfield.(info, :block_name)
+    ind = findfirst(==(blockname), blocknames)
+
+    # the the block is not contained in the file throw and error
+    if isnothing(ind)
+        error("Block $blockname not present!")
+    end
+
+    # get the relevant entry
+    info_selected = info[ind]
+
+    # blocks are type specific so we can use this to make our life easier
+    parttype = findfirst(==(1), info_selected.is_present) - 1
+
+
+    if isfile(filename)
+        if return_haloid
+            block, haloids = read_block(filename, blockname; inf=info_selected, parttype, return_haloid)
+            if ndims(block) == 1
+                return block[ind_ids], haloids
+            else
+                return block[:,ind_ids], haloids
+            end
+        else
+            block = read_block(filename, blockname; inf=info_selected, parttype)
+            if ndims(block) == 1
+                return block[ind_ids]
+            else
+                return block[:,ind_ids]
+            end
+        end
+    end
+
+
+    h = read_header(filename)
+    maxind = maximum(ind_ids)
+
+    # initialize arrays holding blocks and haloids
+    block_arr = []
+    if return_haloid
+        haloids_arr = []
+    end
+
+    # loop over all sub-files
+    n_already_read_in = 0
+    @inbounds for i = 0:(h.num_files-1)
+        if return_haloid
+            block, haloids = read_block(filename*".$i", blockname; parttype, return_haloid, thisfilenum=i)
+            push!(haloids_arr, haloids)
+        else
+            block = read_block(filename*".$i", blockname; parttype)
+        end
+        push!(block_arr, block)
+
+        n_already_read_in += length(block)
+
+        if n_already_read_in ≥ maxind
+            break
+        end
+    end
+
+    if return_haloid
+        return get_lazy_vcat_index.((block_arr,), ind_ids), get_lazy_vcat_index.((haloids_arr,), ind_ids)
+    else
+        return get_lazy_vcat_index.((block_arr,), ind_ids)
+    end
+end
+
+"""
+    get_lazy_vcat_index(arr::AbstractVector, ind)
+
+For an array of arrays `[a, b, c]`, where `a`, `b`, and `c` are arrays, returns the value of `vcat(a, b, c)[ind]`.
+
+This is not exported.
+"""
+function get_lazy_vcat_index(arr::AbstractVector, ind)
+    @assert ind ≥ 0
+
+    for a in arr
+        n = length(a)
+        if ind ≤ n
+            return a[ind]
+        end
+
+        ind -= n
+    end
+
+    throw(BoundsError("attempt to access lazy array of arrays at too large index"))
 end
