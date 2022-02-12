@@ -1,5 +1,5 @@
 """
-    mutable struct SnapshotHeader( [ **Fields ])
+    mutable struct SnapshotHeader <: AbstractGadgetHeader
 
 Contains the data of the `HEAD` block of a Gadget snapshot.
 
@@ -21,7 +21,7 @@ Contains the data of the `HEAD` block of a Gadget snapshot.
 | `h0::Float64`                        | little h                                                                               |
 | `flag_stellarage::Int32`             | 1 if simulation was run with stellar age, else 0                                       |
 | `flag_metals::Int32`                 | 1 if simulation was run with metals, else 0                                            |
-| `npartTotalHighWord::Vector{UInt32}` | weird                                                                                  |
+| `npartTotalHighWord::Vector{UInt32}` | If Npart > 1584^3 (>2^32) this contains a high bit: ntotal = npartTotalHighWord*2^32 + nall  |
 | `flag_entropy_instead_u::Int32`      | 1 if snapshot U field contains entropy instead of internal energy, else 0              |
 | `flag_doubleprecision::Int32`        | 1 if snapshot is in double precision, else 0                                           |
 | `flag_ic_info::Int32`                | 1 if initial snapshot file contains an info block, else 0                              |

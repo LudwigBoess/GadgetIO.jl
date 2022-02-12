@@ -66,7 +66,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
     # check if key files are present
     file_key = filename * ".key"
     if !block_present(file_key, "KEY")
-        error("No .key file present!")
+        error("No .key file present! For brute-force read-in set `use_keys=false`")
     end
 
     if verbose

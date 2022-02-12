@@ -15,12 +15,13 @@ function read_particles_in_geometry(filename::String, blocks::Vector{String},
                                     parttype::Integer=0, verbose::Bool=true,
                                     use_keys::Bool=true, do_shift_across_box_border::Bool=true)
 
-    h = read_header(filename * ".0")
+    
+    h = read_header( select_file(filename, 0) )
 
     # make sure position is read - needed for determining if in geometry or not
     if "POS" ∉ blocks
         @info "POS not found in blocks, adding POS..."
-        append!(blocks, "POS")
+        push!(blocks, "POS")
     end
 
 
