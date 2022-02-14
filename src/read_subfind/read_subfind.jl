@@ -251,7 +251,7 @@ function read_subfind(filename::String, blockname::String, ids::AbstractVector{<
         end
         push!(block_arr, block)
 
-        n_already_read_in += length(block)
+        n_already_read_in += ndims(block) == 1 ? length(block) : size(block, 2)
 
         if n_already_read_in ≥ maxind
             break
@@ -259,30 +259,50 @@ function read_subfind(filename::String, blockname::String, ids::AbstractVector{<
     end
 
     if return_haloid
-        return get_lazy_vcat_index.((block_arr,), ind_ids), get_lazy_vcat_index.((haloids_arr,), ind_ids)
+        return get_lazy_vcat_indices(block_arr, ind_ids), get_lazy_vcat_indices(haloids_arr, ind_ids)
     else
-        return get_lazy_vcat_index.((block_arr,), ind_ids)
+        return get_lazy_vcat_indices(block_arr, ind_ids)
     end
 end
 
 """
-    get_lazy_vcat_index(arr::AbstractVector, ind)
+    get_lazy_vcat_indices(arr::AbstractVector, inds)
 
-For an array of arrays `[a, b, c]`, where `a`, `b`, and `c` are arrays, returns the value of `vcat(a, b, c)[ind]`.
+For an array of arrays `[a, b, c]`, where `a`, `b`, and `c` are arrays, returns the values of `vcat(a, b, c)[ind]`.
+
+This adapts to multi-dimensional arrays, respectively.
 
 This is not exported.
 """
-function get_lazy_vcat_index(arr::AbstractVector, ind)
-    @assert ind ≥ 0
-
-    for a in arr
-        n = length(a)
-        if ind ≤ n
-            return a[ind]
-        end
-
-        ind -= n
+function get_lazy_vcat_indices(arr::AbstractVector, inds)
+    nd = ndims(arr[1])
+    if nd == 1
+        outarr = Vector{eltype(arr[1])}(undef, length(inds))
+    else
+        outarr = Matrix{eltype(arr[1])}(undef, size(arr[1], 1), length(inds))
     end
 
-    throw(BoundsError("attempt to access lazy array of arrays at too large index"))
+    @inbounds for (i, ind) ∈ enumerate(inds)
+        isfound = false
+        for a ∈ arr
+            n = nd == 1 ? length(a) : size(a, 2)
+            if ind ≤ n
+                if ndims(a) == 1
+                    outarr[i] = a[ind]
+                else
+                    @views outarr[:,i] = a[:,ind]
+                end
+                isfound = true
+                break
+            end
+
+            ind -= n
+        end
+
+        if !isfound
+            throw(BoundsError)
+        end
+    end
+
+    return outarr
 end
