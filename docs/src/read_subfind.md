@@ -69,7 +69,7 @@ You can use this to read specific files with [`read_subfind`](@ref) and select t
 
 The `filter_function` argument takes any function that takes one input argument and returns `true` if the requirement is fulfilled, or `false` if not.
 
-So to find e.g. all halos with a virial mass largert than ``10^{15} M_\odot`` you can use
+So to find e.g. all halos with a virial mass larger than ``10^{15} M_\odot`` you can use
 
 ```julia
 find_mass_gt_1e15(M) = ( (M > 1.e15) ? true : false )
@@ -93,17 +93,33 @@ You can read any property of the halo that passed the `filter_function` (see [Fi
 mvir = read_halo_prop(filebase, filtered_subfind[1], "MVIR")
 ```
 
-## Relating to Magneticum
+HaloIDs can also be obtained in a vector of all halos by setting the keyword parameter `return_haloid` to `true`:
 
-If you work with the Magneticum simulation you may be given a global halo id. To read a halo property from a global halo id and convert it to a `HaloID` you can use [`read_halo_prop_and_id`](@ref).
-So for example if you have the global halo id `i_global` and want to read the corresponding virial mass you can use
+```julia
+mvir, haloids = read_subfind(filename, "MVIR"; return_haloid=true)
+```
+
+## Reading halo properties by global halo index
+
+If you have a global index of a halo from subfind (0-indexed, increasing over all subfiles of the subfind outputs), you can also read a halo's properties from subfind. To read a halo property from such a global halo index and convert it to a `HaloID` you can use [`read_halo_prop_and_id`](@ref). To only obtain the property, [`read_halo_prop`](@ref) can be used.
+So for example if you have the global halo id `i_global` and want to read the corresponding virial mass you can use one of the two following lines (note that it is faster to read properties via the HaloID since only a single file has to be read for that):
 
 ```julia
 mvir, halo_id = read_halo_prop_and_id(filebase, i_global, "MVIR")
+mvir = read_halo_prop(filebase, i_global, "MVIR")
 ```
 
-## Reading particles in a halo
+To read the properties of multiple halos for which the halo indices are available, use one of the following two lines (to read the virial masses of the first four halos in subfind):
 
+```julia
+mvir = read_subfind(filebase, "MVIR", [0, 1, 2, 3])
+mvir, haloids = read_subfind(filebase, "MVIR", [0, 1, 2, 3]; return_haloid=true)
+```
+
+The results are returned in the order of the given indices.
+
+
+## Reading particles in a halo
 
 If you want to read all particles associated with a FoF halo you can do this with the function [`read_particles_in_halo`](@ref)
 

@@ -186,9 +186,18 @@ end
 """
     read_subfind(filename::String, blockname::String, ids::AbstractVector{<:Integer}; return_haloid::Bool=false)
 
-Reads the block at the given subfind ids (0-indexed).
+Reads the block at the given subfind indices (`ids`, 0-indexed).
 
 If `return_haloid` is `true`, returns a tuple of the block array and the corresponding `HaloID`s.
+
+# Example
+```julia
+# Read the virial masses of the first four halos in subfind:
+mvir = read_subfind(filebase, "MVIR", [0, 1, 2, 3])
+
+# or:
+mvir, haloids = read_subfind(filebase, "MVIR", [0, 1, 2, 3]; return_haloid=true)
+```
 """
 function read_subfind(filename::String, blockname::String, ids::AbstractVector{<:Integer}; return_haloid::Bool=false)
     # shift to 1-indexed
