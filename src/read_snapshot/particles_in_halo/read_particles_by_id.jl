@@ -168,7 +168,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
             data = allocate_data_dict(blocks, N_to_read, snap_info, no_mass_block)
 
             filename = snap_base * ".0"
-            h = head_to_obj(filename)
+            h = read_header(filename)
 
             @warn "Brute-force reading $(h.num_files) files! This may take a while!"
 

@@ -10,7 +10,7 @@ function snap_to_dict(filename::String, try_info::Bool=true)
 
         data["Header"] = head_to_dict(filename)
 
-        h = head_to_obj(filename)
+        h = read_header(filename)
 
         if data["Header"]["snap_format"] == 2
 

@@ -33,7 +33,7 @@ function read_block(filename::String, blockname::String;
 
     if isnothing(h)
         # read header - super fast and needed for flexibility
-        h = head_to_obj(filename)
+        h = read_header(filename)
     end
 
     # check if particle type is present
@@ -132,7 +132,7 @@ function read_block_subsnaps(filebase::String, blockname::String;
 
     if isnothing(h)
         # read header - super fast and needed for flexibility
-        h = head_to_obj(filebase * ".0")
+        h = read_header(filebase * ".0")
     end
 
     # check if info is present
