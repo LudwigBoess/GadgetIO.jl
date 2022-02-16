@@ -250,6 +250,31 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             prop2 = read_halo_prop("sub_002", haloid, "MTOP")
 
             @test prop2 == prop
+
+
+            mtop = read_subfind("sub_002", "MTOP")
+            mtop2, haloids = read_subfind("sub_002", "MTOP"; return_haloid=true)
+            @test mtop == mtop2
+            @test read_halo_prop("sub_002", haloids[end-4], "MTOP") == mtop[end-4]
+
+            ids = [0, 10, length(haloids) - 3]
+            @test read_subfind("sub_002", "MTOP", ids) == mtop[ids.+1]
+
+            mtop_from_ids, haloids_from_ids = read_subfind("sub_002", "MTOP", ids; return_haloid=true)
+            @test read_subfind("sub_002", "MTOP", ids) == mtop_from_ids
+            @test haloids_from_ids == haloids[ids.+1]
+
+            pos = read_subfind("sub_002", "SPOS")
+            pos2, haloids = read_subfind("sub_002", "SPOS"; return_haloid=true)
+            @test pos == pos2
+            @test read_halo_prop("sub_002", haloids[end-4], "SPOS") == pos[:,end-4]
+
+            ids = [0, 10, length(haloids) - 3]
+            @test read_subfind("sub_002", "SPOS", ids) == pos[:,ids.+1]
+
+            pos_from_ids, haloids_from_ids = read_subfind("sub_002", "SPOS", ids; return_haloid=true)
+            @test read_subfind("sub_002", "SPOS", ids) == pos_from_ids
+            @test haloids_from_ids == haloids[ids.+1]
         end
 
         @testset "Error handling" begin
