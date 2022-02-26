@@ -18,11 +18,13 @@ function read_block(filename::String, blockname::String;
                     block_position::Integer=-1,
                     info::Union{Nothing,InfoLine}=nothing,
                     h::Union{Nothing,SnapshotHeader}=nothing,
+                    return_haloid::Bool=false,
+                    thisfilenum::Integer=0,
                     offset=0, nread=-1)
 
     # the file is actually a filebase -> return concatenated arrays
     if !isfile(filename)
-        return read_block_subsnaps(filename, blockname; parttype, info, h)
+        return read_block_subsnaps(filename, blockname; parttype, info, h, return_haloid)
     end
 
     # we need to know which particle to read
@@ -66,6 +68,15 @@ function read_block(filename::String, blockname::String;
         end
     end
 
+    # allocate and fill HaloID array
+    if return_haloid
+        haloids = Vector{HaloID}(undef, h.npart[parttype+1])
+
+        for j = 1:h.npart[parttype+1]
+            haloids[j] = HaloID(thisfilenum, j)
+        end
+    end
+
 
     f = open(filename)
 
@@ -79,7 +90,11 @@ function read_block(filename::String, blockname::String;
                 skip(f, sizeof(info.data_type)*info.n_dim*offset)
                 block = read_block_data(f, info.data_type, info.n_dim, nread)
                 close(f)
-                return block
+                if return_haloid
+                    return block, haloids
+                else
+                    return block
+                end
             else
                 seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
             end # if i == (parttype+1)
@@ -226,7 +241,8 @@ julia> gas_pos = read_block(filename, "POS", info=pos_info, parttype=0)
 function read_block_subsnaps(filebase::String, blockname::String;
                              parttype::Integer=-1,
                              info::Union{Nothing,InfoLine}=nothing,
-                             h::Union{Nothing,SnapshotHeader}=nothing)
+                             h::Union{Nothing,SnapshotHeader}=nothing,
+                             return_haloid::Bool=false)
 
     # the file is actually a filebase -> return concatenated arrays
     if !isfile(filebase * ".0")
@@ -247,13 +263,13 @@ function read_block_subsnaps(filebase::String, blockname::String;
     if isnothing(info)
         info = check_info(filebase * ".0", blockname)
     end
-    #
+
     # check if particle type is present
     if h.nall[parttype+1] == UInt32(0)
         error("Particle Type $parttype not present in simulation!")
     end
 
-    return read_subsnaps(filebase, blockname, parttype, info, h)
+    return read_subsnaps(filebase, blockname, parttype, info, h; return_haloid)
 
 end
 
@@ -264,13 +280,18 @@ end
 Reads a block over distributed files and returns it in one large Array.
 """
 function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
-                          info::InfoLine, h_global::SnapshotHeader)
+                          info::InfoLine, h_global::SnapshotHeader; return_haloid::Bool=false)
 
     # allocate empty array for block
     if info.n_dim > 1
         block = Array{info.data_type,2}(undef, ( info.n_dim, h_global.nall[parttype+1] ))
     else
         block = Array{info.data_type,1}(undef, h_global.nall[parttype+1])
+    end
+
+    # allocate HaloID array
+    if return_haloid
+        haloids = Vector{HaloID}(undef, h_global.nall[parttype+1])
     end
 
     # store number of particles that have been read
@@ -300,11 +321,22 @@ function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
             read_block!(@view(block[(N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         end
 
+        # fill haloids array
+        if return_haloid
+            for j = 1:N_to_read
+                haloids[N_read + j] = HaloID(i, j)
+            end
+        end
+
         # update number of read particles
         N_read += N_to_read
     end
 
-    return block
+    if return_haloid
+        return block, haloids
+    else
+        return block
+    end
 end
 
 
