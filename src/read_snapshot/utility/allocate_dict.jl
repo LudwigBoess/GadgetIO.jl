@@ -1,4 +1,25 @@
 """
+    get_requested_info(snap_info::Array{InfoLine}, block::AbstractString)
+
+Checks if the `InfoLine` is present for the requested block, or if the `MASS` block is requested, but not in the `INFO` block. 
+"""
+function get_requested_info(snap_info::Array{InfoLine}, block::AbstractString)
+
+     # read the info ot the curent block
+     if !isempty(snap_info[getfield.(snap_info, :block_name) .== block])
+        return snap_info[getfield.(snap_info, :block_name) .== block][1]
+    else
+        if block == "MASS"
+            # ! TODO: more stable form of this!
+            return InfoLine("MASS", Float32, 1, [1, 1, 1, 1, 1, 1])
+        else
+            error("INFO missing for requested block: $block !")
+        end
+    end
+
+end
+
+"""
     allocate_data_dict( blocks::Array{String}, N_to_read::Integer, 
                         snap_info::Array{InfoLine}, no_mass_block::Bool )
 
@@ -11,18 +32,14 @@ function allocate_data_dict(blocks::Array{String}, N_to_read::Integer,
     d = Dict{String, VecOrMat{T} where T}()
 
     for block ∈ blocks
-        dim   = snap_info[getfield.(snap_info, :block_name) .== block][1].n_dim
-        dtype = snap_info[getfield.(snap_info, :block_name) .== block][1].data_type
-        if dim == 1
-            d[block] = Vector{dtype}(undef, N_to_read)
+        
+        block_info = get_requested_info(snap_info, block)
+
+        if block_info.n_dim == 1
+            d[block] = Vector{block_info.data_type}(undef, N_to_read)
         else
-            d[block] = Matrix{dtype}(undef, dim, N_to_read)
+            d[block] = Matrix{block_info.data_type}(undef, block_info.n_dim, N_to_read)
         end
-    end
-    
-    # allocate mass array, if it's not in a block
-    if no_mass_block
-        d["MASS"] = Vector{Float32}(undef, N_to_read)
     end
 
     return d
