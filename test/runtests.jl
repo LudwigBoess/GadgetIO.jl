@@ -320,6 +320,9 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         @test GadgetIO.shift_across_box_border(1, 2, boxsize, boxsize_half) == 1
         @test GadgetIO.shift_across_box_border(8, 2, boxsize, boxsize_half) == -2
         @test GadgetIO.shift_across_box_border(2, 8, boxsize, boxsize_half) == 12
+
+        h = read_header(filename)
+        @test get_total_particles(h, 0) == 125000
     end
 
     @testset "Peano-Hilbert" begin

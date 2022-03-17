@@ -109,8 +109,7 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
         # read the blocks
         @threads for block ∈ blocks
 
-            # read the info ot the curent block
-            block_info = snap_info[getfield.(snap_info, :block_name) .== block][1]
+            block_info = get_requested_info(snap_info, block)
 
             # add offset of particle types that should not be read
             offset = 0

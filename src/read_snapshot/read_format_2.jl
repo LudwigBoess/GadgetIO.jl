@@ -36,8 +36,9 @@ function read_block(filename::String, blockname::String;
         h = read_header(filename)
     end
 
+
     # check if particle type is present
-    if h.nall[parttype+1] == UInt32(0)
+    if iszero(get_total_particles(h, parttype))
         error("Particle Type $parttype not present in simulation!")
     end
 

@@ -139,7 +139,7 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
 
     if verbose
         t2 = time_ns()
-        N_all = Int64(h.nall[parttype+1])
+        N_all = Int64(get_total_particles(h, parttype))
         N_per = N_part / N_all * 100.0
         @info "Need to read $N_part / $N_all particles -> $(@sprintf("%0.2f", N_per)) %"
         @info "  elapsed: $(output_time(t1,t2)) s"
