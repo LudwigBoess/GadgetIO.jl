@@ -55,7 +55,6 @@ module GadgetIO
             read_block,      # similar to readnew.pro by Klaus Dolag
             read_header,
 
-
             # large simulations
             read_particles_in_box,
             read_particles_in_volume,
@@ -68,6 +67,7 @@ module GadgetIO
             find_read_positions,
             save_read_positions,
             load_read_positions,
+            get_total_particles,
 
             # geometries
             AbstractGadgetGeometry,
