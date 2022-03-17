@@ -20,7 +20,7 @@ end
 
 Returns the center of `cylinder`.
 """
-get_geometry_center(cylinder::GadgetCylinder) = 1 // 2 .* cylinder.pos_start .+ cylinder.pos_end
+get_geometry_center(cylinder::GadgetCylinder) = 1 // 2 .* (cylinder.pos_start .+ cylinder.pos_end)
 
 """
     get_geometry_box_corners(cylinder::GadgetCylinder)
