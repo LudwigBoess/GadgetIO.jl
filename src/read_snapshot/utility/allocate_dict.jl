@@ -42,5 +42,9 @@ function allocate_data_dict(blocks::Array{String}, N_to_read::Integer,
         end
     end
 
+    if no_mass_block
+        d["MASS"] = Vector{Float32}(undef, N_to_read)
+    end
+
     return d
 end
