@@ -40,7 +40,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         # try reading the first of the distributed snapshots
         filename = select_file(filebase, 0)
 
-        h = head_to_obj(filename)
+        h = read_header(filename)
 
         if verbose
             @info "$(h.num_files) sub-files found."
@@ -49,7 +49,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         nfiles = h.num_files
     else
         nfiles = 1
-        h = head_to_obj(filename)
+        h = read_header(filename)
     end
 
     blocks, no_mass_block = check_blocks(filename, blocks)
