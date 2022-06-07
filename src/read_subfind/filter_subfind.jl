@@ -1,3 +1,5 @@
+using ProgressMeter
+
 """
     find_most_massive_halo(filebase::String [, nfiles::Int=1])
 
@@ -74,7 +76,7 @@ function filter_subfind(filebase::String, blockname::String, filter_function::Fu
     A = Vector{HaloID}(undef, 0)
 
     # loop over all files in parallel
-    @threads for i = 0:nfiles-1
+    @showprogress for i = 0:nfiles-1
 
         # find correct input file
         sub_input = select_file(filebase, i)
@@ -107,7 +109,7 @@ end
 
 
 """
-    filter_subfind(filebase::String, blockname::String, filter_function::Function [, nfiles::Integer=1])
+    filter_subfind(filebase::String, filter_function::Function [, nfiles::Integer=1])
 
 Selects entries in subfind block that fulfill the 'filter_funcion' requirements and
 returns a 'SubfindFilter' object.
@@ -127,7 +129,7 @@ function filter_subfind(filebase::String, filter_function::Function, nfiles::Int
     A = Vector{HaloID}(undef, 0)
 
     # loop over all files in parallel
-    @threads for i = 0:nfiles-1
+    @showprogress for i = 0:nfiles-1
 
         # find correct input file
         sub_input = select_file(filebase, i)
