@@ -27,7 +27,7 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
         filename = select_file(filebase, files[i])
 
         # read header and key info of the file
-        h = head_to_obj(filename)
+        h = read_header(filename)
         key_info  = read_info(filename * ".key")
 
         if h.npart[parttype+1] == 0
