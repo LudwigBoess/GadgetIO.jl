@@ -12,6 +12,12 @@ struct GadgetCube{T} <: AbstractGadgetGeometry
     corner_upper_right::Vector{T}
 end
 
+"""
+    GadgetCube(center::Vector{T}, side_length::T) where T
+
+Define a `GadgetCube` by its center and side length. 
+"""
+GadgetCube(center::Vector{T}, side_length::T) where T = GadgetCube(center .- side_length/2, center .+ side_length/2)
 
 """
     get_geometry_box_corners(cube::GadgetCube)
