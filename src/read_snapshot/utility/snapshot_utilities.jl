@@ -8,10 +8,10 @@ function check_blocksize(f::IOStream, position_before::Integer, blocksize_before
     seek(f,position_before+blocksize_before+12)
     blocksize_after = read(f,UInt32)
 
-    # of the numbers are the same everything works as it should
+    # if the numbers are the same everything works as it should
     if blocksize_before == blocksize_after
         return blocksize_before
-    else
+    else # compensate for integer overflow
         blocksize_before_fix = blocksize_before + 4294967296
         seek(f,position_before+blocksize_before_fix+12) 
         blocksize_after_fix = read(f,UInt32) + 4294967296
