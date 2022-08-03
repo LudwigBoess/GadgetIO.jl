@@ -19,12 +19,17 @@ end
 
 Helper function to return the correct filtered arrays.
 """
-function read_filtered(snap_file, blockname, parttype, block_position, matched)
-    data = read_block(snap_file, blockname, parttype=parttype, block_position=block_position)
+function read_filtered(snap_file, blockname, parttype, block_position, matched; postmatched=nothing)
+    data = read_block_prefiltered(snap_file, blockname, matched; parttype, block_position)
+    if isnothing(postmatched)
+        # read_block_prefiltered only reads elements between first and last of matched (matched is already sorted),
+        # so the indices of matched have to be corrected downwards according to its first element
+        postmatched = matched .- (first(matched) - 1)
+    end
     if size(data,2) > 1
-        return data[:,matched]
+        return data[:,postmatched]
     else
-        return data[matched]
+        return data[postmatched]
     end
 end
 
@@ -54,11 +59,19 @@ function read_particles_by_id_single_file(snap_file::String, halo_ids::Array{<:I
         @info "Found $(size(matched,1)) matches. Took: $(t2 - t1)"
     end
 
+    if length(matched) == 0
+        return nothing
+    end
+
+    # read_filtered internally only reads elements between first and last of matched (matched is already sorted),
+    # so the indices of matched have to be corrected downwards according to its first element
+    postmatched = matched .- (first(matched) - 1)
+
     # store block positions for faster read-in
     block_positions = get_block_positions(snap_file)
 
     # read the data blocks whole, but only store relevant entries
-    return Dict(blocks[i] => read_filtered(snap_file, blocks[i], parttype, block_positions[blocks[i]], matched) 
+    return Dict(blocks[i] => read_filtered(snap_file, blocks[i], parttype, block_positions[blocks[i]], matched; postmatched) 
                 for i = 1:size(blocks,1))
 
 end
@@ -181,6 +194,10 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 # read data from file
                 data_file = read_particles_by_id_single_file(filename, selected_ids, blocks, parttype, verbose=verbose)
 
+                if isnothing(data_file)
+                    continue
+                end
+
                 N_this_file = size(data_file["ID"],1)
 
                 # write into master dict
@@ -196,6 +213,9 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
                 # update number of read particles
                 N_read += N_this_file
 
+                if N_read == N_to_read
+                    break
+                end
             end
 
             # reduce array size

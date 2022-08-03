@@ -49,9 +49,6 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
                 offset_remaining -= sub_header.nfof
                 continue
             else
-                # find starting position for read-in
-                start_pos = offset_remaining + 1
-                
                 # number of particles remaining to be read
                 if ( sub_header.nfof - offset_remaining < N_ids - ids_read )
                     n_to_read = sub_header.nfof - offset_remaining
@@ -59,7 +56,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
                     n_to_read = N_ids - ids_read
                 end
 
-                ids[ids_read+1:ids_read+n_to_read] = read_subfind(sub_file, "PID")[start_pos:start_pos+n_to_read-1]
+                read_subfind!(@view(ids[(ids_read+1):(ids_read+n_to_read)]), sub_file, "PID"; offset=offset_remaining)
 
                 # update number of IDs alrady read
                 ids_read += n_to_read
@@ -72,9 +69,8 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
 
         return ids
     else # they can be read from one file
-        # position of first ID in array
-        start_pos = offset + 1
-        return read_subfind(sub_file, "PID")[start_pos:start_pos+N_ids-1]
+        ids = Vector{pid_info.data_type}(undef, N_ids)
+        return read_subfind!(ids, sub_file, "PID"; offset)
     end
 end
 

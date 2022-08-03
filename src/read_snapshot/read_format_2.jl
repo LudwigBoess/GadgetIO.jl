@@ -19,7 +19,8 @@ function read_block(filename::String, blockname::String;
                     info::Union{Nothing,InfoLine}=nothing,
                     h::Union{Nothing,SnapshotHeader}=nothing,
                     return_haloid::Bool=false,
-                    thisfilenum::Integer=0)
+                    thisfilenum::Integer=0,
+                    offset=0, nread=-1)
 
     # the file is actually a filebase -> return concatenated arrays
     if !isfile(filename)
@@ -47,6 +48,10 @@ function read_block(filename::String, blockname::String;
         info = check_info(filename, blockname)
     end
 
+    if nread == -1
+        nread = h.npart[parttype+1]
+    end
+
     # check if a block position is supplied
     if block_position == -1
 
@@ -55,7 +60,7 @@ function read_block(filename::String, blockname::String;
         if block_position == -1 || (info.is_present[parttype+1] == 0)
             # if no mass block is present we can read it from the header
             if blockname == "MASS"
-                block = Array{info.data_type,1}(undef, h.npart[parttype+1])
+                block = Array{info.data_type,1}(undef, nread)
                 block .= h.massarr[parttype+1]
                 return block
             else
@@ -83,13 +88,132 @@ function read_block(filename::String, blockname::String;
 
         if info.is_present[i] == Int32(1)
             if i == (parttype+1)
-                block = read_block_data(f, info.data_type, info.n_dim, h.npart[i])
+                skip(f, sizeof(info.data_type)*info.n_dim*offset)
+                block = read_block_data(f, info.data_type, info.n_dim, nread)
                 close(f)
                 if return_haloid
                     return block, haloids
                 else
                     return block
                 end
+            else
+                seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
+            end # if i == (parttype+1)
+        end # info.is_present[i] == Int32(1)
+    end # i ∈ 1:size(info.is_present,1)
+
+    close(f)
+
+end
+
+function read_block!(a::AbstractArray, filename::String, blockname::String;
+                    parttype::Integer=-1,
+                    block_position::Integer=-1,
+                    info::Union{Nothing,InfoLine}=nothing,
+                    h::Union{Nothing,SnapshotHeader}=nothing,
+                    offset=0)
+    # check if a block position is supplied
+    if block_position == -1
+
+        block_position = check_block_position(filename, blockname)
+
+        if block_position == -1 || (info.is_present[parttype+1] == 0)
+            # if no mass block is present we can read it from the header
+            if blockname == "MASS"
+                block = Vector{info.data_type}(undef, length(a))
+                block .= h.massarr[parttype+1]
+                return block
+            else
+                error("Block $blockname not present for particle type $parttype !")
+            end
+        end
+    end
+
+
+    f = open(filename)
+
+    seek(f,block_position)
+
+    for i ∈ 1:size(info.is_present,1)
+        p = position(f)
+
+        if info.is_present[i] == 1
+            if i == (parttype+1)
+                skip(f, sizeof(info.data_type) * info.n_dim * offset)
+                read_block_data!(a, f, info.data_type, info.n_dim, -1) # need to remove excess parameters
+                close(f)
+                return a
+            else
+                seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
+            end # if i == (parttype+1)
+        end # info.is_present[i] == Int32(1)
+    end # i ∈ 1:size(info.is_present,1)
+
+    close(f)
+
+end
+
+function read_block_prefiltered(filename::String, blockname::String, matched;
+                    parttype::Integer=-1,
+                    block_position::Integer=-1,
+                    info::Union{Nothing,InfoLine}=nothing,
+                    h::Union{Nothing,SnapshotHeader}=nothing)
+
+    # the file is actually a filebase -> return concatenated arrays
+    if !isfile(filename)
+        return read_block_subsnaps(filename, blockname; parttype, info, h)
+    end
+
+    # we need to know which particle to read
+    if parttype == -1
+        error("Please specify particle type!")
+    end
+
+    if isnothing(h)
+        # read header - super fast and needed for flexibility
+        h = head_to_obj(filename)
+    end
+
+    # check if particle type is present
+    if h.nall[parttype+1] == UInt32(0)
+        error("Particle Type $parttype not present in simulation!")
+    end
+
+    # check if info is present
+    if isnothing(info)
+        info = check_info(filename, blockname)
+    end
+
+    # check if a block position is supplied
+    if block_position == -1
+
+        block_position = check_block_position(filename, blockname)
+
+        if block_position == -1 || (info.is_present[parttype+1] == 0)
+            # if no mass block is present we can read it from the header
+            if blockname == "MASS"
+                block = Array{info.data_type,1}(undef, length(matched))
+                block .= h.massarr[parttype+1]
+                return block
+            else
+                error("Block $blockname not present for particle type $parttype !")
+            end
+        end
+    end
+
+
+    f = open(filename)
+
+    seek(f,block_position)
+
+    for i ∈ 1:size(info.is_present,1)
+        p = position(f)
+
+        if info.is_present[i] == Int32(1)
+            if i == (parttype+1)
+                block = read_block_data_prefiltered(f, info.data_type, info.n_dim, matched)
+                close(f)
+                return block
             else
                 seek(f, p + ( sizeof(info.data_type)*info.n_dim*h.npart[i] ))
             end # if i == (parttype+1)
@@ -141,6 +265,11 @@ function read_block_subsnaps(filebase::String, blockname::String;
         info = check_info(filebase * ".0", blockname)
     end
 
+    # check if particle type is present
+    if h.nall[parttype+1] == UInt32(0)
+        error("Particle Type $parttype not present in simulation!")
+    end
+
     return read_subsnaps(filebase, blockname, parttype, info, h; return_haloid)
 
 end
@@ -188,11 +317,9 @@ function read_subsnaps(filebase::String, blockname::String, parttype::Integer,
 
         # read the block (info has to be read individually for each file)
         if info.n_dim > 1
-            block[:, N_read+1:N_read+N_to_read] = read_block(filename, blockname;
-                                                            parttype, info, h)
+            read_block!(@view(block[:, (N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         else
-            block[N_read+1:N_read+N_to_read]    = read_block(filename, blockname;
-                                                            parttype, info, h)
+            read_block!(@view(block[(N_read+1):(N_read+N_to_read)]), filename, blockname; parttype, info, h)
         end
 
         # fill haloids array
@@ -227,6 +354,25 @@ function read_block_data(f::IOStream, data_type::DataType, n_dim::Integer, npart
     else
         read!(f, Array{data_type,1}(undef, npart))
     end
+end
+
+function read_block_data!(a::AbstractArray, f::IOStream, data_type::DataType, n_dim::Integer, npart::Integer)
+    read!(f, a)
+end
+
+function read_block_data_prefiltered(f::IOStream, data_type::DataType, n_dim::Integer, matched)
+    firstind = first(matched)
+    lastind = last(matched)
+
+    if n_dim > 1
+        a = Matrix{data_type}(undef, n_dim, lastind - firstind + 1)
+    else
+        a = Vector{data_type}(undef, lastind - firstind + 1)
+    end
+
+    skip(f, sizeof(data_type) * n_dim * (firstind - 1))
+
+    return read!(f, a)
 end
 
 """
@@ -315,10 +461,11 @@ function read_block_with_offset!(data, n_read::Integer, filename::String, pos0::
         seek(f, p + len*offset_key[i])
         n_this_key += part_per_key[i]
 
+        # note the Int(...) are necessary to enable the reading into the SubArray returned by @view
         if info.n_dim == 1
-            data[n_read+1:n_this_key]    = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
+            read_block_data!(@view(data[Int(n_read+1):Int(n_this_key)]), f, info.data_type, info.n_dim, part_per_key[i])
         else
-            data[:, n_read+1:n_this_key] = read_block_data(f, info.data_type, info.n_dim, part_per_key[i])
+            read_block_data!(@view(data[:, Int(n_read+1):Int(n_this_key)]), f, info.data_type, info.n_dim, part_per_key[i])
         end
 
         n_read += part_per_key[i]
