@@ -10,6 +10,8 @@ This package is a subproject of [GadJet.jl](https://github.com/LudwigBoess/GadJe
 It is taylored for working with the development version of P-Gadget3, specifically OpenGadget3 developed by Klaus Dolag. Development is focused on IO for Binary Format 2.
 A lot of the routines are based on IDL scripts by [Klaus Dolag](https://www.usm.uni-muenchen.de/~dolag/) (not public).
 
+If you use `GadgetIO.jl` in your publications please cite [Böss & Valenzuela](https://zenodo.org/badge/latestdoi/270966661).
+
 Please see the [Documentation](https://ludwigboess.github.io/GadgetIO.jl/dev/) for details.
 
 Quickstart
