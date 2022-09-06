@@ -1,0 +1,20 @@
+{
+    "license": "MIT", 
+    "upload_type": "software",
+    "keywords": [ "astrophysics", "cosmology", "simulations", "SPH" ],
+    "language": "eng",
+    "creators": [
+        {
+            "affiliation": "Universitäts-Sternwarte, Fakultät für Physik, Ludwig-Maximilians-Universität München, Scheinerstr.1, 81679 München, Germany", 
+            "name": "Ludwig M. Böss",
+            "orcid": "https://orcid.org/0000-0003-4690-2774"
+        },
+        {
+            "affiliation": "Universitäts-Sternwarte, Fakultät für Physik, Ludwig-Maximilians-Universität München, Scheinerstr.1, 81679 München, Germany", 
+            "name": "Lucas M. Valenzuela",
+            "orcid": "https://orcid.org/0000-0002-7972-9675"
+        }
+    ],
+    "access_right": "open",
+    "notes" : "Supported by: Germanys Excellence Strategy – EXC-2094 – 390783311 & The COMPLEX project from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation program grant agreement ERC-2019-AdG 860744"
+}
