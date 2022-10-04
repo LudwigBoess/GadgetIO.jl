@@ -180,7 +180,7 @@ end
     get_index_list(list_to_find::Vector{<:Integer}, list_to_check::Vector{<:Integer})
 
 Finds the indices at which `list_to_check` contains elements from `list_to_find`.
-If both either of the lists are not sorted it uses a `Dict` lookup, otherwise it uses a `Vector` forward-search.
+If both either of the lists are not sorted it uses a `Set` lookup, otherwise it uses a `Vector` forward-search.
 """
 function get_index_list(list_to_find::Vector{<:Integer}, list_to_check::Vector{<:Integer})
 
@@ -188,7 +188,7 @@ function get_index_list(list_to_find::Vector{<:Integer}, list_to_check::Vector{<
     if ( issorted(list_to_find) && issorted(list_to_check) )
         return get_index_list_arr(list_to_find, list_to_check)
     else
-        return get_index_list_set(list_to_find, list_to_check)
+        return get_index_list_dict(list_to_find, list_to_check)
     end
 end
 
