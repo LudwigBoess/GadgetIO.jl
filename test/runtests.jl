@@ -415,26 +415,26 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
     @testset "Find Index Locations" begin
 
         # create find and check arrays
-        list_to_find = [2, 56, 354, 254, 653, 452, 7523, 45, 42, 742, 5423, 942, 105, 425, 815, 7821]
-        list_to_check = [523, 9, 254, 653, 452, 2, 923, 815, 7821, 742, 354, 543, 942, 15, 25]
+        list_to_find = [1, 29, 12]
+        list_to_check = [12, 1, 18, 19, 29]
 
         # create sorted versions for forward search
         list_to_find_sorted = sort(list_to_find)
         list_to_check_sorted = sort(list_to_check)
 
         # correct indices of unsorted and sorted arrays
-        indices = [3, 4, 5, 6, 8, 9, 10, 11, 13]
-        indices_sorted = [1, 5, 6, 7, 10, 11, 12, 14, 15]
+        indices = [2, 5, 1]
+        indices_sorted = [1, 2, 5]
 
         # check methods
         @test issetequal(GadgetIO.get_index_list_arr(list_to_find_sorted, list_to_check_sorted), indices_sorted)
         @test issetequal(GadgetIO.get_index_list_dict(list_to_find, list_to_check), indices)
         @test issetequal(GadgetIO.get_index_list_dict(list_to_find_sorted, list_to_check_sorted), indices_sorted)
-        @test issetequal(GadgetIO.get_index_list_set(list_to_find, list_to_check), indices)
+        @test issetequal(GadgetIO.get_index_list_set(list_to_find, list_to_check), indices_sorted)
         @test issetequal(GadgetIO.get_index_list_set(list_to_find_sorted, list_to_check_sorted), indices_sorted)
 
         # check that right methods are called
-        @test get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
+        @test get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_dict(list_to_check, list_to_find)
         @test get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
     end
 
@@ -469,4 +469,3 @@ rm("snap_144.3.key")
 rm("snap_144.key.index")
 
 @info "done!"
-
