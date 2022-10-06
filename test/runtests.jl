@@ -298,7 +298,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         @test present == false
 
         blocks = ["POS", "VEL", "MASS"]
-        blocks_checked, no_mass_block = GadgetIO.check_blocks(ref_file, blocks)
+        blocks_checked, no_mass_block = GadgetIO.check_blocks(ref_file, blocks, 0)
 
         @test blocks_checked == ["POS", "VEL"]
         @test no_mass_block == true
