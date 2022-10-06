@@ -118,19 +118,26 @@ end
 
 Check if all requested blocks are present.
 """
-function check_blocks(filename::String, blocks::Array{String})
+function check_blocks(filename::String, blocks::Array{String}, parttype::Integer)
 
     # check if requested blocks are present
     no_mass_block = false
     blocks_in_file = print_blocks(filename, verbose=false)
-    for blockname in blocks
+    # read info block
+    snap_info = read_info(filename)
+
+    for blockname ∈ blocks
         if !block_present(filename, blockname, blocks_in_file)
             if blockname == "MASS"
-
                 no_mass_block = true
                 deleteat!(blocks, findfirst(blocks .== "MASS"))
             else
                 error("Block $blockname not present!")
+            end
+        else
+            if blockname == "MASS" && iszero(snap_info[getfield.(snap_info, :block_name) .== "MASS"][1].is_present[parttype+1])
+                no_mass_block = true
+                deleteat!(blocks, findfirst(blocks .== "MASS"))
             end
         end
     end

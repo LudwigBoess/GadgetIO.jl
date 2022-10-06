@@ -28,7 +28,6 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
     end
 
     filebase = filename
-    file_key_index = filebase * ".key.index"
 
     # if the snapshot does not exist it may be split into multiple files
     if !isfile(filebase)
@@ -52,13 +51,14 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         h = read_header(filename)
     end
 
-    blocks, no_mass_block = check_blocks(filename, blocks)
+    blocks, no_mass_block = check_blocks(filename, blocks, parttype)
 
     # read info blocks once here
     snap_info = read_info(filename)
     key_info  = read_info(filename * ".key")
 
     if verbose
+        println("Mass Block present: $no_mass_block")
         @info "All requested blocks present!"
         @info "Checking for .key files..."
     end
