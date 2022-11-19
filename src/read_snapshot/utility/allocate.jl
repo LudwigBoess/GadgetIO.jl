@@ -48,3 +48,16 @@ function allocate_data_dict(blocks::Array{String}, N_to_read::Integer,
 
     return d
 end
+
+
+function allocate_data_array(info::InfoLine, N_to_read::Integer)
+
+    if info.n_dim == 1
+        return Vector{info.data_type}(undef, N_to_read)
+    else
+        return Matrix{info.data_type}(undef, info.n_dim, N_to_read)
+    end
+end
+
+
+

@@ -14,7 +14,7 @@ function filter_cube(snap_file::String, corner_lowerleft::Array{<:Real}, corner_
     end
 
     # read positions from file
-    pos = read_snap(snap_file, "POS", parttype)
+    pos = read_block(snap_file, "POS"; parttype)
 
     # double check if the corners are set correctly
     cube_lower = Array{eltype(corner_lowerleft[1]),1}(undef, 3)
@@ -53,7 +53,7 @@ function filter_cylinder(filename::String, pt1::Array{<:Real}, pt2::Array{<:Real
     if size(in_cube,1) > 0
         check_in_cylinder_helper(x) = check_in_cylinder(x, pt1, pt2, r)
         # read positions from file
-        pos = read_snap(filename, "POS", parttype)
+        pos = read_block(snap_file, "POS"; parttype)
 
         pos_cylinder = @views pos[:, in_cube]
         is_in_cylinder = mapslices(check_in_cylinder_helper, pos_cylinder, dims=1)

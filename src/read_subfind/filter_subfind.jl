@@ -151,3 +151,42 @@ function filter_subfind(filebase::String, filter_function::Function, nfiles::Int
 end
 
 
+"""
+    halo_ids_to_read_positions(halo_ids::Vector{HaloID})
+
+Convert a `Vector` of `HaloID`s to a dictionary of `read_positions` to be used with [`read_distributed_files`](@ref).
+"""
+function halo_ids_to_read_positions(halo_ids::Vector{HaloID})
+
+    # number of halos that fulfill the filter criteria
+    N_halos = 0
+
+    # allocate dict to store IDs per file
+    store_arrays = Dict()
+
+    # loop over all halo ids
+    for halo_id ∈ halo_ids
+        # if the file has not been listed yet -> add it to the dict
+        if !haskey(store_arrays, halo_id.file)
+            store_arrays[halo_id.file] = Vector{Int64}(undef, 0)
+        end
+
+        push!(store_arrays[halo_id.file], halo_id.id)
+
+        # count total halos
+        N_halos += 1
+    end
+
+    # allocate read_positions dict
+    read_positions = Dict()
+
+    # loop over file entries
+    for file ∈ keys(store_arrays)
+        # reduce neighboring block postions
+        read_positions[file] = reduce_read_positions(store_arrays[file])
+    end
+
+    read_positions["N_part"] = N_halos
+
+    return read_positions
+end
