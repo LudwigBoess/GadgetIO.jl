@@ -17,14 +17,20 @@ module GadgetIO
     include(joinpath("read_snapshot", "utility", "domain_slices.jl"))
     include(joinpath("read_snapshot", "read_header.jl"))
     include(joinpath("read_snapshot", "read_info.jl"))
-    include(joinpath("read_snapshot", "utility", "allocate_dict.jl"))
+    include(joinpath("read_snapshot", "utility", "allocate.jl"))
     include(joinpath("read_snapshot", "utility", "snapshot_utilities.jl"))
+    include(joinpath("read_snapshot", "utility", "block_position.jl"))
+    include(joinpath("read_snapshot", "utility", "total_particles.jl"))
     include(joinpath("read_snapshot", "read_format_1.jl"))
     include(joinpath("read_snapshot", "read_format_2.jl"))
     include(joinpath("read_snapshot", "read_snapshot.jl"))
+
+    include(joinpath("read_subfind",  "read_header.jl"))
+    include(joinpath("read_subfind",  "halo_ids.jl"))
     include(joinpath("read_subfind",  "read_subfind.jl"))
     include(joinpath("read_subfind",  "read_halo_prop.jl"))
     include(joinpath("read_subfind",  "filter_subfind.jl"))
+
     include(joinpath("read_snapshot", "particles_in_box",  "read_key_files.jl"))
     include(joinpath("read_snapshot", "particles_in_box",  "peano_hilbert.jl"))
     include(joinpath("read_snapshot", "particles_in_box",  "utility.jl"))
@@ -64,7 +70,7 @@ module GadgetIO
             get_index_list,
             get_npart_to_read,
             filter_ids,
-            read_blocks_over_all_files,
+            read_blocks_filtered,
             find_read_positions,
             save_read_positions,
             load_read_positions,

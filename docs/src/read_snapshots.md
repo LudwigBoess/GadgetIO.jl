@@ -212,10 +212,10 @@ data["RHO"]  # array of densities
 
 ## Read distributed snapshotfiles
 
-If you want to read multiple blocks in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
+If you want to read multiple blocks in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_filtered`](@ref).
 
 ```julia
-read_blocks_over_all_files( snap_base::String, blocks::Array{String};
+read_blocks_filtered( snap_base::String, blocks::Array{String};
                             filter_function::Union{Function, Nothing}=nothing, 
                             read_positions::Union{Dict, Nothing}=nothing, 
                             parttype::Integer=0, verbose::Bool=true )
@@ -249,7 +249,7 @@ As an example, to read positions, velocity and ID of all shocked particles from 
 
 ```julia
 blocks = ["POS", "VEL", "ID"]
-data = read_blocks_over_all_files(snap_base, blocks, filter_function=mach_gt_1, parttype=0)
+data = read_blocks_filtered(snap_base, blocks, filter_function=mach_gt_1, parttype=0)
 ```
 
 Just as a reminder from above you can read single blocks into an array by using [`read_snap`](@ref) and [`read_block`](@ref):
@@ -294,7 +294,7 @@ This can then be used to read any number of blocks with
 
 ```julia
 blocks = ["POS", "VEL", "ID"]
-data = read_blocks_over_all_files(snap_base, blocks, read_positions=read_positions, parttype=0)
+data = read_blocks_filtered(snap_base, blocks, read_positions=read_positions, parttype=0)
 ```
 
 ## Reading particles by referenced ID

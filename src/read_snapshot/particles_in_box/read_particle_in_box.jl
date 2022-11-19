@@ -128,7 +128,7 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         t1 = Dates.now()
     end
 
-    n_read = 0
+    N_read = 0
 
     for i = 1:N_files
 
@@ -146,9 +146,11 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
         # read info block
         snap_info = read_info(filename)
 
+        # open filestream
+        f = open(filename, "r")
 
         # read blocks in parallel
-        @threads for j = 1:size(blocks,1)
+        for j = 1:size(blocks,1)
 
             block_info = snap_info[getfield.(snap_info, :block_name) .== blocks[j]][1]
 
@@ -161,17 +163,18 @@ function read_particles_in_box_peano(filename::String, blocks::Vector{String},
             end
 
             # reads data into the dictionary and counts up n_read
-            read_block_with_offset!(d[blocks[j]], n_read, filename, 
-                                    file_block_positions[i][blocks[j]],
-                                    block_info, offset, file_offset_key[i],
-                                    file_part_per_key[i])
+            read_block!(d[blocks[j]], f, file_offset_key[i], N_read, file_part_per_key[i],
+                        parttype=parttype, 
+                        block_position=file_block_positions[i][blocks[j]],
+                        info=block_info, h=h)
 
         end # loop over blocks
 
-        
-        n_read += sum(file_part_per_key[i])
+        close(f)
 
-        @info "Read $n_read / $N_to_read particles"
+        N_read += sum(file_part_per_key[i])
+
+        @info "Read $N_read / $N_to_read particles"
 
     end # for i = 1:size(files,1)
 
@@ -213,7 +216,7 @@ function read_particles_in_box(filename::String, blocks::Vector{String},
             @info "Brute-force read-in."
         end
         filter_function(snap_file) = filter_cube(snap_file, corner_lowerleft, corner_upperright, parttype=parttype)
-        d = read_blocks_over_all_files(filename, blocks, filter_function = filter_function, parttype = parttype, verbose = verbose )
+        d = read_blocks_filtered(filename, blocks, filter_function = filter_function, parttype = parttype, verbose = verbose )
     end
 
     return d

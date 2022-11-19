@@ -216,13 +216,3 @@ Shift coordinate `x` across the box border if the zero coordinate `x₀` is on t
     end
     return x
 end
-
-
-"""
-    get_total_particles(h::AbstractGadgetHeader, parttype::Integer)
-
-Calculates to total number of particles present in the simulation. Accounts for integer overflow.
-"""
-function get_total_particles(h::AbstractGadgetHeader, parttype::Integer)
-    h.npartTotalHighWord[parttype+1] * 2^32 + h.nall[parttype+1]
-end

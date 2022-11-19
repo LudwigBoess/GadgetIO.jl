@@ -26,11 +26,17 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
 
         filename = select_file(filebase, files[i])
 
-        # read header and key info of the file
+        # read header of the file
         h = read_header(filename)
-        key_info  = read_info(filename * ".key")
 
-        if h.npart[parttype+1] == 0
+        # read header of the keyfile
+        filename_keyfile = filename * ".key"
+        key_h     = read_header(filename_keyfile)
+
+        # overwrite number of files to re-use simple block reading
+        key_h.num_files = 1
+
+        if iszero(h.npart[parttype+1])
             @info "No particles of type $parttype in file $(i)!"
             # store the arrays for later reading
             file_offset_key[i]   = Int[]
@@ -39,8 +45,6 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
             continue
         end
 
-        filename_keyfile = filename * ".key"
-
         # Vector of field names (KEY, NKEY, OKEY)
         fields = getfield.(key_info, :block_name)
 
@@ -48,11 +52,28 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
         # - key file data
         # - number of particles associated with PH key
         # - offsets in the blocks to get to the relevant particles
-        keys_in_file, part_per_key, offset_key = read_key_block.(filename_keyfile,
-                                                                 (key_info,),
-                                                                 (fields,),
-                                                                 ["KEY", "NKEY", "OKEY"],
-                                                                 parttype)
+        # keys_in_file, part_per_key, offset_key = read_key_block.(filename_keyfile,
+        #                                                          (key_info,),
+        #                                                          (fields,),
+        #                                                          ["KEY", "NKEY", "OKEY"],
+        #                                                          parttype)
+
+        keys_in_file = read_block(filename_keyfile, "KEY", 
+                                   info = key_info[findfirst(==("KEY"), fields)],
+                                   h = key_h; 
+                                   parttype)
+
+        part_per_key = read_block(filename_keyfile, "NKEY", 
+                                   info = key_info[findfirst(==("NKEY"), fields)],
+                                   h = key_h;
+                                   parttype)
+
+
+        offset_key   = read_block(filename_keyfile, "OKEY", 
+                                   info = key_info[findfirst(==("OKEY"), fields)],
+                                   h = key_h; 
+                                   parttype)
+
 
         if verbose
             @info "Calculating index list..."
