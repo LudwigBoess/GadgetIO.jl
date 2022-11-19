@@ -16,7 +16,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
     # read info for PID datatype
     info = read_info(sub_file)
     pid_info = info[getfield.(info, :block_name) .== "PID"][1]
-
+    
     # if there are fewer IDs in the file than in the halo they are distributed over multiple files
     if (sub_header.nfof - offset) < N_ids
         
@@ -70,6 +70,14 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
 
                 # update number of IDs alrady read
                 ids_read += n_to_read
+
+                if offset_remaining > 0
+                    offset_remaining -= n_to_read
+                end 
+                
+                if offset_remaining <= 0
+                    offset_remaining = 0
+                end
 
                 # increase for next file read
                 files_read += 1

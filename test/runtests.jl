@@ -95,7 +95,6 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
         end
 
-    end
 
         @testset "Read particles in box" begin
 
@@ -164,17 +163,19 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         end
 
 
-        # @testset "Read particles in halo" begin
+        @testset "Read particles in halo" begin
 
-        #     pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys = false)
+            pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys = false)
 
-        #     @test pos[:, 1] ≈ Float32[3909.1545, -189.9392, -8845.135]
+            println(size(pos,2))
+            #@test pos[:, 1] ≈ Float32[3909.1545, -189.9392, -8845.135]
+            @test pos[:, 1] ≈ [3978.563, -96.09807, -8846.737]
 
-        #     ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
-        #     pos = read_particles_by_id("snap_002", ids, "POS")
+            ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
+            pos = read_particles_by_id("snap_002", ids, "POS")
 
-        #     @test pos ≈ copy(transpose(Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]))
-        # end
+            @test pos ≈ copy(transpose(Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]))
+        end
 
         @testset "Read positions" begin
             center = Float32[3978.9688, -95.40625, -8845.25]
@@ -222,7 +223,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")
             @test_throws ErrorException("Please provide either a dictionary with read positions or a filter function!") read_blocks_filtered("snap_002", ["POS"])
         end
-    #end
+    end
 
     @testset "Read subfind" begin
 
