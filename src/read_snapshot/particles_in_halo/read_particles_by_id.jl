@@ -44,7 +44,7 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
     filename = select_file(snap_base, 0)
 
     # check if blocks are present 
-    blocks, no_mass_block = check_blocks(filename, blocks)
+    blocks, no_mass_block = check_blocks(filename, blocks, parttype)
 
     # extend the list of blocks to read by ID block 
     blocks = [ blocks ; "ID" ]

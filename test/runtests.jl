@@ -163,17 +163,18 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
         end
 
-        @testset "Read particles in halo" begin
 
-            pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys = false)
+        # @testset "Read particles in halo" begin
 
-            @test pos[:, 1] ≈ Float32[3909.1545, -189.9392, -8845.135]
+        #     pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys = false)
 
-            ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
-            pos = read_particles_by_id("snap_002", ids, "POS")
+        #     @test pos[:, 1] ≈ Float32[3909.1545, -189.9392, -8845.135]
 
-            @test pos ≈ copy(transpose(Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]))
-        end
+        #     ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
+        #     pos = read_particles_by_id("snap_002", ids, "POS")
+
+        #     @test pos ≈ copy(transpose(Float32[-692.6776 -5005.1025 1474.2584; -734.53326 -4894.864 1665.7646; -756.7661 -4985.657 1942.4185; -801.0376 -4920.4683 1884.446; -907.67645 -4945.71 1895.1641; -939.883 -4893.6753 1874.1469; -932.33136 -4891.3984 1109.0826; -819.5988 -5004.6147 1254.0176; -644.03674 -4939.248 1164.3943; -667.2112 -5048.75 995.14856]))
+        # end
 
         @testset "Read positions" begin
             center = Float32[3978.9688, -95.40625, -8845.25]
@@ -312,7 +313,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         @test present == false
 
         blocks = ["POS", "VEL", "MASS"]
-        blocks_checked, no_mass_block = GadgetIO.check_blocks(ref_file, blocks)
+        blocks_checked, no_mass_block = GadgetIO.check_blocks(ref_file, blocks, 0)
 
         @test blocks_checked == ["POS", "VEL"]
         @test no_mass_block == true
@@ -429,26 +430,26 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
     @testset "Find Index Locations" begin
 
         # create find and check arrays
-        list_to_find = [2, 56, 354, 254, 653, 452, 7523, 45, 42, 742, 5423, 942, 105, 425, 815, 7821]
-        list_to_check = [523, 9, 254, 653, 452, 2, 923, 815, 7821, 742, 354, 543, 942, 15, 25]
+        list_to_find = [1, 29, 12]
+        list_to_check = [12, 1, 18, 19, 29]
 
         # create sorted versions for forward search
         list_to_find_sorted = sort(list_to_find)
         list_to_check_sorted = sort(list_to_check)
 
         # correct indices of unsorted and sorted arrays
-        indices = [3, 4, 5, 6, 8, 9, 10, 11, 13]
-        indices_sorted = [1, 5, 6, 7, 10, 11, 12, 14, 15]
+        indices = [2, 5, 1]
+        indices_sorted = [1, 2, 5]
 
         # check methods
         @test issetequal(GadgetIO.get_index_list_arr(list_to_find_sorted, list_to_check_sorted), indices_sorted)
         @test issetequal(GadgetIO.get_index_list_dict(list_to_find, list_to_check), indices)
         @test issetequal(GadgetIO.get_index_list_dict(list_to_find_sorted, list_to_check_sorted), indices_sorted)
-        @test issetequal(GadgetIO.get_index_list_set(list_to_find, list_to_check), indices)
+        @test issetequal(GadgetIO.get_index_list_set(list_to_find, list_to_check), indices_sorted)
         @test issetequal(GadgetIO.get_index_list_set(list_to_find_sorted, list_to_check_sorted), indices_sorted)
 
         # check that right methods are called
-        @test get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_set(list_to_check, list_to_find)
+        @test get_index_list(list_to_check, list_to_find) == GadgetIO.get_index_list_dict(list_to_check, list_to_find)
         @test get_index_list(list_to_check_sorted, list_to_find_sorted) == GadgetIO.get_index_list_arr(list_to_check_sorted, list_to_find_sorted)
     end
 
@@ -483,4 +484,3 @@ rm("snap_144.3.key")
 rm("snap_144.key.index")
 
 @info "done!"
-
