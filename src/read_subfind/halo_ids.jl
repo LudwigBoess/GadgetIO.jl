@@ -93,3 +93,112 @@ function global_idxs_to_halo_id(sub_base::String, offset::Integer, n_to_read::In
 
     return global_idxs_to_halo_id(sub_base, idxs; parttype)
 end
+
+
+
+"""
+    halo_ids_to_read_positions(halo_ids::Vector{HaloID})
+
+Convert a `Vector` of `HaloID`s to a dictionary of `read_positions`. 
+To be used with [read_block_filtered](@ref).
+"""
+function halo_ids_to_read_positions(halo_ids::Vector{HaloID})
+
+    # get all relevant files
+    files = unique(getfield.(halo_ids, :file))
+
+    # allocate dict to store IDs per file
+    store_arrays = Dict()
+
+    # loop over all halo ids
+    for file ∈ files
+        
+        # filter all HaloIDs in the current file
+        sel = findall(getfield.(halo_ids, :file) .== file)
+
+        # save all indices
+        store_arrays[file] = getfield.(halo_ids[sel], :id)
+    end
+
+    # allocate read_positions dict
+    read_positions = Dict()
+
+    # loop over file entries
+    for file ∈ keys(store_arrays)
+        # reduce neighboring block postions
+        index, n_to_read = reduce_read_positions(store_arrays[file])
+
+        # store Dicts
+        read_positions[file] = Dict( "index" => index, "n_to_read" => n_to_read)
+    end
+
+    # finally store all halos to be read
+    read_positions["N_part"] = length(halo_ids)
+
+    return read_positions
+end
+
+
+"""
+    read_positions_to_halo_ids(read_positions)
+
+Converts `read_positions` to a Vector of [HaloID](@ref)s.
+"""
+function read_positions_to_halo_ids(read_positions)
+
+    A = Vector{HaloID}(undef, read_positions["N_part"])
+
+    N_read = 1
+    for file ∈ keys(read_positions)
+
+        # skip N_part entry
+        if file == "N_part"
+            continue
+        end
+
+        # convert indices and numbers to read to HaloIDs
+        for i = 1:length(read_positions[file]["index"]),
+            j = 1:read_positions[file]["n_to_read"][i]
+            
+            # store halo ids
+            A[N_read] = HaloID(file, read_positions[file]["index"][i] + j)
+            N_read += 1
+        end
+    end
+
+    return A
+end
+
+
+"""
+    IO
+"""
+
+
+"""
+    save_halo_ids(filename::String, halo_ids::Vector{HaloID})
+
+Writes a `Vector` of [HaloID](@ref)s to a files.
+"""
+function save_halo_ids(filename::String, halo_ids::Vector{HaloID})
+
+    # convert halo ids to read positions
+    read_positions = halo_ids_to_read_positions(halo_ids)
+
+    # save the read positions
+    save_read_positions(filename, read_positions)
+end
+
+
+"""
+    save_halo_ids(filename::String)
+
+Loads a `Vector` of [HaloID](@ref)s from a file.
+"""
+function load_halo_ids(filename::String)
+    # load the read positions
+    read_positions = load_read_positions(filename)
+
+    # convert read positions to halo ids
+    read_positions_to_halo_ids(read_positions)
+end

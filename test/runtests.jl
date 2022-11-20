@@ -237,20 +237,32 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         end
 
         @testset "Filter Subfind" begin
-            # check if filter works
-            find_mass_gt_7(M) = ((M > 7.0) ? true : false)
-            dummy = filter_subfind("sub_002", "MTOP", find_mass_gt_7)
-            @test dummy[1] == HaloID(0, 3)
-            @test dummy[2] == HaloID(0, 4)
 
-            dummy2 = filter_subfind("sub_002", filter_dummy)
-            @test dummy == dummy2
+            @testset "Filtering" begin
+                # check if filter works
+                dummy = filter_subfind("sub_002", filter_dummy)
+                @test dummy[1] == HaloID(0, 3)
+                @test dummy[2] == HaloID(0, 4)
 
-            # find the most massive halo in the sample subfind output
-            center, rvir, haloid = find_most_massive_halo("sub_002", 4)
-            @test center ≈ Float32[3978.9688, -95.40625, -8845.25]
-            @test rvir ≈ 118.76352
-            @test haloid == HaloID(0, 4)
+                # find the most massive halo in the sample subfind output
+                center, rvir, haloid = find_most_massive_halo("sub_002", 4)
+                @test center ≈ Float32[3978.9688, -95.40625, -8845.25]
+                @test rvir ≈ 118.76352
+                @test haloid == HaloID(0, 4)
+            end 
+
+            @testset "IO" begin
+                # check if filter works
+                dummy = filter_subfind("sub_002", filter_dummy)
+                
+                filename = "halo_ids.dat"
+
+                @test_nowarn save_halo_ids(filename, dummy)
+
+                dummy2 = load_halo_ids(filename)
+                @test dummy2 == dummy
+            end
+            
         end
 
         @testset "Read halo props" begin

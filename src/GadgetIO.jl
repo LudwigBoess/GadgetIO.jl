@@ -94,6 +94,8 @@ module GadgetIO
             read_subfind,
             find_most_massive_halo,
             filter_subfind,
+            save_halo_ids,
+            load_halo_ids,
             read_ids_in_halo,
             read_particles_by_id,
             read_halo_prop,
