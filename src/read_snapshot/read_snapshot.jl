@@ -1,10 +1,10 @@
 """
-    snap_to_dict(filename::String, try_info::Bool=true)
+    snap_to_dict(filename::String)
 
 Reads whole snapshot into memory and returns a dictionary sorted by particle type
 and block names. Be cautious with large snapshots!
 """
-function snap_to_dict(filename::String, try_info::Bool=true)
+function snap_to_dict(filename::String)
 
         data = Dict()
 

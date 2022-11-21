@@ -51,59 +51,63 @@ mutable struct SnapshotHeader <: AbstractGadgetHeader
     lpt_scalingfactor::Float32          # factor to use second order ic generation
     fill::Vector{Int32}                 # the HEAD block needs to be filled with zeros to have a size of 256 bytes
 
-    function SnapshotHeader(npart::Vector{Int32}=Int32.([0,0,0,0,0,0]),
-           massarr::Vector{Float64}=zeros(6),
-           time::Float64=0.,
-           z::Float64=0.,
-           flag_sfr::Int32=Int32(0),
-           flag_feedback::Int32=Int32(0),
-           nall::Vector{UInt32}=UInt32.([0,0,0,0,0,0]),
-           flag_cooling::Int32=Int32(0),
-           num_files::Int32=Int32(0),
-           boxsize::Float64=0.,
-           omega_0::Float64=0.,
-           omega_l::Float64=0.,
-           h0::Float64=0.,
-           flag_stellarage::Int32=Int32(0),
-           flag_metals::Int32=Int32(0),
-           npartTotalHighWord::Vector{UInt32}=UInt32.([0,0,0,0,0,0]),
-           flag_entropy_instead_u::Int32=Int32(0),
-           flag_doubleprecision::Int32=Int32(0),
-           flag_ic_info::Int32=Int32(0),
-           lpt_scalingfactor::Float32=Float32(0.),
-           fill::Vector{Int32}=Int32.(zeros(12)))
 
-          new(npart,
-              massarr,
-              time,
-              z,
-              flag_sfr,
-              flag_feedback,
-              nall,
-              flag_cooling,
-              num_files,
-              boxsize,
-              omega_0,
-              omega_l,
-              h0,
-              flag_stellarage,
-              flag_metals,
-              npartTotalHighWord,
-              flag_entropy_instead_u,
-              flag_doubleprecision,
-              flag_ic_info,
-              lpt_scalingfactor,
-              fill)
+    function SnapshotHeader(npart::Vector{Int32}=zeros(Int32, 6),
+                            massarr::Vector{Float64}=zeros(Float64, 6),
+                            time::Float64=0.0,
+                            z::Float64=0.0,
+                            flag_sfr::Int32=Int32(0),
+                            flag_feedback::Int32=Int32(0),
+                            nall::Vector{UInt32}=zeros(UInt32, 6),
+                            flag_cooling::Int32=Int32(0),
+                            num_files::Int32=Int32(0),
+                            boxsize::Float64=0.0,
+                            omega_0::Float64=0.0,
+                            omega_l::Float64=0.0,
+                            h0::Float64=0.,
+                            flag_stellarage::Int32=Int32(0),
+                            flag_metals::Int32=Int32(0),
+                            npartTotalHighWord::Vector{UInt32}=zeros(UInt32, 6),
+                            flag_entropy_instead_u::Int32=Int32(0),
+                            flag_doubleprecision::Int32=Int32(0),
+                            flag_ic_info::Int32=Int32(0),
+                            lpt_scalingfactor::Float32=Float32(0.0),
+                            fill::Vector{Int32}=zeros(Int32,12) )
+
+    new(npart,
+        massarr,
+        time,
+        z,
+        flag_sfr,
+        flag_feedback,
+        nall,
+        flag_cooling,
+        num_files,
+        boxsize,
+        omega_0,
+        omega_l,
+        h0,
+        flag_stellarage,
+        flag_metals,
+        npartTotalHighWord,
+        flag_entropy_instead_u,
+        flag_doubleprecision,
+        flag_ic_info,
+        lpt_scalingfactor,
+        fill)
     end
 end
 
 
+
+
+
 """
-    head_to_obj(filename::String)
+    head_to_struct(filename::String)
 
 Returns the header of a snapshot as a `SnapshotHeader` object.
 """
-function head_to_obj(filename)
+function head_to_struct(filename)
 
     h = SnapshotHeader()
 
@@ -235,9 +239,8 @@ end
 Reads the header of a snapshot file or file base (without .0, .1, etc.)
 and returns a SnapshotHeader object.
 
-See also: [`head_to_obj`](@ref)
+See also: [head_to_struct](@ref)
 """
 function read_header(filename::String)
-    filename = select_file(filename, 0)
-    return head_to_obj(filename)
+    head_to_struct(select_file(filename, 0))
 end

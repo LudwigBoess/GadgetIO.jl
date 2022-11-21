@@ -1,6 +1,6 @@
 """
     struct InfoLine([  block_name="", data_type=Float32, n_dim=Int32(0),
-                                is_present=zeros(Int32, 6) ])
+                    is_present=zeros(Int32, 6) ])
 
 Contains the data of a single entry in the `INFO` block of a Gadget snapshot.
 
@@ -86,9 +86,9 @@ function read_info(filename::String; verbose::Bool=false)
 
     end # while eof(f) != true
 
-    println("No info block present!")
+    @warn "No info block present!"
 
-    return 1
+    return default_info_lines
 end
 
 """
@@ -135,4 +135,35 @@ function read_info_line(f::IOStream)
 
     # construct the info line struct and return it.
     return InfoLine(block_name, dt, n_dim, is_present)
+end
+
+
+"""
+    check_info(filename::String, blockname::String)
+
+Helper function to read INFO block or construct `InfoLine` for MASS block, if no INFO block is present.
+Returns a single `InfoLine` struct.
+"""
+function check_info(filename::String, blockname::String)
+    info = read_info(filename)
+    if info == 1
+        if blockname == "MASS"
+            return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
+        else
+            error("No Info block in snapshot! Supply InfoLine type!")
+        end
+    else # info != 1
+        for i ∈ 1:size(info,1)
+            if info[i].block_name == blockname
+                return info[i]
+            end # if block found
+        end # loop over info
+        if isa(info, Array)
+            if (blockname == "MASS")
+                return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
+            else
+                error("Block $blockname not present!")
+            end
+        end
+    end # info == 1
 end

@@ -15,7 +15,7 @@ Format 2
 
 The safest way to write snapshots is in Format 2.
 Simply set up your header object and the arrays you want to write in the correct data format.
-For the header this is the struct [`Header`](@ref) and for data its usually `Array{Float32,2}`.
+For the header this is the struct [`SnapshotHeader`](@ref) and for data its usually `Array{Float32,2}`.
 You can then write an initial condition file by writing the header and the individual data blocks.
 
 ```julia
@@ -46,8 +46,8 @@ Also you need to make sure the blocks are in the order gadget expects them to be
 ```julia
 f = open(filename, "w")
 write_header(f, header, snap_format=1)
-write_block( f,  pos,    snap_format=1)
-write_block( f,  vel,    snap_format=1)
-write_block( f,  id,     snap_format=1)
+write_block( f,  pos,   snap_format=1)
+write_block( f,  vel,   snap_format=1)
+write_block( f,  id,    snap_format=1)
 close(f)
 ```

@@ -1,9 +1,11 @@
 """
     read_subfind(filename::String, blockname::String)
 
-Reads a block of a subfind file.
-
-If `return_haloid` is `true`, returns a tuple of the block array and the corresponding `HaloID`s.
+# Example
+To read e.g. the virial radius of halos use
+```julia
+R_vir = read_subfind(filename, "RVIR")
+```
 """
 function read_subfind(filename::String, blockname::String; 
                       info::Union{Nothing,InfoLine}=nothing,
@@ -69,7 +71,7 @@ end
 """
     subfind_block_parttype(filename, blockname)
 
-
+Get the particle type for which a subfind block is relevant.
 """
 function subfind_block_parttype(filename, blockname, info=nothing)
 
@@ -96,51 +98,7 @@ function read_subfind_length(filename::String, blockname::String)
     # blocks are type specific so we can use this to make our life easier
     parttype = subfind_block_parttype(filename, blockname)
 
-    h = head_to_obj(filename)
+    h = head_to_struct(filename)
 
     return h.npart[parttype+1]
-end
-
-
-
-"""
-    get_lazy_vcat_indices(arr::AbstractVector, inds)
-
-For an array of arrays `[a, b, c]`, where `a`, `b`, and `c` are arrays, returns the values of `vcat(a, b, c)[ind]`.
-
-This adapts to multi-dimensional arrays, respectively.
-
-This is not exported.
-"""
-function get_lazy_vcat_indices(arr::AbstractVector, inds)
-    nd = ndims(arr[1])
-    if nd == 1
-        outarr = Vector{eltype(arr[1])}(undef, length(inds))
-    else
-        outarr = Matrix{eltype(arr[1])}(undef, size(arr[1], 1), length(inds))
-    end
-
-    @inbounds for (i, ind) ∈ enumerate(inds)
-        isfound = false
-        for a ∈ arr
-            n = nd == 1 ? length(a) : size(a, 2)
-            if ind ≤ n
-                if ndims(a) == 1
-                    outarr[i] = a[ind]
-                else
-                    @views outarr[:,i] = a[:,ind]
-                end
-                isfound = true
-                break
-            end
-
-            ind -= n
-        end
-
-        if !isfound
-            throw(BoundsError)
-        end
-    end
-
-    return outarr
 end

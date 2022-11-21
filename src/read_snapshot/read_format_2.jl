@@ -25,11 +25,14 @@ Block Names are case sensitive.
 - `n_to_read`: How many particles to read. Can be used for sub-IO.
 
 # Examples
+In case an `INFO` block is present:
 ```julia
-julia> pos_info = InfoLine("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
-[...]
-julia> gas_pos = read_block(filename, "POS", info=pos_info, parttype=0)
-[...]
+gas_pos = read_block(filename, "POS", parttype=0)
+```
+If not you need to supply your own `InfoLine`
+```julia
+pos_info = InfoLine("POS", Float32, 1, [1, 1, 1, 1, 1, 1])
+gas_pos = read_block(filename, "POS", info=pos_info, parttype=0)
 ```
 """
 function read_block(filename::String, blockname::String;
@@ -226,38 +229,3 @@ function read_block!(a::AbstractArray, f::IOStream,
     a
 end
 
-
-"""
-    check_info(filename::String, blockname::String)
-
-Helper function to read INFO block or construct `InfoLine` for MASS block, if no INFO block is present.
-Returns a single `InfoLine` struct.
-"""
-function check_info(filename::String, blockname::String)
-    info = read_info(filename)
-    if info == 1
-        if blockname == "MASS"
-            return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
-        else
-            error("No Info block in snapshot! Supply InfoLine type!")
-        end
-    else # info != 1
-        for i ∈ 1:size(info,1)
-            if info[i].block_name == blockname
-                return info[i]
-            end # if block found
-        end # loop over info
-        if isa(info, Array)
-            if (blockname == "MASS")
-                return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
-            else
-                error("Block $blockname not present!")
-            end
-        end
-    end # info == 1
-end
-
-
-"""
-    Everything past here needs to go!
-"""
