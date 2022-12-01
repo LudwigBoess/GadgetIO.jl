@@ -95,7 +95,7 @@ If you have a global index of a halo from subfind (0-indexed, increasing over al
 read_halo_prop_and_id
 ```
 
-To only obtain the property us
+To only obtain the property use
 
 ```@docs
 read_halo_prop(::Any, ::AbstractString, ::Integer)
@@ -121,13 +121,10 @@ The results are returned in the order of the given indices.
 
 ## Reading particles in a halo
 
-If you want to read all particles associated with a FoF halo you can do this with the function [`read_particles_in_halo`](@ref)
+If you want to read all particles associated with a FoF halo you can do this with the function 
 
-```julia
-read_particles_in_halo( snap_base::String,   blocks::Array{String},
-                        sub_base::String,    halo::HaloID; 
-                        rad_scale::Real=1.0, halo_type::Integer=1,
-                        parttype::Integer=0, verbose::Bool=true)
+```@docs
+read_particles_in_halo
 ```
 
 This reads all blocks defined in `blocks` for the `halo` into a dictionary. `snap_base` and `sub_base` should point to the snap and subfind filebase as in other functions, or the files if you only have one file. The `HaloID` point to the selected halo. `halo_type` should be set to `1` for halos and `2` for subhalos. 

@@ -105,7 +105,9 @@ Since `v0.7` [`read_block`](@ref) reads the full block if `parttype=-1` is set.
 ## Read Subvolumes
 
 If you only want to read a subvolume of the whole simulation you can do this in two ways.
-To get all particles within a subvolume of the simulation you can use the functions [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref).
+### Cubes
+
+To get all particles within a cubic box of the simulation you can use the functions [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref).
 
 [`read_particles_in_box`](@ref) takes a box defined by a lower-left corner and an upper-right corner and reads all requested blocks and particles in that volume.
 
@@ -113,13 +115,15 @@ To get all particles within a subvolume of the simulation you can use the functi
 function read_particles_in_box
 ```
 
-You can define an array of blocks you want to read, these will be read in parallel with simple multi-threading.
+You can define an array of blocks you want to read, these will be read into a dictionary.
 
 [`read_particles_in_volume`](@ref) is a simple wrapper around [`read_particles_in_box`](@ref), where you can define a central position and a radius around it and it will construct the box containing that sphere for you and read all particles in it.
 
 ```@docs
 read_particles_in_volume
 ```
+
+### Arbitrary Geometries
 
 For reading particles in more complex geometries you can use
 
@@ -148,39 +152,19 @@ There are also multiple dispatch versions of all functions available that only t
 
 
 
-### Peano-Hilbert key based reading
+## Peano-Hilbert key based reading
 
 For large simulations Gadget distributes snapshots over multiple files. These files contain particles associated with specific Peano-Hilbert keys.
 
 If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=true` (which is the default case) it constructs the peano hilbert keys, selects the relevant files and reads the particles from these files into a dictionary. This is considerably faster than the brute-force attempt.
 
 
-### Brute-Force Reading
+## Brute-Force Reading
 If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=false` it reads all particles over all distributed files which are contained in the requested subvolume.
 This takes quite a lot longer than the key based reading, but sometimes it's the only option.
+To speed this up you can apply the filtering only once and store the [Read positions](@ref).
 
 
-### Example
-
-If you want to, e.g. read positions, velocities, masses, density and hsml for all gas particles within the virial radius of the most massive halo of a simulation you can do this as follows.
-
-Assuming `pos_halo` is the position of the center of mass of the halo and `r_vir` is its virial radius you read the data with
-
-```julia
-blocks = ["POS", "VEL", "MASS", "RHO", "HSML"]
-
-data   = read_particles_in_volume(filename, blocks, pos_halo, r_vir,
-                                  parttype=0,
-                                  verbose=true)
-```
-
-This will return a dictionary with the blocks as keys and containing the arrays for the particles.
-
-```julia
-data["POS"]  # array of positions
-data["RHO"]  # array of densities
-(...)
-```
 
 ## Custom Filtering
 
@@ -278,3 +262,27 @@ read_particles_by_id
 If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Read Subvolumes](@ref) for details on this.
 
 This will return a dictionary with all requested blocks.
+
+
+
+## Example
+
+If you want to, e.g. read positions, velocities, masses, density and hsml for all gas particles within the virial radius of the most massive halo of a simulation you can do this as follows.
+
+Assuming `pos_halo` is the position of the center of mass of the halo and `r_vir` is its virial radius you read the data with
+
+```julia
+blocks = ["POS", "VEL", "MASS", "RHO", "HSML"]
+
+data   = read_particles_in_volume(filename, blocks, pos_halo, r_vir,
+                                  parttype=0,
+                                  verbose=true)
+```
+
+This will return a dictionary with the blocks as keys and containing the arrays for the particles.
+
+```julia
+data["POS"]  # array of positions
+data["RHO"]  # array of densities
+(...)
+```
