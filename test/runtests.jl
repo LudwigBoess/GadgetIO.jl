@@ -238,6 +238,10 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
         @testset "Filter Subfind" begin
 
+            @testset "subfind length" begin
+                @test read_subfind_length("sub_002.0", "MTOP") == 4
+            end
+
             @testset "Filtering" begin
                 # check if filter works
                 dummy = filter_subfind("sub_002", filter_dummy)
@@ -250,6 +254,15 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
                 @test rvir ≈ 118.76352
                 @test haloid == HaloID(0, 4)
             end 
+
+            # @testset "Read Positions" begin
+            #     dummy = filter_subfind("sub_002", filter_dummy)
+
+            #     read_positions = GadgetIO.halo_ids_to_read_positions(dummy)
+
+                
+
+            # end
 
             @testset "IO" begin
                 # check if filter works
@@ -392,7 +405,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
         # read in reference file
         ref_file = joinpath(dirname(@__FILE__), "snap_sedov")
-        head = head_to_obj(ref_file)
+        head = head_to_struct(ref_file)
         x = read_snap(ref_file, "POS", 0)
 
         # specify output file for testing
