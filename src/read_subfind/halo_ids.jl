@@ -114,10 +114,10 @@ function halo_ids_to_read_positions(halo_ids::Vector{HaloID})
     for file ∈ files
         
         # filter all HaloIDs in the current file
-        sel = findall(getfield.(halo_ids, :file) .== file)
+        sel = findall((x->x.file).(halo_ids) .== file)
 
         # save all indices
-        store_arrays[file] = getfield.(halo_ids[sel], :id)
+        store_arrays[file] = (p->p.id).(halo_ids[sel])
     end
 
     # allocate read_positions dict
@@ -168,7 +168,6 @@ function read_positions_to_halo_ids(read_positions)
 
     return A
 end
-
 
 """
     IO
