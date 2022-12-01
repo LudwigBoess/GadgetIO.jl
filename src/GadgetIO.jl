@@ -54,7 +54,7 @@ module GadgetIO
             InfoLine,       # types
             head_to_dict,
             snap_to_dict,
-            head_to_obj,
+            head_to_struct,
             print_blocks,
             read_info,
             block_present,
