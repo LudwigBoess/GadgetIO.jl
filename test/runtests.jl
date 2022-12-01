@@ -239,7 +239,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         @testset "Filter Subfind" begin
 
             @testset "subfind length" begin
-                @test read_subfind_length("sub_002.0", "MTOP") == 4
+                @test GadgetIO.read_subfind_length("sub_002.0", "MTOP") == 4
             end
 
             @testset "Filtering" begin
