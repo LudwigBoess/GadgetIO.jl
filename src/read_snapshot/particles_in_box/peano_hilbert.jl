@@ -180,6 +180,8 @@ end
                                 corner_lowerleft::Array{<:Real}, 
                                 corner_upperright::Array{<:Real};
                                 parttype::Integer, verbose::Bool)
+
+Finds the Peano-Hilbert keys in a cube defined by `corner_lowerleft` and `corner_upperright`.
 """
 function read_positions_from_PH_keys(filebase::String,
                                     corner_lowerleft::Array{<:Real}, 
