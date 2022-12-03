@@ -68,8 +68,14 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
     # read info block
     snap_info = read_info(filename)
 
+    # check if mass block is supposed to be read
+    read_mass = !isnothing(findfirst(blocks .== "MASS")) ? true : false
+
+    # check if all blocks are present
+    blocks, no_mass_block = check_blocks(filename, blocks, parttype)
+
     # pre-allocate all data arrays in a dictionary
-    d = allocate_data_dict(blocks, read_positions["N_part"], snap_info, false)
+    d = allocate_data_dict(blocks, read_positions["N_part"], snap_info, no_mass_block)
     
     if verbose
         t2 = time_ns()
@@ -129,13 +135,15 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
         if verbose
             @info "Read $N_read / $(read_positions["N_part"]) particles"
         end
-        
-    
     end
 
     if verbose
         t2 = time_ns()
         @info "  elapsed: $(output_time(t1,t2)) s"
+    end
+
+    if read_mass && no_mass_block
+        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read)
     end
 
     return d
