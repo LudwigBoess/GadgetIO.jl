@@ -16,7 +16,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
     # read info for PID datatype
     info = read_info(sub_file)
     pid_info = info[getfield.(info, :block_name) .== "PID"][1]
-
+    
     # if there are fewer IDs in the file than in the halo they are distributed over multiple files
     if (sub_header.nfof - offset) < N_ids
         
@@ -39,7 +39,8 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
             end
 
             # read the header
-            sub_header = read_subfind_header(sub_file)
+            h = read_header(sub_file)
+            sub_header = convert_header(h)
 
             # if the offset is larger than the number of IDs in this file
             if offset_remaining >= sub_header.nfof
@@ -56,10 +57,27 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
                     n_to_read = N_ids - ids_read
                 end
 
-                read_subfind!(@view(ids[(ids_read+1):(ids_read+n_to_read)]), sub_file, "PID"; offset=offset_remaining)
+                block_position = get_block_positions(sub_file)["PID"]
+
+                f = open(sub_file)
+
+                read_block!(@view(ids[(ids_read+1):(ids_read+n_to_read)]), f, 
+                            offset_remaining, ids_read, n_to_read,
+                            info=pid_info, parttype=2;
+                            block_position, h)
+
+                close(f)
 
                 # update number of IDs alrady read
                 ids_read += n_to_read
+
+                if offset_remaining > 0
+                    offset_remaining -= n_to_read
+                end 
+                
+                if offset_remaining <= 0
+                    offset_remaining = 0
+                end
 
                 # increase for next file read
                 files_read += 1
@@ -69,8 +87,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
 
         return ids
     else # they can be read from one file
-        ids = Vector{pid_info.data_type}(undef, N_ids)
-        return read_subfind!(ids, sub_file, "PID"; offset)
+        return read_block( sub_file, "PID", parttype=2, n_to_read=N_ids; offset)
     end
 end
 
@@ -122,6 +139,8 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     # read all IDs of the particles contained in a halo
     halo_ids = read_pids(sub_base, N_ids, offset)
 
+    println("pids done")
+
     if verbose
         t2 = Dates.now()
         @info "IDs read. Took: $(t2 - t1)"
@@ -131,11 +150,11 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
 end
 
 """
-    function get_pos_block_name(sub_file, halo_type)
+    function get_pos_block_name(halo_type)
 
 Returns the position block name depending on the halo type.
 """
-function get_pos_block_name(sub_file, halo_type)
+function get_pos_block_name(halo_type)
     if halo_type == 1
         # halos
         return "GPOS"
@@ -205,7 +224,7 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
     end
 
     # read all IDs of the particles contained in a halo
-    halo_ids = read_ids_in_halo(sub_base, halo, halo_type=halo_type, verbose=verbose)
+    halo_ids = read_ids_in_halo(sub_base, halo; halo_type, verbose)
 
     if verbose
         t2 = Dates.now()
@@ -216,23 +235,23 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
     end
 
     # position of halo
-    pos_block = get_pos_block_name(sub_file, halo_type)
-    halo_pos = read_subfind(sub_file, pos_block)[:,halo.id]
+    pos_block = get_pos_block_name(halo_type)
+    pos0      = read_subfind(sub_file, pos_block)[:,halo.id]
 
     # initial search radius for read-in
     if isnothing(radius)
         rad_block = get_rad_block_name(sub_file, halo_type)
-        initial_radius = rad_scale * read_subfind(sub_file, rad_block)[halo.id]
+        r0 = rad_scale * read_subfind(sub_file, rad_block)[halo.id]
     else
-        initial_radius = rad_scale * radius
+        r0 = rad_scale * radius
     end
 
     # read ids in the halo 
-    data = read_particles_by_id(snap_base, halo_ids, blocks,
-                              parttype=parttype, verbose=verbose,
-                              pos0=halo_pos,
-                              r0=initial_radius,
-                              use_keys=use_keys)
+    data = read_particles_by_id(snap_base, halo_ids, blocks;
+                              parttype, verbose,
+                              pos0,
+                              r0,
+                              use_keys)
 
     if verbose
         t2 = Dates.now()
@@ -261,7 +280,5 @@ function read_particles_in_halo(snap_base::String, block::String,
                                 sub_base::String, halo::HaloID; 
                                 kwargs...)
 
-    data = read_particles_in_halo(snap_base, [block], sub_base, halo; kwargs...) 
-
-    return data[block]
+    read_particles_in_halo(snap_base, [block], sub_base, halo; kwargs...)[block]
 end

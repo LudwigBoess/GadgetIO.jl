@@ -55,99 +55,81 @@ end
 
 
 
-"""
-    filter_subfind(filebase::String, blockname::String, filter_function::Function [, nfiles::Integer=1])
 
-Selects entries in subfind block that fulfill the 'filter_funcion' requirements and
-returns a 'SubfindFilter' object.
+"""
+    filter_subfind(sub_base::String, filter_function::Function, files=nothing)
+
+Filters all entries in a subfind file that fulfill the 'filter_funcion' requirements and
+returns a `Vector` of [HaloID](@ref)s.
 
 # Examples
 ```julia
-julia> find_mass_gt_1e15(M) = ( (M > 1.e15) ? true : false )
-find_mass_gt_1e15 (generic function with 1 method)
-julia> filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
-[...]
+# load packages
+using GadgetIO, GadgetUnits
+
+# define filter function
+function find_mvir_gt_1e15(filename) 
+    h = read_header(filename)
+    GU = GadgetPhysical(h) # unit conversion
+
+    # read Mvir and convert to solar masses 
+    M = read_subfind(filename, "MVIR") .* GU.m_msun
+
+    return findall(M .> 1.0e15)
+end
+
+# basename of subfind output (without .*)
+sub_base = /path/to/groups_000/sub_000
+
+# get relevant halos from first 10 files
+halo_ids = filter_subfind(sub_base, find_mvir_gt_1e15, 0:9)
 ```
 
 """
-function filter_subfind(filebase::String, blockname::String, filter_function::Function, nfiles::Integer=1)
+function filter_subfind(sub_base::String, filter_function::Function, files=nothing)
 
-    # allocate empty array for SubfindFilter objects
-    A = Vector{HaloID}(undef, 0)
+    # if file range is not defined
+    # run over all files
+    if isnothing(files)
+        h = read_header(sub_base)
+        files = 0:h.num_files-1
+    end
+
+    # count total number of files
+    Nfiles = length(files)
+
+    # allocate storage arrays
+    storage_arr = Vector{Vector{Int64}}(undef, Nfiles)
 
     # loop over all files in parallel
-    @showprogress for i = 0:nfiles-1
-
+    @showprogress "Filtering files... " for i = 1:Nfiles
         # find correct input file
-        sub_input = select_file(filebase, i)
-
-        # read block
-        block = read_subfind(sub_input, blockname)
+        sub_input = select_file(sub_base, files[i])
 
         # apply filter function
-        selection = filter_function.(block)
-
-        # select matches
-        correct_selection = findall(selection)
-
-        if size(selection[selection],1) > 0
-
-            # create array of integers for easy storing
-            id_array = collect(1:size(selection,1))[correct_selection]
-
-            # create HaloID object and push it to the storage array
-            for j = 1:size(id_array,1)
-                push!(A, HaloID(i, id_array[j]))
-            end
-
-        end # if entries > 0
-
+        storage_arr[i] = filter_function(sub_input)
     end # for loop
+
+    # count total number of matching entries 
+    Nentries = 0
+    for i = 1:Nfiles
+        Nentries += length(storage_arr[i])
+    end
+
+    # allocate empty array for HaloID structs
+    A = Vector{HaloID}(undef, Nentries)
+
+    # write HaloIDs to array 
+    Ncount = 1
+    # loop over all files
+    for i = 1:Nfiles
+        # loop over all indices where filter function matches
+        for j ∈ eachindex(storage_arr[i])
+            A[Ncount] = HaloID(files[i], storage_arr[i][j])
+            Ncount += 1
+        end
+    end
 
     return A
 end
-
-
-"""
-    filter_subfind(filebase::String, filter_function::Function [, nfiles::Integer=1])
-
-Selects entries in subfind block that fulfill the 'filter_funcion' requirements and
-returns a 'SubfindFilter' object.
-
-# Examples
-```julia
-julia> find_mass_gt_1e15(M) = ( (M > 1.e15) ? true : false )
-find_mass_gt_1e15 (generic function with 1 method)
-julia> filtered_subfind = filter_subfind(filebase, "MVIR", find_mass_gt_1e15)
-[...]
-```
-
-"""
-function filter_subfind(filebase::String, filter_function::Function, nfiles::Integer=1)
-
-    # allocate empty array for SubfindFilter objects
-    A = Vector{HaloID}(undef, 0)
-
-    # loop over all files in parallel
-    @showprogress for i = 0:nfiles-1
-
-        # find correct input file
-        sub_input = select_file(filebase, i)
-
-        # apply filter function
-        id_array = filter_function(sub_input)
-
-        if size(id_array,1) > 0
-            # create HaloID object and push it to the storage array
-            for j = 1:size(id_array,1)
-                push!(A, HaloID(i, id_array[j]))
-            end
-
-        end # if entries > 0
-
-    end # for loop
-
-    return A
-end
-
 

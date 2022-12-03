@@ -2,44 +2,43 @@ using Dates
 using Base.Threads
 
 """
-    find_read_positions(files::Vector{<:Integer}, filebase::String, 
-                        blocks::AbstractVector{String}, parttype::Integer,
-                        keylist::Vector{<:Integer}, key_info::Vector{InfoLine},
-                        verbose::Bool)
+    read_positions_from_PH_keys(files::Vector{<:Integer}, filebase::String, 
+                                blocks::AbstractVector{String}, parttype::Integer,
+                                keylist::Vector{<:Integer}, key_info::Vector{InfoLine},
+                                verbose::Bool)
 
 Helper function to get positions and length of particle blocks in files.
 """
-function find_read_positions(files::Vector{<:Integer}, filebase::String, 
-                             blocks::AbstractVector{String}, parttype::Integer,
-                             keylist::Vector{<:Integer}, key_info::Vector{InfoLine},
-                             verbose::Bool)
+function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::String,
+                                        keylist::Vector{<:Integer}, key_info::Vector{InfoLine};
+                                        parttype::Integer, verbose::Bool)
 
     # store number of file
     N_files = length(files)
 
     # allocate arrys to store reading information
-    file_offset_key      = Vector{Vector{<:Integer}}(undef, N_files)
-    file_part_per_key    = Vector{Vector{<:Integer}}(undef, N_files)
-    file_block_positions = Vector{Dict{String,<:Integer}}(undef, N_files)
+    d = Dict()
+
+    d["N_part"] = 0
 
     @inbounds for i = 1:N_files
 
         filename = select_file(filebase, files[i])
 
-        # read header and key info of the file
+        # read header of the file
         h = read_header(filename)
-        key_info  = read_info(filename * ".key")
 
-        if h.npart[parttype+1] == 0
+        # read header of the keyfile
+        filename_keyfile = filename * ".key"
+        key_h     = read_header(filename_keyfile)
+
+        # overwrite number of files to re-use simple block reading
+        key_h.num_files = 1
+
+        if iszero(h.npart[parttype+1])
             @info "No particles of type $parttype in file $(i)!"
-            # store the arrays for later reading
-            file_offset_key[i]   = Int[]
-            file_part_per_key[i] = Int[]
-            file_block_positions[i] = Dict{String,Int}()
             continue
         end
-
-        filename_keyfile = filename * ".key"
 
         # Vector of field names (KEY, NKEY, OKEY)
         fields = getfield.(key_info, :block_name)
@@ -48,11 +47,22 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
         # - key file data
         # - number of particles associated with PH key
         # - offsets in the blocks to get to the relevant particles
-        keys_in_file, part_per_key, offset_key = read_key_block.(filename_keyfile,
-                                                                 (key_info,),
-                                                                 (fields,),
-                                                                 ["KEY", "NKEY", "OKEY"],
-                                                                 parttype)
+        keys_in_file = read_block(filename_keyfile, "KEY", 
+                                   info = key_info[findfirst(==("KEY"), fields)],
+                                   h = key_h; 
+                                   parttype)
+
+        part_per_key = read_block(filename_keyfile, "NKEY", 
+                                   info = key_info[findfirst(==("NKEY"), fields)],
+                                   h = key_h;
+                                   parttype)
+
+
+        offset_key   = read_block(filename_keyfile, "OKEY", 
+                                   info = key_info[findfirst(==("OKEY"), fields)],
+                                   h = key_h; 
+                                   parttype)
+
 
         if verbose
             @info "Calculating index list..."
@@ -82,22 +92,15 @@ function find_read_positions(files::Vector{<:Integer}, filebase::String,
         end
 
         # store the arrays for later reading
-        file_offset_key[i]   = offset_key[use_block]
-        file_part_per_key[i] = part_per_key[use_block]
+        d[i]   = Dict("index"     => offset_key[use_block],
+                      "n_to_read" => part_per_key[use_block])
 
-        file_block_positions[i] = get_block_positions(filename)
-
-        # double-check if blocks are present
-        blocks_in_file = String.(keys(file_block_positions[i]))
-        for blockname in blocks
-            if !block_present(filename, blockname, blocks_in_file)
-                error("Block $blockname not present in file $filename !")
-            end
-        end
+        # sum up all particles to read
+        d["N_part"] += sum(d[i]["n_to_read"])
 
     end # for i = 1:N_files
 
-    return file_offset_key, file_part_per_key, file_block_positions
+    return d
 end
 
 """
@@ -155,13 +158,13 @@ end
 
 Selects the files in which the particles associated with the given Peano-Hilbert keys are stored.
 """
-function find_files_for_keys(filebase::String, nfiles::Integer, keylist::Vector{<:Integer})
+function find_files_for_keys(filebase::String, keylist::Vector{<:Integer})
 
     file_key_index = filebase * ".key.index"
 
     # if index file does not exist all key files need to be read
     if !isfile(file_key_index)
-        return collect(0:nfiles-1)
+        return error("No .key.index file present!")
     end
 
     # get the data from the index file (low and high lists are sorted)

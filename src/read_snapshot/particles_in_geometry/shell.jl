@@ -39,11 +39,12 @@ end
 Returns the indices of all particles contained in the `shell`.
 """
 function get_geometry_mask(shell::GadgetShell, pos::Matrix{T}) where T
-    r1²  = (shell.radius + 0.5shell.width)^2
-    r2²  = (shell.radius - 0.5shell.width)^2
+    
+    r1²  = (shell.radius - 0.5shell.width)^2
+    r2²  = (shell.radius + 0.5shell.width)^2
 
     d²   = @views @. (pos[1,:] - shell.center[1])^2 + (pos[2,:] - shell.center[2])^2 + (pos[3,:] - shell.center[3])^2
-    mask = @views @. ( d² ≤ r1² ) & ( d² ≥ r2² )
+    mask = @views @. ( r1² ≤ d² ≤ r2² )
 
     return findall(mask)
 end

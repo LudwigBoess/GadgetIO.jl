@@ -53,11 +53,11 @@ In the relevant functions `GadgetIO.jl` will then automatically loop through the
 
 There are multiple ways to read the data in the snapshot
 
-### Full snapshot
+## Full snapshot
 If you want to read a simulation snapshot into memory with `GadgetIO.jl`, it's as easy as this:
 
-```julia
-    data = read_snap(filename)
+```@docs
+read_snap
 ```
 
 This will return a dictionary with the header information in `data["Header"]` and the blocks sorted by particle type.
@@ -69,12 +69,12 @@ As an example, this is how you would access the positions of the gas particles:
 ```
 
 
-### Specific blocks
+## Specific blocks
 
-If you only want to read a specific block for a single particle type, e.g. positions of gas particles, you can use the function with a specified blockname and particle type like so:
+If you only want to read a specific block for a single particle type, e.g. positions of gas particles, you can use the function `read_block` with a specified blockname and particle type.
 
-```julia
-    pos = read_snap(filename, "POS", 0)
+```@docs
+read_block
 ```
 
 This will return an array of the datatype of your simulation, usually `Float32`.
@@ -83,15 +83,8 @@ If the snapshot has no info block this will fail unfortunately.
 
 You can still read the specific block by supplying a hand-constructed [`InfoLine`](@ref) object:
 
-```julia
-struct InfoLine
-    block_name::String              # name of the data block, e.g. "POS"
-    data_type::DataType             # datatype of the block, e.g. Float32 for single precision, Float64 for double
-    n_dim::Int32                    # number of dimensions of the block, usually 1 or 3
-    is_present::Vector{Int32}       # array of flags for which particle type this block is present,
-                                    # e.g. gas only:  [ 1, 0, 0, 0, 0, 0 ]
-                                    # e.g. gas + BHs: [ 1, 0, 0, 0, 0, 1 ]
-end
+```@docs
+InfoLine
 ```
 
 and passing that to the function [`read_block`](@ref):
@@ -102,57 +95,40 @@ pos = read_block(filename, "POS", info=pos_info, parttype=0)
 
 where `pos_info` is an [`InfoLine`](@ref) object.
 
-[`read_snap`](@ref) is used mainly as a wrapper function to call [`read_block`](@ref), in case you were wondering about the function name change.
 
 I will collect some example `InfoLine` objects in a later release to be able to read some common blocks even without an `INFO` block.
 
 Since `v0.5` [`read_snap`](@ref) and [`read_block`](@ref) also work if you pass them a `file_base`.
 
-
+Since `v0.7` [`read_block`](@ref) reads the full block if `parttype=-1` is set.
 
 ## Read Subvolumes
 
 If you only want to read a subvolume of the whole simulation you can do this in two ways.
-To get all particles within a subvolume of the simulation you can use the functions [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref).
+### Cubes
+
+To get all particles within a cubic box of the simulation you can use the functions [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref).
 
 [`read_particles_in_box`](@ref) takes a box defined by a lower-left corner and an upper-right corner and reads all requested blocks and particles in that volume.
 
-```julia
-function read_particles_in_box( filename::String, blocks::Vector{String},
-                                corner_lowerleft,
-                                corner_upperright;
-                                parttype::Int=0,
-                                verbose::Bool=true,
-                                use_keys::Bool=true )
-
-            (...)
-
-end
+```@docs
+read_particles_in_box
 ```
 
-You can define an array of blocks you want to read, these will be read in parallel with simple multi-threading.
+You can define an array of blocks you want to read, these will be read into a dictionary.
 
 [`read_particles_in_volume`](@ref) is a simple wrapper around [`read_particles_in_box`](@ref), where you can define a central position and a radius around it and it will construct the box containing that sphere for you and read all particles in it.
 
-```julia
-function read_particles_in_volume( filename::String, blocks::Vector{String},
-                                   center_pos::Vector{AbstractFloat},
-                                   radius::AbstractFloat;
-                                   parttype::Int=0,
-                                   verbose::Bool=true,
-                                   use_keys::Bool=true )
-
-            (...)
-end
+```@docs
+read_particles_in_volume
 ```
 
-For reading particles in more complex geometries you can use [`read_particles_in_geometry`](@ref).
+### Arbitrary Geometries
 
-```julia
-read_particles_in_geometry( filename::String, blocks::Vector{String},
-                            geometry::AbstractGadgetGeometry;
-                            parttype::Integer=0, verbose::Bool=true,
-                            use_keys::Bool=true)
+For reading particles in more complex geometries you can use
+
+```@docs
+read_particles_in_geometry
 ```
 
 You can use built-in geometries like [`GadgetCube`](@ref), [`GadgetSphere`](@ref) and [`GadgetCylinder`](@ref).
@@ -176,49 +152,26 @@ There are also multiple dispatch versions of all functions available that only t
 
 
 
-### Peano-Hilbert key based reading
+## Peano-Hilbert key based reading
 
 For large simulations Gadget distributes snapshots over multiple files. These files contain particles associated with specific Peano-Hilbert keys.
 
 If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=true` (which is the default case) it constructs the peano hilbert keys, selects the relevant files and reads the particles from these files into a dictionary. This is considerably faster than the brute-force attempt.
 
 
-### Brute-Force Reading
+## Brute-Force Reading
 If you call [`read_particles_in_box`](@ref) or [`read_particles_in_volume`](@ref) with the keyword argument `use_keys=false` it reads all particles over all distributed files which are contained in the requested subvolume.
 This takes quite a lot longer than the key based reading, but sometimes it's the only option.
+To speed this up you can apply the filtering only once and store the [Read positions](@ref).
 
 
-### Example
 
-If you want to, e.g. read positions, velocities, masses, density and hsml for all gas particles within the virial radius of the most massive halo of a simulation you can do this as follows.
+## Custom Filtering
 
-Assuming `pos_halo` is the position of the center of mass of the halo and `r_vir` is its virial radius you read the data with
+If you want to read multiple blocks in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_filtered`](@ref).
 
-```julia
-blocks = ["POS", "VEL", "MASS", "RHO", "HSML"]
-
-data   = read_particles_in_volume(filename, blocks, pos_halo, r_vir,
-                                  parttype=0,
-                                  verbose=true)
-```
-
-This will return a dictionary with the blocks as keys and containing the arrays for the particles.
-
-```julia
-data["POS"]  # array of positions
-data["RHO"]  # array of densities
-(...)
-```
-
-## Read distributed snapshotfiles
-
-If you want to read multiple blocks in a simulation whose snapshots have been distributed over a number of sub-snapshots you can use [`read_blocks_over_all_files`](@ref).
-
-```julia
-read_blocks_over_all_files( snap_base::String, blocks::Array{String};
-                            filter_function::Union{Function, Nothing}=nothing, 
-                            read_positions::Union{Dict, Nothing}=nothing, 
-                            parttype::Integer=0, verbose::Bool=true )
+```@docs
+read_blocks_filtered
 ```
 This will read the specified `blocks` for all particles that pass the `filter_function`. This can be useful if you don't know where the region you are interested in is located and don't have enough memory to read in all particles.
 Alternatively you can also provide a `Dict` with `read_positions` as described in [Read positions](@ref).
@@ -249,7 +202,7 @@ As an example, to read positions, velocity and ID of all shocked particles from 
 
 ```julia
 blocks = ["POS", "VEL", "ID"]
-data = read_blocks_over_all_files(snap_base, blocks, filter_function=mach_gt_1, parttype=0)
+data = read_blocks_filtered(snap_base, blocks, filter_function=mach_gt_1, parttype=0)
 ```
 
 Just as a reminder from above you can read single blocks into an array by using [`read_snap`](@ref) and [`read_block`](@ref):
@@ -263,26 +216,16 @@ This requiers `GadgetIO.jl` v0.5 though.
 ### Read positions
 
 To avoid having to filter all files each time you want to read a snapshot you can also split the steps.
-You can first filter the particles to find the positions of the particles within the data blocks with [`find_read_positions`](@ref)
+You can first filter the particles to find the positions of the particles within the data blocks with
 
-```julia
-read_positions = find_read_positions(snap_base, filter_function)
+```@docs
+find_read_positions
 ```
-and then save the result as a binary file with [`save_read_positions`](@ref)
+and then save the result as a binary file with
 
-```julia
-save_read_positions(save_file, read_positions)
+```@docs
+save_read_positions
 ```
-where `save_file` is the filename you specified for storage.
-
-This also works with an [`AbstractGadgetGeometry`](@ref) by calling [`find_read_positions`](@ref) with
-
-```julia
-find_read_positions( snap_base::String, geometry::AbstractGadgetGeometry;
-                     parttype::Integer=0,
-                     verbose::Bool=true )
-```
-
 
 To re-use the `read_positions` you can load them from file using [`load_read_positions`](@ref)
 
@@ -294,23 +237,42 @@ This can then be used to read any number of blocks with
 
 ```julia
 blocks = ["POS", "VEL", "ID"]
-data = read_blocks_over_all_files(snap_base, blocks, read_positions=read_positions, parttype=0)
+data = read_blocks_filtered(snap_base, blocks, read_positions=read_positions, parttype=0)
 ```
 
 ## Reading particles by referenced ID
 
-If you want to select specific particles to read from an array of `IDs` you can do this with [`read_particles_by_id`](@ref):
+If you want to select specific particles to read from an array of `IDs` you can do this with
 
-```julia
-read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer}, 
-                     blocks::Array{String}; 
-                     parttype::Integer=0, verbose::Bool=true,
-                     pos0::Union{Array{<:Real},Nothing}=nothing,
-                     r0::Real=0.0,
-                     use_keys::Bool=true )
+```@docs
+read_particles_by_id
 ```
 
 `snap_base` defines the target snapshot, or the snapshot basename, `selected_ids` contains the list of IDs of the particles you want to read and `blocks` containes the blocknames of the blocks you want to read.
 If the simulation is too large to read the whole snapshot into memory you can give values for `pos0` and `r0` to read only a specific region with [`read_particles_in_volume`](@ref). See [Read Subvolumes](@ref) for details on this.
 
 This will return a dictionary with all requested blocks.
+
+
+
+## Example
+
+If you want to, e.g. read positions, velocities, masses, density and hsml for all gas particles within the virial radius of the most massive halo of a simulation you can do this as follows.
+
+Assuming `pos_halo` is the position of the center of mass of the halo and `r_vir` is its virial radius you read the data with
+
+```julia
+blocks = ["POS", "VEL", "MASS", "RHO", "HSML"]
+
+data   = read_particles_in_volume(filename, blocks, pos_halo, r_vir,
+                                  parttype=0,
+                                  verbose=true)
+```
+
+This will return a dictionary with the blocks as keys and containing the arrays for the particles.
+
+```julia
+data["POS"]  # array of positions
+data["RHO"]  # array of densities
+(...)
+```

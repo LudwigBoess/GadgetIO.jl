@@ -152,28 +152,28 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
 end
 
 """
-    save_read_positions(read_positions_file::String, data)
+    save_read_positions(save_file::String, read_positions::Dict)
 
 Saves the relevant read-in positions to a binary file.
 """
-function save_read_positions(read_positions_file::String, data)
+function save_read_positions(save_file::String, read_positions::Dict)
 
-    f = open(read_positions_file, "w")
-    N_part = data["N_part"]
+    f = open(save_file, "w")
+    N_part = read_positions["N_part"]
 
-    delete!(data, "N_part")
-    files = keys(data)
-    N_files = length(keys(data))
+    delete!(read_positions, "N_part")
+    files = keys(read_positions)
+    N_files = length(keys(read_positions))
 
     write(f, Int64(N_part))
     write(f, Int64(N_files))
 
     for file ∈ files
-        N_entries = size(data[file]["index"],1)
+        N_entries = size(read_positions[file]["index"],1)
         write(f, Int64(file))
         write(f, Int64(N_entries))
-        write(f, Int64.(data[file]["index"]))
-        write(f, Int64.(data[file]["n_to_read"]))
+        write(f, Int64.(read_positions[file]["index"]))
+        write(f, Int64.(read_positions[file]["n_to_read"]))
     end
 
     close(f)
@@ -181,15 +181,15 @@ function save_read_positions(read_positions_file::String, data)
 end
 
 """
-    load_read_positions(read_positions_file::String)
+    load_read_positions(save_file::String)
 
 Loads the relevant read-in positions from a binary file.
 """
-function load_read_positions(read_positions_file::String)
+function load_read_positions(save_file::String)
     
     read_positions = Dict()
 
-    f = open(read_positions_file, "r")
+    f = open(save_file, "r")
 
     read_positions["N_part"] = read(f, Int64)
 

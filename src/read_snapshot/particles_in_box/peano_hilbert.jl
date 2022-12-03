@@ -10,7 +10,7 @@ end
 """
     Lookup tables for peano hilbert keys
 """
-const global rottable3 = [36  28  25  27  10  10  25  27;
+const rottable3 = [36  28  25  27  10  10  25  27;
                           29  11  24  24  37  11  26  26;
                            8   8  25  27  30  38  25  27;
                            9  39  24  24   9  31  26  26;
@@ -59,7 +59,7 @@ const global rottable3 = [36  28  25  27  10  10  25  27;
                           40  12  21  12  40   6  23   6;
                           13   7  13   7  41  41  22  20 ]
 
-const global subpix3 = [0  7  1  6  3  4  2  5 ;
+const subpix3 = [0  7  1  6  3  4  2  5 ;
                         7  4  6  5  0  3  1  2 ;
                         4  3  5  2  7  0  6  1 ;
                         3  0  2  1  4  7  5  6 ;
@@ -172,4 +172,64 @@ function get_keylist(h_key::KeyHeader, x0::Array{T}, x1::Array{T}) where T
     end
 
     return sort!(keylist)
+end
+
+
+"""
+    read_positions_from_PH_keys(filebase::String,
+                                corner_lowerleft::Array{<:Real}, 
+                                corner_upperright::Array{<:Real};
+                                parttype::Integer, verbose::Bool)
+
+Finds the Peano-Hilbert keys in a cube defined by `corner_lowerleft` and `corner_upperright`.
+"""
+function read_positions_from_PH_keys(filebase::String,
+                                    corner_lowerleft::Array{<:Real}, 
+                                    corner_upperright::Array{<:Real};
+                                    parttype::Integer, verbose::Bool)
+
+    # read info blocks once here
+    key_info  = read_info(filebase * ".0.key")
+
+    # check if key files are present
+    file_key = filebase * ".0.key"
+    if !isfile(file_key)
+        error("No .key file present! For brute-force read-in set `use_keys=false`")
+    end
+
+    if verbose
+        @info ".key files found!"
+        @info "Calculating peano-hilbert keys..."
+        t1 = Dates.now()
+    end
+
+    # first read the header
+    h_key = read_keyheader(file_key)
+
+    # get a list of the required peano-hilbert keys
+    keylist = get_keylist(h_key, corner_lowerleft, corner_upperright)
+
+    if verbose
+        t2 = Dates.now()
+        @info "$(size(keylist,1)) Peano-Hilbert keys found. Took: $(t2 - t1)"
+        @info "Looking for relevant files..."
+        t1 = Dates.now()
+    end
+
+    # find relevant files
+    files = find_files_for_keys(filebase, keylist)
+    
+    N_files = size(files,1)
+    if verbose
+        t2 = Dates.now()
+        @info "$N_files files found. Took: $(t2 - t1)"
+
+        @info "Searching read positions..."
+        println()
+        t1 = Dates.now()
+    end
+
+    # find all the positions where to read data
+    return read_positions_from_keys_files( files, filebase, keylist, key_info; 
+                                            parttype, verbose)
 end

@@ -89,8 +89,6 @@ function print_blocks(filename::String; verbose::Bool=true)
 end
 
 
-
-
 """
     block_present(filename::String, blockname::String, blocks::Vector{String}=[""])
 
@@ -112,6 +110,7 @@ function block_present(filename::String, blockname::String, blocks::Vector{Strin
 
     return false
 end
+
 
 """
     check_blocks(snap_base::String, blocks::Array{String})
@@ -146,49 +145,6 @@ function check_blocks(filename::String, blocks::Array{String}, parttype::Integer
 
 end
 
-"""
-    get_block_positions(filename::String)
-
-Returns a dictionary with the starting positions of all blocks in a snapshot in bits.
-"""
-function get_block_positions(filename::String)
-
-    f = open(filename)
-    blocksize = read(f, Int32)
-
-    # only works for snap format 2
-    if blocksize != 8
-        error("Block search not possible - use snap_format 2!")
-    end
-
-    # allocate data dict
-    d = Dict{String, Integer}()
-
-    while eof(f) != true
-
-        # read block name
-        blockname = read_bockname(f)
-
-        p = position(f)
-
-        seek(f,p+8)
-
-        skipsize = read(f, UInt32)
-
-        skipsize = check_blocksize(f, p, skipsize)
-
-        # store blockname and position in Dict
-        d[blockname] = p+12
-
-        # skip to the next name block
-        seek(f,p+skipsize+20)
-
-    end
-
-    close(f)
-
-    return d
-end
 
 
 """
@@ -222,14 +178,4 @@ Shift coordinate `x` across the box border if the zero coordinate `x₀` is on t
         return x + boxsize
     end
     return x
-end
-
-
-"""
-    get_total_particles(h::AbstractGadgetHeader, parttype::Integer)
-
-Calculates to total number of particles present in the simulation. Accounts for integer overflow.
-"""
-function get_total_particles(h::AbstractGadgetHeader, parttype::Integer)
-    h.npartTotalHighWord[parttype+1] * 2^32 + h.nall[parttype+1]
 end

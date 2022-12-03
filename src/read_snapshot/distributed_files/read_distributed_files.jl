@@ -24,15 +24,13 @@ Reads IDs from `snap_file` and returns the indices of particles matching the `se
 """
 function filter_ids(snap_file::String, selected_ids::Vector{<:Integer}, parttype::Integer)
 
-    # read ids in file
-    ids = read_snap(snap_file, "ID", parttype) 
-    
-    # check which IDs match
-    return filter_by_ids( selected_ids, ids)
+    IDs = read_block(snap_file, "ID"; parttype)
+
+    return get_index_list(selected_ids, IDs)
 end
 
 """
-    read_blocks_over_all_files( snap_base::String, blocks::Array{String};
+    read_blocks_filtered( snap_base::String, blocks::Array{String};
                                 filter_function::Union{Function, Nothing}=nothing, 
                                 read_positions::Union{Dict, Nothing}=nothing, 
                                 parttype::Integer=0, verbose::Bool=true )
@@ -40,10 +38,10 @@ end
 Reads the specified blocks from all distributed files where particles pass the `filter_function`, or are given by a `Dict` of `read_positions`.
 For `read_positions` please see [`find_read_positions`](@ref).
 """
-function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
-                                    filter_function::Union{Function, Nothing}=nothing, 
-                                    read_positions::Union{Dict, Nothing}=nothing, 
-                                    parttype::Integer=0, verbose::Bool=true )
+function read_blocks_filtered(snap_base::String, blocks::Array{String};
+                              filter_function::Union{Function, Nothing}=nothing, 
+                              read_positions::Union{Dict, Nothing}=nothing, 
+                              parttype::Integer=0, verbose::Bool=true )
 
     # default behaviour is to find the particles to read.
     # If this number is known in advance it can be given as an input parameter.
@@ -70,8 +68,14 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
     # read info block
     snap_info = read_info(filename)
 
+    # check if mass block is supposed to be read
+    read_mass = !isnothing(findfirst(blocks .== "MASS")) ? true : false
+
+    # check if all blocks are present
+    blocks, no_mass_block = check_blocks(filename, blocks, parttype)
+
     # pre-allocate all data arrays in a dictionary
-    d = allocate_data_dict(blocks, read_positions["N_part"], snap_info, false)
+    d = allocate_data_dict(blocks, read_positions["N_part"], snap_info, no_mass_block)
     
     if verbose
         t2 = time_ns()
@@ -106,40 +110,40 @@ function read_blocks_over_all_files(snap_base::String, blocks::Array{String};
         # find the location of the blocks in the current file
         file_block_positions = get_block_positions(filename)
 
+        # open filestream
+        f = open(filename, "r")
+
         # read the blocks
-        @threads for block ∈ blocks
+        for block ∈ blocks
 
             block_info = get_requested_info(snap_info, block)
 
-            # add offset of particle types that should not be read
-            offset = 0
-            for i = 1:size(h.npart,1)
-                if (block_info.is_present[i] > 0) & (h.npart[i] > 0) & ( i < parttype + 1)
-                    offset += h.npart[i]
-                end
-            end
-
             # store the relevant data in the `d[block]` array
-            read_block_with_offset!(d[block], N_read, filename, 
-                                    file_block_positions[block],
-                                    block_info, offset, 
-                                    read_positions[file]["index"],
-                                    read_positions[file]["n_to_read"])
+            read_block!(d[block], f, read_positions[file]["index"],
+                        N_read, read_positions[file]["n_to_read"],
+                        parttype=parttype, 
+                        block_position=file_block_positions[block],
+                        info=block_info, h=h)
 
         end
+
+        close(f)
+
         # count the number of particles already read
         N_read += sum(read_positions[file]["n_to_read"])
 
         if verbose
             @info "Read $N_read / $(read_positions["N_part"]) particles"
         end
-        
-    
     end
 
     if verbose
         t2 = time_ns()
         @info "  elapsed: $(output_time(t1,t2)) s"
+    end
+
+    if read_mass && no_mass_block
+        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read)
     end
 
     return d
