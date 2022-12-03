@@ -112,7 +112,7 @@ To get all particles within a cubic box of the simulation you can use the functi
 [`read_particles_in_box`](@ref) takes a box defined by a lower-left corner and an upper-right corner and reads all requested blocks and particles in that volume.
 
 ```@docs
-function read_particles_in_box
+read_particles_in_box
 ```
 
 You can define an array of blocks you want to read, these will be read into a dictionary.
@@ -216,26 +216,16 @@ This requiers `GadgetIO.jl` v0.5 though.
 ### Read positions
 
 To avoid having to filter all files each time you want to read a snapshot you can also split the steps.
-You can first filter the particles to find the positions of the particles within the data blocks with [`find_read_positions`](@ref)
+You can first filter the particles to find the positions of the particles within the data blocks with
 
-```julia
-read_positions = find_read_positions(snap_base, filter_function)
+```@docs
+find_read_positions
 ```
-and then save the result as a binary file with [`save_read_positions`](@ref)
+and then save the result as a binary file with
 
-```julia
-save_read_positions(save_file, read_positions)
+```@docs
+save_read_positions
 ```
-where `save_file` is the filename you specified for storage.
-
-This also works with an [`AbstractGadgetGeometry`](@ref) by calling [`find_read_positions`](@ref) with
-
-```julia
-find_read_positions( snap_base::String, geometry::AbstractGadgetGeometry;
-                     parttype::Integer=0,
-                     verbose::Bool=true )
-```
-
 
 To re-use the `read_positions` you can load them from file using [`load_read_positions`](@ref)
 

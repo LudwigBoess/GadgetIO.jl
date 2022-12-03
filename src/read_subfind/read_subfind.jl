@@ -98,6 +98,7 @@ function read_subfind_length(filename::String, blockname::String)
     # blocks are type specific so we can use this to make our life easier
     parttype = subfind_block_parttype(filename, blockname)
 
+    # read header
     h = head_to_struct(filename)
 
     return h.npart[parttype+1]
