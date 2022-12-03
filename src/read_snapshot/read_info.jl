@@ -22,12 +22,6 @@ struct InfoLine
     is_present::Vector{Int32}       # array of flags for which particle type this block is present,
                                     # e.g. gas only:  [ 1, 0, 0, 0, 0, 0 ]
                                     # e.g. gas + BHs: [ 1, 0, 0, 0, 0, 1 ]
-
-    function InfoLine(block_name="", data_type=Float32, n_dim=Int32(0),
-        is_present=zeros(Int32, 6))
-    
-        new(block_name, data_type, n_dim, is_present)
-    end
 end
 
 

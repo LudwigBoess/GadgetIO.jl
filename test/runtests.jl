@@ -51,7 +51,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
     @testset "Objects" begin
         @test_nowarn SnapshotHeader()
-        @test_nowarn InfoLine()
+        @test_nowarn InfoLine("POS", Float32, 3, [1, 1, 1, 1, 1, 1])
     end
 
     @testset "Read Snapshot" begin
