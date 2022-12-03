@@ -118,6 +118,16 @@ mvir, haloids = read_subfind(filebase, "MVIR", [0, 1, 2, 3]; return_haloid=true)
 
 The results are returned in the order of the given indices.
 
+## Converting global halo indices to HaloIDs
+
+If you want to convert global halo indices to [`HaloID`](@ref)s use
+
+```@docs
+global_idxs_to_halo_id
+```
+
+You can then save the `HaloID`s with [Saving/Loading HaloIDs](@ref) or convert them to `read_positions` with [`halo_ids_to_read_positions`](@ref).
+
 
 ## Reading particles in a halo
 
