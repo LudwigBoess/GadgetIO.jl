@@ -23,6 +23,7 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
 
     @inbounds for i = 1:N_files
 
+        # get filename for relevant file
         filename = select_file(filebase, files[i])
 
         # read header of the file
@@ -43,26 +44,23 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
         # Vector of field names (KEY, NKEY, OKEY)
         fields = getfield.(key_info, :block_name)
 
-        # Reads the following in, respectively:
-        # - key file data
-        # - number of particles associated with PH key
-        # - offsets in the blocks to get to the relevant particles
+        # reads which keys are contained in the file
         keys_in_file = read_block(filename_keyfile, "KEY", 
                                    info = key_info[findfirst(==("KEY"), fields)],
                                    h = key_h; 
                                    parttype)
 
+        # reads how many particles are associated with the key
         part_per_key = read_block(filename_keyfile, "NKEY", 
                                    info = key_info[findfirst(==("NKEY"), fields)],
                                    h = key_h;
                                    parttype)
 
-
+        # reads the offset between the beginning of the array and the beginning of the key 
         offset_key   = read_block(filename_keyfile, "OKEY", 
                                    info = key_info[findfirst(==("OKEY"), fields)],
                                    h = key_h; 
                                    parttype)
-
 
         if verbose
             @info "Calculating index list..."
@@ -92,11 +90,11 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
         end
 
         # store the arrays for later reading
-        d[i]   = Dict("index"     => offset_key[use_block],
+        d[files[i]]   = Dict("index"     => offset_key[use_block],
                       "n_to_read" => part_per_key[use_block])
 
         # sum up all particles to read
-        d["N_part"] += sum(d[i]["n_to_read"])
+        d["N_part"] += sum(d[files[i]]["n_to_read"])
 
     end # for i = 1:N_files
 
