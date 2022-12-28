@@ -13,18 +13,15 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
                                         keylist::Vector{<:Integer}, key_info::Vector{InfoLine};
                                         parttype::Integer, verbose::Bool)
 
-    # store number of file
-    N_files = length(files)
-
     # allocate arrys to store reading information
     d = Dict()
 
     d["N_part"] = 0
 
-    @inbounds for i = 1:N_files
+    @inbounds for file ∈ files
 
         # get filename for relevant file
-        filename = select_file(filebase, files[i])
+        filename = select_file(filebase, file)
 
         # read header of the file
         h = read_header(filename)
@@ -37,7 +34,7 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
         key_h.num_files = 1
 
         if iszero(h.npart[parttype+1])
-            @info "No particles of type $parttype in file $(i)!"
+            @info "No particles of type $parttype in file $(file)!"
             continue
         end
 
@@ -90,13 +87,13 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
         end
 
         # store the arrays for later reading
-        d[files[i]]   = Dict("index"     => offset_key[use_block],
+        d[file]   = Dict("index"     => offset_key[use_block],
                       "n_to_read" => part_per_key[use_block])
 
         # sum up all particles to read
-        d["N_part"] += sum(d[files[i]]["n_to_read"])
+        d["N_part"] += sum(d[file]["n_to_read"])
 
-    end # for i = 1:N_files
+    end # for file ∈ files
 
     return d
 end
