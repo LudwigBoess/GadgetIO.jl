@@ -77,19 +77,19 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             snap_base = "snap_002"
 
             blocks = ["POS", "ID", "RHO"]
-            data = read_blocks_filtered(snap_base, blocks, filter_function = pass_all, parttype = 0)
+            data = read_blocks_filtered(snap_base, blocks, filter_function=pass_all, parttype=0)
 
-            rho = read_block(snap_base, "RHO", parttype = 0)
+            rho = read_block(snap_base, "RHO", parttype=0)
 
             @test length(data["RHO"]) == length(rho)
 
             @test data["RHO"] == rho
 
-            id = read_block(snap_base, "ID", parttype = 0)
+            id = read_block(snap_base, "ID", parttype=0)
 
             @test sort(data["ID"]) == sort(id)
 
-            pos = read_block(snap_base, "POS", parttype = 0)
+            pos = read_block(snap_base, "POS", parttype=0)
 
             @test data["POS"] == pos
 
@@ -101,12 +101,12 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @testset "Brute-Force" begin
                 center = Float32[3978.9688, -95.40625, -8845.25]
                 rvir = 118.76352
-                pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys = false, parttype = 1)
+                pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false, parttype=1)
 
                 @test pos[:, 1] ≈ Float32[3882.5537, -20.574343, -8768.669]
 
                 pos = read_particles_in_box("snap_002", "POS", center .- rvir, center .+ rvir,
-                    use_keys = false, parttype = 1, verbose = false)
+                    use_keys=false, parttype=1, verbose=false)
 
                 @test pos[:, 1] ≈ Float32[3882.5537, -20.574343, -8768.669]
             end
@@ -114,17 +114,29 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @testset "Peano-Hilbert reading" begin
 
                 center = [32572.607, 33825.95, 26314.158]
-                rvir   = 1138.885
+                rvir = 1138.885
 
-                pos = read_particles_in_volume("snap_144", "POS", center, rvir, use_keys = true, parttype = 1)
+                pos = read_particles_in_volume("snap_144", "POS", center, rvir, use_keys=true, parttype=1, verbose=true)
+
+                id = read_particles_in_volume("snap_144", "ID", center, rvir, use_keys=true, parttype=1, verbose=false)
 
                 # check if correct number of particles were read
                 @test size(pos, 2) == 11981
 
                 # check if the positions are the same as in Klaus' IDL code
-                @test pos[:,1] ≈ Float32[31486.8, 33696.7, 25475.5]
-                @test pos[:,2] ≈ Float32[32027.1, 33818.6, 25249.8]
-                @test pos[:,3] ≈ Float32[31978.6, 33792.4, 25175.6]
+                @test pos[:, 1] ≈ Float32[31486.8, 33696.7, 25475.5]
+                @test pos[:, 2] ≈ Float32[32027.1, 33818.6, 25249.8]
+                @test pos[:, 3] ≈ Float32[31978.6, 33792.4, 25175.6]
+
+                @test pos[:, 1:10] ≈ Float32[31486.781 32027.072 31978.645 32176.344 32121.607 32016.475 31969.11 31932.04 32121.26 32127.13; 33696.67 33818.57 33792.375 33933.582 34023.098 33961.69 33963.83 34092.285 34075.18 34012.707; 25475.465 25249.795 25175.584 25233.756 25304.545 25254.64 25245.88 25347.342 25327.582 25469.148]
+                @test pos[:, end-10:end] ≈ Float32[32736.15 32729.447 32881.92 32840.797 31663.264 31936.314 32008.166 32007.818 32062.03 32029.402 32049.965; 34642.566 34646.56 34533.527 34535.62 34514.78 34576.348 34734.242 34731.906 34826.69 34821.555 34925.05; 25311.725 25476.305 25346.922 25362.049 25434.195 25240.049 25428.146 25396.178 25425.773 25233.172 25381.234]
+
+                # check if IDs are correct 
+                #@test id[1:10] ≈ UInt64[0x00000000000d8b92, 0x00000000000c3027, 0x00000000000df58f, 0x00000000000bddac, 0x00000000000dfe19, 0x00000000000c0864, 0x00000000000c1f2c, 0x00000000000de478, 0x00000000000bd814, 0x00000000000df867]
+                #@test id[end-10:end] ≈ UInt64[0x00000000000d4cb4, 0x00000000000c3ee6, 0x00000000000bebea, 0x00000000000ce9c3, 0x00000000000e5e7d, 0x00000000000e3978, 0x00000000000c331a, 0x00000000000c10ee, 0x00000000000c13c7, 0x00000000000c24dd, 0x00000000000e364e]
+
+                @test id[11480-10:11480] ≈ UInt64[0x00000000000db2e7, 0x00000000000d9f13, 0x00000000000db89a, 0x00000000000dc9af, 0x00000000000de350, 0x00000000000dbe65, 0x00000000000ddd9e, 0x00000000000de629, 0x00000000000dbe4b, 0x00000000000dbb72, 0x00000000000de077]
+                @test id[11481:11490]    ≈ UInt64[0x00000000000d9960, 0x00000000000da206, 0x00000000000be085, 0x00000000000bc6fe, 0x00000000000d858d, 0x00000000000d9688, 0x00000000000d6ec5, 0x00000000000d57fd, 0x00000000000e1456, 0x00000000000ce048]
             end
 
         end
@@ -136,7 +148,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @testset "Cube" begin
 
                 cube = GadgetCube(center .- rvir, center .+ rvir)
-                pos = read_particles_in_geometry("snap_002", "POS", cube, use_keys = false, parttype = 1)
+                pos = read_particles_in_geometry("snap_002", "POS", cube, use_keys=false, parttype=1)
 
                 @test pos["POS"][:, 1] ≈ Float32[3882.5537, -20.574343, -8768.669]
             end
@@ -144,7 +156,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @testset "Sphere" begin
                 sphere = GadgetSphere(center, rvir)
 
-                data = read_particles_in_geometry("snap_002", "POS", sphere, use_keys = false, parttype = 1)
+                data = read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
 
                 @test data["POS"][:, 1:3] ≈ Float32[3904.7957 3871.5486 4038.2986; -135.69522 -79.47088 -62.441578; -8837.774 -8831.329 -8873.304]
             end
@@ -153,7 +165,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
                 cylinder = GadgetCylinder(center .- 0.5rvir, center .+ 0.5rvir,
                     0.5rvir)
 
-                data = read_particles_in_geometry("snap_002", "POS", cylinder, use_keys = false, parttype = 1)
+                data = read_particles_in_geometry("snap_002", "POS", cylinder, use_keys=false, parttype=1)
 
                 @test data["POS"][:, 1:3] ≈ Float32[3904.7957 4049.4988 4035.499; -135.69522 -91.40538 -105.1906; -8837.774 -8828.907 -8844.973]
             end
@@ -162,12 +174,11 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
         end
 
-
         @testset "Read particles in halo" begin
 
-            pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys = false)
+            pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys=false)
 
-            println(size(pos,2))
+            println(size(pos, 2))
             #@test pos[:, 1] ≈ Float32[3909.1545, -189.9392, -8845.135]
             @test pos[:, 1] ≈ [3978.563, -96.09807, -8846.737]
 
@@ -182,7 +193,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             rvir = 118.76352
 
             # with filter function
-            ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype = 1)
+            ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1)
             read_positions = find_read_positions("snap_002", ff)
 
             @test read_positions["N_part"] == 87
@@ -195,7 +206,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
             # with gadget geometry
             cube = GadgetCube(center .- rvir, center .+ rvir)
-            read_positions_geo = find_read_positions("snap_002", cube, parttype = 1)
+            read_positions_geo = find_read_positions("snap_002", cube, parttype=1)
 
             @test read_positions_geo["N_part"] == 87
 
@@ -218,8 +229,8 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
         @testset "Error Handling" begin
             #@test_throws ErrorException("Please specify particle type!") read_block("snap_002.0", "POS")
-            @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype = 5, h = SnapshotHeader())
-            @test_throws ErrorException("Block ABCD not present!") read_block("snap_002.0", "ABCD", parttype = 0)
+            @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype=5, h=SnapshotHeader())
+            @test_throws ErrorException("Block ABCD not present!") read_block("snap_002.0", "ABCD", parttype=0)
             @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")
             @test_throws ErrorException("Please provide either a dictionary with read positions or a filter function!") read_blocks_filtered("snap_002", ["POS"])
         end
@@ -253,21 +264,21 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
                 @test center ≈ Float32[3978.9688, -95.40625, -8845.25]
                 @test rvir ≈ 118.76352
                 @test haloid == HaloID(0, 4)
-            end 
+            end
 
             # @testset "Read Positions" begin
             #     dummy = filter_subfind("sub_002", filter_dummy)
 
             #     read_positions = GadgetIO.halo_ids_to_read_positions(dummy)
 
-                
+
 
             # end
 
             @testset "IO" begin
                 # check if filter works
                 dummy = filter_subfind("sub_002", filter_dummy)
-                
+
                 filename = "halo_ids.dat"
 
                 @test_nowarn save_halo_ids(filename, dummy)
@@ -275,7 +286,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
                 dummy2 = load_halo_ids(filename)
                 @test dummy2 == dummy
             end
-            
+
         end
 
         @testset "Read halo props" begin
@@ -305,10 +316,10 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             pos2, haloids = read_subfind("sub_002", "SPOS"; return_haloid=true)
             @test pos == pos2
 
-            @test read_halo_prop("sub_002", "SPOS", haloids[end-4]) == pos[:,end-4]
+            @test read_halo_prop("sub_002", "SPOS", haloids[end-4]) == pos[:, end-4]
 
             ids = [0, 10, length(haloids) - 3]
-            @test read_subfind("sub_002", "SPOS", ids) == pos[:,ids.+1]
+            @test read_subfind("sub_002", "SPOS", ids) == pos[:, ids.+1]
 
             pos_from_ids, haloids_from_ids = read_subfind("sub_002", "SPOS", ids; return_haloid=true)
             @test read_subfind("sub_002", "SPOS", ids) == pos_from_ids
@@ -417,7 +428,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         close(f)
 
         pos_info = InfoLine("POS", Float32, 3, [1, 0, 0, 0, 0, 0])
-        x_check = read_block(output_file, "POS", info = pos_info, parttype = 0)
+        x_check = read_block(output_file, "POS", info=pos_info, parttype=0)
 
         # check if we read the same thing we wrote
         @test x_check == x
@@ -445,7 +456,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
         end
         # snap format 1
         f = open(output_file, "w")
-        @test_logs (:info, "Writing block done.") write_block(f, x, "", snap_format = 1)
+        @test_logs (:info, "Writing block done.") write_block(f, x, "", snap_format=1)
 
         @test_throws ErrorException("Please specify blockname!") write_block(f, x, "")
         close(f)
