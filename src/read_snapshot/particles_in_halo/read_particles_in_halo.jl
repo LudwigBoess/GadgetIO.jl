@@ -139,8 +139,6 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     # read all IDs of the particles contained in a halo
     halo_ids = read_pids(sub_base, N_ids, offset)
 
-    println("pids done")
-
     if verbose
         t2 = Dates.now()
         @info "IDs read. Took: $(t2 - t1)"
