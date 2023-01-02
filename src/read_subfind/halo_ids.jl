@@ -18,7 +18,7 @@ end
 
 Converts global halo indices to `HaloID`s.
 """
-function global_idxs_to_halo_id(sub_base::String, idxs::Vector{<:Integer}; 
+function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer}; 
                                 parttype::Integer=0)
 
     # idxs are 0-indexed
@@ -89,7 +89,7 @@ function global_idxs_to_halo_id(sub_base::String, offset::Integer, n_to_read::In
         finish_read = offset + n_to_read
     end
 
-    idxs = collect(offset:finish_read)
+    idxs = offset:finish_read
 
     return global_idxs_to_halo_id(sub_base, idxs; parttype)
 end
