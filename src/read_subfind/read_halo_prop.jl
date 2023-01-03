@@ -73,7 +73,7 @@ function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, halo
     read_positions = halo_ids_to_read_positions(haloids)
 
     # read filtered blocks
-    return read_block_filtered(sub_base, blocks; read_positions, parttype, verbose)
+    return read_blocks_filtered(sub_base, blocks; read_positions, parttype, verbose)
 end
 
 """
@@ -106,7 +106,7 @@ function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_gl
     read_positions = halo_ids_to_read_positions(haloids)
 
     # read filtered blocks
-    return read_block_filtered(sub_base, blocks; read_positions, parttype, verbose)
+    return read_blocks_filtered(sub_base, blocks; read_positions, parttype, verbose)
 end
 
 """
