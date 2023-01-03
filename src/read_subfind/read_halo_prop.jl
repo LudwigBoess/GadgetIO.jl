@@ -28,7 +28,7 @@ end
 Get halo property from block `blockname` by global halo index `i_global` (zero-based index).
 """
 function read_halo_prop(filebase, blockname::AbstractString, i_global::Integer; verbose::Bool=true)
-    val, id = read_halo_prop_and_id(filebase, i_global, blockname; verbose)
+    val, id = read_halo_prop_and_id(filebase, blockname, i_global; verbose)
     return val
 end
 
