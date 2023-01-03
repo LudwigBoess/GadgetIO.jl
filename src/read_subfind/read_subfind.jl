@@ -105,7 +105,7 @@ function check_subfind_parttype_for_multiple_blocks(sub_base, blocks::AbstractVe
 
         # error handling
         if parttype_block != parttype 
-            error("All requested blocks must be for the same halo type. Block $block is not available for halo type $parttype.")
+            error("All requested blocks must be for the same halo type. Block $block is not available for halo type $parttype but only for halo type $parttype_block.")
         end
     end
 
