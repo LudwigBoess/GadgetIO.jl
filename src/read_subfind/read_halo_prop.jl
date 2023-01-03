@@ -55,3 +55,67 @@ function read_halo_prop_and_id(sub_base, blockname::AbstractString, i_global::In
 
     return read_halo_prop(sub_base, blockname, haloid; verbose), haloid
 end
+
+
+
+"""
+    read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloids::Vector{HaloID}; verbose::Bool=true)
+
+Get halo properties defined by an `Array` of blocks for an `Array` of `HaloID`s. Please note that this only works if all blocks are of the same halo type.
+    Returns a dictionary with all requested blocks.
+"""
+function read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloids::Vector{HaloID}; verbose::Bool=true)
+    
+    # check if all blocks are for the same parttype
+    parttype = check_subfind_parttype_for_multiple_blocks(sub_base, blocks)
+
+    # get read positions from the array of HaloIDs 
+    read_positions = halo_ids_to_read_positions(haloids)
+
+    # read filtered blocks
+    return read_block_filtered(sub_base, blocks; read_positions, parttype, verbose)
+end
+
+"""
+    read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloid::HaloID; verbose::Bool=true)
+
+Get halo properties defined by an `Array` of blocks for a `HaloID`. Please note that this only works if all blocks are of the same halo type.
+Returns a dictionary with all requested blocks.
+"""
+function read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloid::HaloID; verbose::Bool=true)
+    # call default function
+    read_halo_prop(sub_base, blocks, [haloid]; verbose)
+end
+
+
+"""
+    read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vector{Integer}; verbose::Bool=true)
+
+Get halo properties defined by an `Array` of blocks for an `Array` of global indices. Please note that this only works if all blocks are of the same halo type.
+Returns a dictionary with all requested blocks.
+"""
+function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vector{Integer}; verbose::Bool=true)
+    
+    # check if all blocks are for the same parttype
+    parttype = check_subfind_parttype_for_multiple_blocks(sub_base, blocks)
+
+    # convert global halo idxs to HaloIDs
+    haloids = global_idxs_to_halo_id(sub_base, i_global; parttype)
+
+    # get read positions from the array of HaloIDs 
+    read_positions = halo_ids_to_read_positions(haloids)
+
+    # read filtered blocks
+    return read_block_filtered(sub_base, blocks; read_positions, parttype, verbose)
+end
+
+"""
+    read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Integer; verbose::Bool=true)
+
+Get halo properties defined by an `Array` of blocks for a global index. Please note that this only works if all blocks are of the same halo type.
+Returns a dictionary with all requested blocks.
+"""
+function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Integer; verbose::Bool=true)
+    # call default function
+    read_halo_prop(sub_base, blocks, [haloid]; verbose)
+end
