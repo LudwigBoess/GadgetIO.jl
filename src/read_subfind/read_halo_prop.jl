@@ -89,12 +89,12 @@ end
 
 
 """
-    read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vector{Integer}; verbose::Bool=true)
+    read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::AbstractVector{Integer}; verbose::Bool=true)
 
 Get halo properties defined by an `Array` of blocks for an `Array` of global indices. Please note that this only works if all blocks are of the same halo type.
 Returns a dictionary with all requested blocks.
 """
-function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vector{Integer}; verbose::Bool=true)
+function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::AbstractVector{Integer}; verbose::Bool=true)
     
     # check if all blocks are for the same parttype
     parttype = check_subfind_parttype_for_multiple_blocks(sub_base, blocks)
