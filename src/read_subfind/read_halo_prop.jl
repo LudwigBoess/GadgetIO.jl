@@ -99,7 +99,7 @@ Returns a dictionary with all requested blocks.
 """
 function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
     if !issorted(i_global)
-        @warn "The Vector of HaloIDs is not sorted for requesting the properties from Subfind, the returned properties are returned as if they were sorted, however."
+        @warn "The Vector of i_global is not sorted for requesting the properties from Subfind, the returned properties are returned as if they were sorted, however."
     end
     
     # check if all blocks are for the same parttype
