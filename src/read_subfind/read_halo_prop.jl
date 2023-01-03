@@ -117,5 +117,5 @@ Returns a dictionary with all requested blocks.
 """
 function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Integer; verbose::Bool=true)
     # call default function
-    read_halo_prop(sub_base, blocks, [haloid]; verbose)
+    read_halo_prop(sub_base, blocks, [i_global]; verbose)
 end
