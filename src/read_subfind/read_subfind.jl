@@ -87,6 +87,31 @@ function subfind_block_parttype(filename, blockname, info=nothing)
     return findfirst(==(1), info.is_present) - 1
 end
 
+"""
+    check_subfind_parttype_for_multiple_blocks(sub_base, blocks::Vector{AbstractString})
+
+Checks if all requested blocks are for the same halo type and returns the correct halo type if true.
+"""
+function check_subfind_parttype_for_multiple_blocks(sub_base, blocks::Vector{AbstractString})
+
+    # blocks are type specific so we can use this to make our life easier
+    parttype = subfind_block_parttype(sub_base, blocks[1])
+
+    # check if all requested blocks are for the same halo type
+    for block ∈ blocks 
+        
+        # read parttype of current block
+        parttype_block = subfind_block_parttype(sub_base, block)
+
+        # error handling
+        if parttype_block != parttype 
+            error("All requested blocks must be for the same halo type. Block $block is not available for halo type $parttype.")
+        end
+    end
+
+    # if all parttypes match we can return the correct parttype
+    return parttype
+end
 
 """
     read_subfind_length(filename::String, blockname::String)
