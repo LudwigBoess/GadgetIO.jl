@@ -11,6 +11,7 @@ struct HaloID
     id::Int64
 end
 
+Base.isless(x::HaloID, y::HaloID) = isless((x.file, x.id), (y.file, y.id))
 
 """
     global_idxs_to_halo_id(sub_base::String, idxs::Vector{<:Integer}; 
