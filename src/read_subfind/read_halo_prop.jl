@@ -59,12 +59,12 @@ end
 
 
 """
-    read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloids::Vector{HaloID}; verbose::Bool=true)
+    read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, haloids::AbstractVector{HaloID}; verbose::Bool=true)
 
 Get halo properties defined by an `Array` of blocks for an `Array` of `HaloID`s. Please note that this only works if all blocks are of the same halo type.
     Returns a dictionary with all requested blocks.
 """
-function read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloids::Vector{HaloID}; verbose::Bool=true)
+function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, haloids::AbstractVector{HaloID}; verbose::Bool=true)
     
     # check if all blocks are for the same parttype
     parttype = check_subfind_parttype_for_multiple_blocks(sub_base, blocks)
@@ -77,24 +77,24 @@ function read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloids::Vecto
 end
 
 """
-    read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloid::HaloID; verbose::Bool=true)
+    read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, haloid::HaloID; verbose::Bool=true)
 
 Get halo properties defined by an `Array` of blocks for a `HaloID`. Please note that this only works if all blocks are of the same halo type.
 Returns a dictionary with all requested blocks.
 """
-function read_halo_prop(sub_base, blocks::Vector{AbstractString}, haloid::HaloID; verbose::Bool=true)
+function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, haloid::HaloID; verbose::Bool=true)
     # call default function
     read_halo_prop(sub_base, blocks, [haloid]; verbose)
 end
 
 
 """
-    read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vector{Integer}; verbose::Bool=true)
+    read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
 
 Get halo properties defined by an `Array` of blocks for an `Array` of global indices. Please note that this only works if all blocks are of the same halo type.
 Returns a dictionary with all requested blocks.
 """
-function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vector{Integer}; verbose::Bool=true)
+function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
     
     # check if all blocks are for the same parttype
     parttype = check_subfind_parttype_for_multiple_blocks(sub_base, blocks)
@@ -110,12 +110,12 @@ function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Vect
 end
 
 """
-    read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Integer; verbose::Bool=true)
+    read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::Integer; verbose::Bool=true)
 
 Get halo properties defined by an `Array` of blocks for a global index. Please note that this only works if all blocks are of the same halo type.
 Returns a dictionary with all requested blocks.
 """
-function read_halo_prop(sub_base, blocks::Vector{AbstractString}, i_global::Integer; verbose::Bool=true)
+function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::Integer; verbose::Bool=true)
     # call default function
     read_halo_prop(sub_base, blocks, [i_global]; verbose)
 end
