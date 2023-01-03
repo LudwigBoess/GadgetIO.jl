@@ -88,11 +88,11 @@ function subfind_block_parttype(filename, blockname, info=nothing)
 end
 
 """
-    check_subfind_parttype_for_multiple_blocks(sub_base, blocks::Vector{AbstractString})
+    check_subfind_parttype_for_multiple_blocks(sub_base, blocks::AbstractVector{<:AbstractString})
 
 Checks if all requested blocks are for the same halo type and returns the correct halo type if true.
 """
-function check_subfind_parttype_for_multiple_blocks(sub_base, blocks::Vector{AbstractString})
+function check_subfind_parttype_for_multiple_blocks(sub_base, blocks::AbstractVector{<:AbstractString})
 
     # blocks are type specific so we can use this to make our life easier
     parttype = subfind_block_parttype(sub_base, blocks[1])
