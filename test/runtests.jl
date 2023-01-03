@@ -178,7 +178,6 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
             pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys=false)
 
-            println(size(pos, 2))
             #@test pos[:, 1] ≈ Float32[3909.1545, -189.9392, -8845.135]
             @test pos[:, 1] ≈ [3978.563, -96.09807, -8846.737]
 
@@ -321,7 +320,11 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             pos2, haloids = read_subfind("sub_002", "SPOS"; return_haloid=true)
             @test pos == pos2
 
+            # reading halo property for HaloID 
             @test read_halo_prop("sub_002", "SPOS", haloids[end-4]) == pos[:, end-4]
+            
+            # reading halo property for index (0-based)
+            @test read_halo_prop("sub_002", "SPOS", length(haloids) - 5) == pos[:, end-4]
 
             ids = [0, 10, length(haloids) - 3]
             @test read_subfind("sub_002", "SPOS", ids) == pos[:, ids.+1]
@@ -367,6 +370,9 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
             # halo prop error handling
             @test_throws ErrorException("All requested blocks must be for the same halo type. Block MTOP is not available for halo type 1 but only for halo type 0.") read_halo_prop("sub_002", ["SPOS", "MTOP"], 1:3)
+
+            @test_logs (:warn, "The Vector of HaloIDs is not sorted for requesting the properties from Subfind, the returned properties are returned as if they were sorted, however.") read_halo_prop("sub_002", ["GPOS", "MTOP"], [HaloID(0,3), HaloID(0,2)], verbose=false)
+            @test_logs (:warn, "The Vector of i_global is not sorted for requesting the properties from Subfind, the returned properties are returned as if they were sorted, however.") read_halo_prop("sub_002", ["GPOS", "MTOP"], [3,2], verbose=false)
         end
 
     end
