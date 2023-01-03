@@ -1,5 +1,12 @@
 # Read Subfind Data
 
+```@meta
+CurrentModule = GadgetIO
+DocTestSetup = quote
+    using GadgetIO
+end
+```
+
 `Gadget` contains an on-the-fly halo-finder as described in [Springel et al (2001)](https://ui.adsabs.harvard.edu/link_gateway/2001MNRAS.328..726S/doi:10.1046/j.1365-8711.2001.04912.x) or [Dolag et al (2009)](https://ui.adsabs.harvard.edu/link_gateway/2009MNRAS.399..497D/doi:10.1111/j.1365-2966.2009.15034.x).
 This sections provides an overview of the functions you can use to work with this output.
 Please note that you need to compile `Gadget` with `WRITE_SUB_IN_SNAP_FORMAT` to use this functionality.
@@ -9,17 +16,33 @@ Please note that since subfind files are equivalent to snapshot files you can us
 ## Reading the header
 
 As in the normal snapshot the subfind output also contains a `HEAD` block with useful information.
-You can read the header of the subfind output into a [`SubfindHeader`](@ref) object
-
-```@docs
-SubfindHeader
-```
-
-by using
+You can read the header of the subfind output into a [`SubfindHeader`](@ref) object by using
 
 ```@docs
 read_subfind_header
 ```
+
+The subfind header contains the fields 
+
+| Name                                 | Meaning                                                                                |
+| :----------------------------------  | :------------------------------------------------------------------------------------- |
+| `nhalos::Int32`                      | number of halos in the output file                                                     |
+| `nsubhalos::Int32`                   | number of subhalos in the output file                                                  |
+| `nfof::Int32`                        | number of particles in the FoF                                                         |
+| `ngroups::Int32`                     | number of large groups in the output file                                              |
+| `time::Float64`                      | time / scale factor of the simulation                                                  |
+| `z::Float64`                         | redshift of the simulation                                                             |
+| `tothalos::UInt32`                   | total number of halos over all output files                                            |
+| `totsubhalos::UInt32`                | total number of subhalos over all output files                                         |
+| `totfof::UInt32`                     | total number of particles in the FoF                                                   |
+| `totgroups::UInt32`                  | 1 if simulation was run with cooling, else 0                                           |
+| `num_files::Int32`                   | number of files over which subfind data is distributed                                 |
+| `boxsize::Float64`                   | total size of the simulation box                                                       |
+| `omega_0::Float64`                   | Omega matter                                                                           |
+| `omega_l::Float64`                   | Omega dark enery                                                                       |
+| `h0::Float64`                        | little h                                                                               |
+| `flag_doubleprecision::Int32`        | 1 if snapshot is in double precision, else 0                                           |
+| `flag_ic_info::Int32`                | 1 if initial snapshot file contains an info block, else 0                              |
 
 ## Reading the subfind files
 
@@ -37,11 +60,13 @@ If you want to read specific halos from the subfind output you can use the funct
 filter_subfind
 ```
 
-This will return an array of [HaloID](@ref)s 
+This will return an array of [HaloID](@ref)s which contain the fields
 
-```@docs
-HaloID
-```
+| Name                                 | Meaning                                                                                |
+| :----------------------------------  | :------------------------------------------------------------------------------------- |
+| `file::Int64`                        | number of the subfile that contains the halo, e.g. "sub_000.2"                         |
+| `id::Int64`                          | position in the block                                                                  |
+
 
 This can be used either with [Reading halo property by HaloID](@ref) 
 
