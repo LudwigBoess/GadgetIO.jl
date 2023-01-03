@@ -266,14 +266,19 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
                 @test haloid == HaloID(0, 4)
             end
 
-            # @testset "Read Positions" begin
-            #     dummy = filter_subfind("sub_002", filter_dummy)
+            @testset "Read Positions" begin
 
-            #     read_positions = GadgetIO.halo_ids_to_read_positions(dummy)
+                # get same filtering as before
+                dummy = filter_subfind("sub_002", filter_dummy)
+                read_positions = GadgetIO.halo_ids_to_read_positions(dummy)
 
+                blocks = ["GPOS", "MTOP"]
+                data_from_haloids = read_halo_prop("sub_002", blocks, dummy)
 
+                data_from_read_positions = read_blocks_filtered("sub_002", blocks; read_positions)
 
-            # end
+                @test data_from_read_positions == data_from_haloids
+            end
 
             @testset "IO" begin
                 # check if filter works
@@ -324,6 +329,32 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             pos_from_ids, haloids_from_ids = read_subfind("sub_002", "SPOS", ids; return_haloid=true)
             @test read_subfind("sub_002", "SPOS", ids) == pos_from_ids
             @test haloids_from_ids == haloids[ids.+1]
+
+            # load reference data
+            msub_from_ids, haloids_from_ids = read_subfind("sub_002", "MSUB", ids; return_haloid=true)
+
+            # read multiple blocks at the same time
+            blocks = ["SPOS", "MSUB"]
+
+            # for array of indices
+            data_from_ids = read_halo_prop("sub_002", blocks, ids)
+            @test data_from_ids["SPOS"] == pos_from_ids
+            @test data_from_ids["MSUB"] == msub_from_ids
+
+            # for single index
+            data_from_ids = read_halo_prop("sub_002", blocks, ids[1])
+            @test data_from_ids["SPOS"][1] == pos_from_ids[1]
+            @test data_from_ids["MSUB"][1] == msub_from_ids[1]
+
+            # for array of HaloIDs
+            data_from_haloids = read_halo_prop("sub_002", blocks, haloids[ids.+1])
+            @test data_from_haloids["SPOS"] == pos_from_ids
+            @test data_from_haloids["MSUB"] == msub_from_ids
+
+            # for single HaloID
+            data_from_haloids = read_halo_prop("sub_002", blocks, haloids[ids.+1][1])
+            @test data_from_haloids["SPOS"][1] == pos_from_ids[1]
+            @test data_from_haloids["MSUB"][1] == msub_from_ids[1]
         end
 
         @testset "Error handling" begin
@@ -333,6 +364,9 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
             filename = "pos_sedov.dat"
             @test_throws ErrorException("incorrect file format encountered when reading header of $filename") read_subfind_header(filename)
+
+            # halo prop error handling
+            @test_throws ErrorException("All requested blocks must be for the same halo type. Block MTOP is not available for halo type 1 but only for halo type 0.") read_halo_prop("sub_002", ["SPOS", "MTOP"], 1:3)
         end
 
     end
