@@ -19,8 +19,8 @@ Base.isless(x::HaloID, y::HaloID) = isless((x.file, x.id), (y.file, y.id))
 
 Converts global halo indices to `HaloID`s.
 """
-function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer}; 
-                                parttype::Integer=0)
+function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer};
+    parttype::Integer=0)
 
     # idxs are 0-indexed
     idx_local = idxs .+ 1
@@ -38,7 +38,7 @@ function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer
             halo_ids[i] = HaloID(0, idx_local)
         end
 
-    # if there are multiple subfiles we need to arrange the indices
+        # if there are multiple subfiles we need to arrange the indices
     else
         # get number of sub-files from header
         num_files = read_header(sub_base).num_files
@@ -51,12 +51,12 @@ function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer
             h = read_header(select_file(sub_base, filenum))
 
             # check currently relevant entries
-            sel = findall( halos_read .< idx_local .<= halos_read + h.npart[parttype+1] )
+            sel = findall(halos_read .< idx_local .<= halos_read + h.npart[parttype+1])
 
             # write into HaloIDs
             for entry ∈ idx_local[sel]
                 # store HaloID
-                halo_ids[i] = HaloID(filenum, entry-halos_read)
+                halo_ids[i] = HaloID(filenum, entry - halos_read)
                 # count up entries
                 i += 1
             end
@@ -73,12 +73,12 @@ end
 
 
 """
-    global_idxs_to_halo_id(sub_base::String, idxs::Vector{<:Integer}; 
+    global_idxs_to_halo_id(sub_base::String, offset::Integer, n_to_read::Integer;
                             parttype::Integer=0)
 
 Converts a given number of indices defined by `offset` and `n_to_read` to `HaloID`s.
 """
-function global_idxs_to_halo_id(sub_base::String, offset::Integer, n_to_read::Integer; 
+function global_idxs_to_halo_id(sub_base::String, offset::Integer, n_to_read::Integer;
                                 parttype::Integer=0)
 
     # read the header 
@@ -101,7 +101,7 @@ end
     halo_ids_to_read_positions(halo_ids::Vector{HaloID})
 
 Convert a `Vector` of `HaloID`s to a dictionary of `read_positions`. 
-To be used with [read_block_filtered](@ref).
+To be used with [`read_blocks_filtered`](@ref).
 """
 function halo_ids_to_read_positions(halo_ids::Vector{HaloID})
 
@@ -113,12 +113,12 @@ function halo_ids_to_read_positions(halo_ids::Vector{HaloID})
 
     # loop over all halo ids
     for file ∈ files
-        
+
         # filter all HaloIDs in the current file
-        sel = findall((x->x.file).(halo_ids) .== file)
+        sel = findall((x -> x.file).(halo_ids) .== file)
 
         # save all indices
-        store_arrays[file] = (p->p.id).(halo_ids[sel])
+        store_arrays[file] = (p -> p.id).(halo_ids[sel])
     end
 
     # allocate read_positions dict
@@ -130,7 +130,7 @@ function halo_ids_to_read_positions(halo_ids::Vector{HaloID})
         index, n_to_read = reduce_read_positions(store_arrays[file])
 
         # store Dicts
-        read_positions[file] = Dict( "index" => index, "n_to_read" => n_to_read)
+        read_positions[file] = Dict("index" => index, "n_to_read" => n_to_read)
     end
 
     # finally store all halos to be read
@@ -160,7 +160,7 @@ function read_positions_to_halo_ids(read_positions)
         # convert indices and numbers to read to HaloIDs
         for i = 1:length(read_positions[file]["index"]),
             j = 1:read_positions[file]["n_to_read"][i]
-            
+
             # store halo ids
             A[N_read] = HaloID(file, read_positions[file]["index"][i] + j)
             N_read += 1

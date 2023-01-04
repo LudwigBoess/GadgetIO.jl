@@ -1,12 +1,5 @@
 # File information
 
-```@meta
-CurrentModule = GadgetIO
-DocTestSetup = quote
-    using GadgetIO
-end
-```
-
 Since `Gadget` outputs in binary format it can be quite tedious to see what is actually contained in the file. For this `GadgetIO` provides a number of helper functions.
 
 ## Reading the header
@@ -49,13 +42,13 @@ the struct contains the following fields:
 [`read_header`](@ref) is a wrapper around:
 
 ```@docs
-head_to_struct
+GadgetIO.head_to_struct
 ```
 
 If you want to read the header information into a dictionary you can use:
 
 ```@docs
-head_to_dict
+GadgetIO.head_to_dict
 ```
 
 ## Getting the block names
@@ -78,7 +71,7 @@ block_present
 If you want to read in multiple blocks into individual variables you can speed the process up significantly by first getting the starting positions of the blocks with
 
 ```@docs
-get_block_positions
+GadgetIO.get_block_positions
 ```
 
 This returns a dictionary with the block names as keys and the starting position in bytes as an `Integer`:

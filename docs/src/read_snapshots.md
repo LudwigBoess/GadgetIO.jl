@@ -1,13 +1,5 @@
 # Read Snapshot Data
 
-
-```@meta
-CurrentModule = GadgetIO
-DocTestSetup = quote
-    using GadgetIO
-end
-```
-
 ---
 **NOTE**
 
@@ -81,22 +73,14 @@ This will return an array of the datatype of your simulation, usually `Float32`.
 
 If the snapshot has no info block this will fail unfortunately.
 
-You can still read the specific block by supplying a hand-constructed [`InfoLine`](@ref) object:
-
-```@docs
-InfoLine
-```
-
-and passing that to the function [`read_block`](@ref):
+You can still read the specific block by supplying a hand-constructed [`InfoLine`](@ref) struct and passing that to the function [`read_block`](@ref):
 
 ```julia
-pos = read_block(filename, "POS", info=pos_info, parttype=0)
+pos_info = InfoLine("POS", Float32, 3, [1,1,1,1,1,1])
+pos      = read_block(filename, "POS", info=pos_info, parttype=0)
 ```
 
-where `pos_info` is an [`InfoLine`](@ref) object.
-
-
-I will collect some example `InfoLine` objects in a later release to be able to read some common blocks even without an `INFO` block.
+I will collect some example `InfoLine` structs in a later release to be able to read some common blocks even without an `INFO` block.
 
 Since `v0.5` [`read_snap`](@ref) and [`read_block`](@ref) also work if you pass them a `file_base`.
 
@@ -144,8 +128,8 @@ struct YourGeometry{T} <: AbstractGadgetGeometry
 end
 ```
 
-and define the functions [`get_geometry_box_corners`](@ref) and [`get_geometry_mask`](@ref).
-[`get_geometry_box_corners`](@ref) has to return a `Tuple` of two vectors which define the lower left and upper right corner of a box that contains the `geometry`. [`get_geometry_mask`](@ref) has to return an array of indices for which `pos` is contained in the `geometry`.
+and define the functions [`GadgetIO.get_geometry_box_corners`](@ref) and [`GadgetIO.get_geometry_mask`](@ref).
+[`GadgetIO.get_geometry_box_corners`](@ref) has to return a `Tuple` of two vectors which define the lower left and upper right corner of a box that contains the `geometry`. [`GadgetIO.get_geometry_mask`](@ref) has to return an array of indices for which `pos` is contained in the `geometry`.
 
 In all functions `parttype` defines the particle type to be read, as in the previous read functions and `verbose` gives console output.
 There are also multiple dispatch versions of all functions available that only take a single `block` as input and return an array with the values instead of a dictionary.

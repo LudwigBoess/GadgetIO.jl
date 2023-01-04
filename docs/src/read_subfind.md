@@ -1,12 +1,5 @@
 # Read Subfind Data
 
-```@meta
-CurrentModule = GadgetIO
-DocTestSetup = quote
-    using GadgetIO
-end
-```
-
 `Gadget` contains an on-the-fly halo-finder as described in [Springel et al (2001)](https://ui.adsabs.harvard.edu/link_gateway/2001MNRAS.328..726S/doi:10.1046/j.1365-8711.2001.04912.x) or [Dolag et al (2009)](https://ui.adsabs.harvard.edu/link_gateway/2009MNRAS.399..497D/doi:10.1111/j.1365-2966.2009.15034.x).
 This sections provides an overview of the functions you can use to work with this output.
 Please note that you need to compile `Gadget` with `WRITE_SUB_IN_SNAP_FORMAT` to use this functionality.
@@ -16,7 +9,7 @@ Please note that since subfind files are equivalent to snapshot files you can us
 ## Reading the header
 
 As in the normal snapshot the subfind output also contains a `HEAD` block with useful information.
-You can read the header of the subfind output into a [`SubfindHeader`](@ref) object by using
+You can read the header of the subfind output into a [`GadgetIO.SubfindHeader`](@ref) object by using
 
 ```@docs
 read_subfind_header
@@ -60,7 +53,7 @@ If you want to read specific halos from the subfind output you can use the funct
 filter_subfind
 ```
 
-This will return an array of [HaloID](@ref)s which contain the fields
+This will return an array of [`HaloID`](@ref)s which contain the fields
 
 | Name                                 | Meaning                                                                                |
 | :----------------------------------  | :------------------------------------------------------------------------------------- |
@@ -85,34 +78,53 @@ load_halo_ids
 ```
 
 
-If you want to use [`HaloID`](@ref)s with [`read_block_filtered`](@ref) you can convert convert the [`HaloID`](@ref)s to `read_positions` by using
+If you want to use [`HaloID`](@ref)s with [`read_blocks_filtered`](@ref) you can convert convert the [`HaloID`](@ref)s to `read_positions` by using
 
 ```@docs
-halo_ids_to_read_positions
+GadgetIO.halo_ids_to_read_positions
 ```
 
-
-## Reading halo property by HaloID
-
-You can read any property of the halo that passed the `filter_function` (see [Filtered read-in](@ref)) by using 
+## Reading halo properties
 
 ```@docs
-read_halo_prop(::Any, ::AbstractString, ::HaloID)
+read_halo_prop
+```
+
+### By HaloID
+
+You can read any property of the halo that passed the `filter_function` (see [Filtered read-in](@ref)) by using [`read_halo_prop`](@ref) with an individual `HaloID`
+
+```julia
+read_halo_prop(sub_base, blockname::AbstractString, haloid::HaloID; verbose::Bool=true)
 ```
 
 So if you want to read e.g. the virial radius for the first halo that passed your `filter_function`
 
 ```julia
-mvir = read_halo_prop(filebase, filtered_subfind[1], "MVIR")
+mvir = read_halo_prop(filebase, "MVIR", filtered_subfind[1])
 ```
 
-HaloIDs can also be obtained in a vector of all halos by setting the keyword parameter `return_haloid` to `true`:
+`HaloID`s can also be obtained in a vector of all halos by setting the keyword parameter `return_haloid` to `true`:
 
 ```julia
 mvir, haloids = read_subfind(filename, "MVIR"; return_haloid=true)
 ```
 
-## Reading halo properties by global halo index
+You can also read single or multiple blocks at once for single or multiple `HaloID`s.
+
+```julia
+# multiple blocks, multiple HaloIDs -> returns Dict with blocks as keys
+read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, haloids::AbstractVector{HaloID}; verbose::Bool=true)
+# multiple blocks, single HaloID -> returns Dict with blocks as keys
+read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, haloid::HaloID; verbose::Bool=true)
+# single block, multiple HaloIDs -> returns vector of block
+read_halo_prop(sub_base, block::AbstractString, haloids::AbstractVector{HaloID}; verbose::Bool=true)
+```
+
+
+Please note: These functions will return the result ordered by increasing `HaloID`s, which may not be the order of the `Vector{HaloID}` you put in! 
+
+### By global halo index
 
 If you have a global index of a halo from subfind (0-indexed, increasing over all subfiles of the subfind outputs), you can also read a halo's properties from subfind. To read a halo property from such a global halo index and convert it to a `HaloID` you can use 
 
@@ -122,26 +134,39 @@ read_halo_prop_and_id
 
 To only obtain the property use
 
-```@docs
-read_halo_prop(::Any, ::AbstractString, ::Integer)
+```julia
+read_halo_prop(sub_base, blockname::AbstractString, i_global::Integer; verbose::Bool=true)
 ```
-
 
 So for example if you have the global halo id `i_global` and want to read the corresponding virial mass you can use one of the two following lines (note that it is faster to read properties via the HaloID since only a single file has to be read for that):
 
 ```julia
-mvir, halo_id = read_halo_prop_and_id(filebase, i_global, "MVIR")
-mvir = read_halo_prop(filebase, i_global, "MVIR")
+mvir, halo_id = read_halo_prop_and_id(filebase, "MVIR", i_global)
+mvir = read_halo_prop(filebase, "MVIR", i_global)
 ```
 
 To read the properties of multiple halos for which the halo indices are available, use one of the following two lines (to read the virial masses of the first four halos in subfind):
 
 ```julia
 mvir = read_subfind(filebase, "MVIR", [0, 1, 2, 3])
+mvir = read_subfind(filebase, "MVIR", 0:3)
 mvir, haloids = read_subfind(filebase, "MVIR", [0, 1, 2, 3]; return_haloid=true)
 ```
 
 The results are returned in the order of the given indices.
+
+Again you can also read single or multiple blocks at once for single or multiple indices.
+
+```julia
+# multiple blocks, multiple indices -> returns Dict with blocks as keys
+read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
+# multiple blocks, single index -> returns Dict with blocks as keys
+read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::Integer; verbose::Bool=true)
+# single block, multiple indices -> returns vector of block
+read_halo_prop(sub_base, block::AbstractString, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
+```
+Please note: These functions will return the result ordered by increasing indices, which may not be the order of the `Vector{i_global}` you put in! 
+
 
 ## Converting global halo indices to HaloIDs
 

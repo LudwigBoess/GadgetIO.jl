@@ -239,7 +239,7 @@ end
 Reads the header of a snapshot file or file base (without .0, .1, etc.)
 and returns a SnapshotHeader object.
 
-See also: [head_to_struct](@ref)
+See also: [`head_to_struct`](@ref)
 """
 function read_header(filename::String)
     head_to_struct(select_file(filename, 0))
