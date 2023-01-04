@@ -349,6 +349,10 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             @test data_from_ids["SPOS"][1] == pos_from_ids[1]
             @test data_from_ids["MSUB"][1] == msub_from_ids[1]
 
+            # for single block and array of indices
+            @test read_halo_prop("sub_002", "SPOS", ids) == pos_from_ids
+            @test read_halo_prop("sub_002", "MSUB", ids) == msub_from_ids
+
             # for array of HaloIDs
             data_from_haloids = read_halo_prop("sub_002", blocks, haloids[ids.+1])
             @test data_from_haloids["SPOS"] == pos_from_ids
@@ -358,6 +362,10 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
             data_from_haloids = read_halo_prop("sub_002", blocks, haloids[ids.+1][1])
             @test data_from_haloids["SPOS"][1] == pos_from_ids[1]
             @test data_from_haloids["MSUB"][1] == msub_from_ids[1]
+
+            # for single block and array of HaloIDs
+            @test read_halo_prop("sub_002", "SPOS", haloids[ids.+1]) == pos_from_ids
+            @test read_halo_prop("sub_002", "MSUB", haloids[ids.+1]) == msub_from_ids
         end
 
         @testset "Error handling" begin
