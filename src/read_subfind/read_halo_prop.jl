@@ -90,6 +90,17 @@ function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, halo
     read_halo_prop(sub_base, blocks, [haloid]; verbose)
 end
 
+"""
+    read_halo_prop(sub_base, block::AbstractString, haloids::AbstractVector{HaloID}; verbose::Bool=true)
+
+Get halo properties defined by the block for an `Array` of `HaloID`s.
+Returns an array with the requested block.
+"""
+function read_halo_prop(sub_base, block::AbstractString, haloids::AbstractVector{HaloID}; verbose::Bool=true)
+    # call default function
+    read_halo_prop(sub_base, [block], haloids; verbose)[block]
+end
+
 
 """
     read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
@@ -124,4 +135,15 @@ Returns a dictionary with all requested blocks.
 function read_halo_prop(sub_base, blocks::AbstractVector{<:AbstractString}, i_global::Integer; verbose::Bool=true)
     # call default function
     read_halo_prop(sub_base, blocks, [i_global]; verbose)
+end
+
+"""
+    read_halo_prop(sub_base, block::AbstractString, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
+
+Get halo properties defined by the block for an `Array` of global indices.
+Returns an array with the requested block.
+"""
+function read_halo_prop(sub_base, block::AbstractString, i_global::AbstractVector{<:Integer}; verbose::Bool=true)
+    # call default function
+    read_halo_prop(sub_base, [block], i_global; verbose)[block]
 end
