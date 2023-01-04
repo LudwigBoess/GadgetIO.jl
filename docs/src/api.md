@@ -1,12 +1,5 @@
 # API Reference
 
-```@meta
-CurrentModule = GadgetIO
-DocTestSetup = quote
-    using GadgetIO
-end
-```
-
 ```@index
 ```
 

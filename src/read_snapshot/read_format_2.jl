@@ -1,10 +1,10 @@
 """
-read_block(filename::String, blockname::String;
-           parttype::Integer=0,
-           block_position::Integer=-1,
-           info::Union{Nothing,InfoLine}=nothing,
-           h::Union{Nothing,SnapshotHeader}=nothing,
-           offset=0, n_to_read=-1)
+    read_block(filename::String, blockname::String;
+                parttype::Integer=0,
+                block_position::Integer=-1,
+                info::Union{Nothing,InfoLine}=nothing,
+                h::Union{Nothing,SnapshotHeader}=nothing,
+                offset=0, n_to_read=-1)
 
 Reads a block in a snapshot with given name. Defaults to reading gas particles.
 Block Names are case sensitive.

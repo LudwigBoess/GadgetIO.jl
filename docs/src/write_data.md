@@ -1,13 +1,6 @@
 Write Data
 ==========
 
-```@meta
-CurrentModule = GadgetIO
-DocTestSetup = quote
-    using GadgetIO
-end
-```
-
 GadgetIO.jl can write snapshots that can be used as initial conditions.
 
 Format 2
@@ -15,7 +8,7 @@ Format 2
 
 The safest way to write snapshots is in Format 2.
 Simply set up your header object and the arrays you want to write in the correct data format.
-For the header this is the struct [`SnapshotHeader`](@ref) and for data its usually `Array{Float32,2}`.
+For the header this is the struct [`GadgetIO.SnapshotHeader`](@ref) and for data its usually `Array{Float32,2}`.
 You can then write an initial condition file by writing the header and the individual data blocks.
 
 ```julia
@@ -35,7 +28,7 @@ If you want to write the `INFO` block as well you can use
 write_info_block(f, info)
 ```
 
-where `info` is a `Vector` of [`InfoLine`](@ref).
+where `info` is a `Vector` of [`GadgetIO.InfoLine`](@ref).
 
 Format 1
 --------

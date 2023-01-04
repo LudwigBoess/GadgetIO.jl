@@ -1,10 +1,3 @@
-```@meta
-CurrentModule = GadgetIO
-DocTestSetup = quote
-    using GadgetIO
-end
-```
-
 # GadgetIO.jl
 
 This package provides IO functionality to work with the Smoothed-Particle Hydrodynamics code [Gadget](https://wwwmpa.mpa-garching.mpg.de/gadget/) by Volker Springel.
