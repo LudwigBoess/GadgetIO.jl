@@ -44,6 +44,9 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.3.k
 
 Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key.index", "./snap_144.key.index")
 
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_144.0", "./snap_mass_144.0")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_144.1", "./snap_mass_144.1")
+
 @info "done!"
 
 
@@ -224,6 +227,21 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key
 
             # delete dummy file
             rm("dummy.bin")
+        end
+
+        @testset "Read files different infolines" begin
+            subbase = "./snap_mass_144"
+            subfile0 = "$subbase.0"
+            subfile1 = "$subbase.1"
+
+            mass = read_block(subbase, "MASS"; parttype=4)
+            mass0 = read_block(subfile0, "MASS"; parttype=4)
+            mass1 = read_block(subfile1, "MASS"; parttype=4)
+
+            # check that reading mass did not read boundary particles by accident;
+            # the reason is that the first file does not have particle type 3, but
+            # the second file does
+            @test mass == [mass0; mass1]
         end
 
         @testset "Error Handling" begin
@@ -543,6 +561,7 @@ end
 @info "delete test data..."
 rm("snap_sedov")
 rm("pos_sedov.dat")
+rm("halo_ids.dat")
 rm("sub_002.0")
 rm("sub_002.1")
 rm("sub_002.2")
@@ -567,5 +586,8 @@ rm("snap_144.1.key")
 rm("snap_144.2.key")
 rm("snap_144.3.key")
 rm("snap_144.key.index")
+
+rm("snap_mass_144.0")
+rm("snap_mass_144.1")
 
 @info "done!"

@@ -95,6 +95,7 @@ function read_block(filename::String, blockname::String;
     end
 
     # check if info is present
+    was_info_given = !isnothing(info)
     if isnothing(info)
         info = check_info(filename, blockname)
     end
@@ -117,11 +118,16 @@ function read_block(filename::String, blockname::String;
         
         # read local filename
         _filename = select_file(filename, file)
+        h = read_header(_filename)
+
+        # read info individually for the file if no info block was passed
+        if !was_info_given
+            info = check_info(_filename, blockname)
+        end
 
         # get number of particles to read from local file, if not given
         if (h.num_files > 1) && (!n_read_io)
-            h_internal = read_header(_filename)
-            n_to_read  = h_internal.npart[parttype+1]
+            n_to_read = h.npart[parttype+1]
         end
 
         # find block position, if not given
