@@ -44,6 +44,9 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.3.k
 
 Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_144.key.index", "./snap_144.key.index")
 
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_144.0", "./snap_mass_144.0")
+Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_144.1", "./snap_mass_144.1")
+
 @info "done!"
 
 
@@ -567,5 +570,8 @@ rm("snap_144.1.key")
 rm("snap_144.2.key")
 rm("snap_144.3.key")
 rm("snap_144.key.index")
+
+rm("snap_mass_144.0")
+rm("snap_mass_144.1")
 
 @info "done!"
