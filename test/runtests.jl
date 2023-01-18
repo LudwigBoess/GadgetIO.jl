@@ -561,6 +561,7 @@ end
 @info "delete test data..."
 rm("snap_sedov")
 rm("pos_sedov.dat")
+rm("halo_ids.dat")
 rm("sub_002.0")
 rm("sub_002.1")
 rm("sub_002.2")
