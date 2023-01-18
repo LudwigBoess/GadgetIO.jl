@@ -229,6 +229,21 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_14
             rm("dummy.bin")
         end
 
+        @testset "Read files different infolines" begin
+            subbase = "./snap_mass_144"
+            subfile0 = "$subbase.0"
+            subfile1 = "$subbase.1"
+
+            mass = read_block(subbase, "MASS"; parttype=4)
+            mass0 = read_block(subfile0, "MASS"; parttype=4)
+            mass1 = read_block(subfile1, "MASS"; parttype=4)
+
+            # check that reading mass did not read boundary particles by accident;
+            # the reason is that the first file does not have particle type 3, but
+            # the second file does
+            @test mass == [mass0; mass1]
+        end
+
         @testset "Error Handling" begin
             #@test_throws ErrorException("Please specify particle type!") read_block("snap_002.0", "POS")
             @test_throws ErrorException("Particle Type 5 not present in simulation!") read_block("snap_002.0", "POS", parttype=5, h=SnapshotHeader())
