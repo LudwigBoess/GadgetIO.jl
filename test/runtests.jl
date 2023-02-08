@@ -62,39 +62,93 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_14
         snap_file = "snap_sedov"
 
         @testset "Read blocks" begin
-            #@test_nowarn read_snap(snap_file)
-            @test_nowarn read_header(snap_file)
-            @test_nowarn read_info(snap_file)
 
-            d = read_block(snap_file, "POS")
+            @testset "Error handling" begin
+                #@test_nowarn read_snap(snap_file)
+                @test_nowarn read_header(snap_file)
+                @test_nowarn read_info(snap_file)
+            end
 
-            ideal_file = joinpath(dirname(@__FILE__), "pos_sedov.dat")
-            d_ideal = copy(transpose(Float32.(readdlm(ideal_file))))
+            @testset "single block" begin
+                d = read_block(snap_file, "POS")
 
-            @test d == d_ideal
+                ideal_file = joinpath(dirname(@__FILE__), "pos_sedov.dat")
+                d_ideal = copy(transpose(Float32.(readdlm(ideal_file))))
 
-            # check if read to dict works
-            @test_nowarn d = read_snap(snap_file)
-            @test d["PartType0"]["POS"] == d_ideal
+                @test d == d_ideal
 
-            snap_base = "snap_002"
+                snap_base = "snap_002"
 
-            blocks = ["POS", "ID", "RHO"]
-            data = read_blocks_filtered(snap_base, blocks, filter_function=pass_all, parttype=0)
+                blocks = ["POS", "ID", "RHO"]
+                data = read_blocks_filtered(snap_base, blocks, filter_function=pass_all, parttype=0)
 
-            rho = read_block(snap_base, "RHO", parttype=0)
+                rho = read_block(snap_base, "RHO", parttype=0)
 
-            @test length(data["RHO"]) == length(rho)
+                @test length(data["RHO"]) == length(rho)
 
-            @test data["RHO"] == rho
+                @test data["RHO"] == rho
 
-            id = read_block(snap_base, "ID", parttype=0)
+                id = read_block(snap_base, "ID", parttype=0)
 
-            @test sort(data["ID"]) == sort(id)
+                @test sort(data["ID"]) == sort(id)
 
-            pos = read_block(snap_base, "POS", parttype=0)
+                pos = read_block(snap_base, "POS", parttype=0)
 
-            @test data["POS"] == pos
+                @test data["POS"] == pos
+
+            end
+
+            @testset "Read to Dict" begin
+                # check if read to dict works
+                ideal_file = joinpath(dirname(@__FILE__), "pos_sedov.dat")
+                d_ideal = copy(transpose(Float32.(readdlm(ideal_file))))
+                
+                d = read_snap(snap_file)
+                @test d["PartType0"]["POS"] == d_ideal
+            end
+
+            @testset "full block" begin
+
+                snap_file = "snap_002.0"
+                h = read_header(snap_file)
+                n_all = sum(h.npart)
+
+                mass = zeros(n_all)
+                n_read = 0
+                for parttype = 0:5
+                    n_to_read = h.npart[parttype+1]
+                    if !iszero(n_to_read)
+                        mass[n_read+1:n_read+n_to_read] = read_block(snap_file, "MASS"; parttype)
+                        n_read += n_to_read
+                    end
+                end
+
+                mass_full = read_block(snap_file, "MASS", parttype=-1)
+
+                @test mass_full == mass
+
+
+                h = read_header(snap_file)
+                n_all = sum(h.npart)
+
+
+                id = zeros(UInt32, n_all)
+                n_read = 0
+                for parttype = 0:5
+                    n_to_read = h.npart[parttype+1]
+                    if !iszero(n_to_read)
+                        id[n_read+1:n_read+n_to_read] = read_block(snap_file, "ID"; parttype)
+                        n_read += n_to_read
+                    end
+                end
+
+                id_full = read_block(snap_file, "ID", parttype=-1)
+
+                @test id_full == id
+
+                # distributed files
+                # ToDo!
+            end
 
         end
 
@@ -251,6 +305,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_14
             @test_throws ErrorException("Requested block ABCD not present!") GadgetIO.check_block_position("snap_002.0", "ABCD")
             @test_throws ErrorException("Please provide either a dictionary with read positions or a filter function!") read_blocks_filtered("snap_002", ["POS"])
         end
+
     end
 
     @testset "Read subfind" begin
