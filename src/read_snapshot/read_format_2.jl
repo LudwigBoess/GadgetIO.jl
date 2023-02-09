@@ -64,6 +64,9 @@ function read_block(filename::String, blockname::String;
                 n_to_read = h.npart[parttype+1]
             else
                 n_to_read = sum(h.npart)
+
+                # we have calculated the number of particles to read now
+                n_read_io = true
             end
         else
             # if there are sub-files
@@ -78,6 +81,9 @@ function read_block(filename::String, blockname::String;
                 for ptype = 0:5
                     n_to_read += get_total_particles(h, ptype)
                 end
+
+                # we have calculated the number of particles to read now
+                n_read_io = true
             end
 
         end
@@ -136,9 +142,14 @@ function read_block(filename::String, blockname::String;
             block_position, mass_block = check_block_position(_filename, blockname)
 
             if mass_block
-                block .= h.massarr[parttype+1]
+                assign_mass_from_header!(block, _filename, h, parttype) 
                 return block
             end
+        end
+
+        # set parttype to 0 to have no offset for reading
+        if parttype == -1
+            parttype = 0
         end
         
         f = open(_filename, "r")
