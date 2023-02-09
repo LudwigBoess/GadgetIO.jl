@@ -120,6 +120,12 @@ function read_block(filename::String, blockname::String;
 
     # loop over all sub-files
     # -> irrelevant if already a subfile
+    filenames = Vector{String}(undef, num_files)
+    headers = Vector{SnapshotHeader}(undef, num_files)
+    infos = Vector{InfoLine}(undef, num_files)
+    nreads = Vector{Int64}(undef, num_files)
+    n_to_reads = Vector{Int64}(undef, num_files)
+    block_positions = Vector{Int64}(undef, num_files)
     for file ∈ 0:num_files-1
         
         # read local filename
@@ -151,13 +157,25 @@ function read_block(filename::String, blockname::String;
         if parttype == -1
             parttype = 0
         end
-        
+
+        ind = file + 1
+        filenames[ind] = _filename
+        headers[ind] = h
+        infos[ind] = info
+        nreads[ind] = nread
+        n_to_reads[ind] = n_to_read
+        block_positions[ind] = block_position
+
+        nread += n_to_read
+    end
+
+
+    Threads.@threads for (_filename, nread, n_to_read, block_position, info, h) ∈ collect(zip(filenames, nreads, n_to_reads, block_positions, infos, headers))
         f = open(_filename, "r")
         read_block!(block, f, offset, nread, n_to_read;
                     parttype, block_position, info, h)
 
         close(f)
-        nread += n_to_read
     end
 
     return block
