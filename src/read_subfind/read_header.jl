@@ -32,10 +32,10 @@ struct SubfindHeader <: AbstractGadgetHeader
     ngroups::Int32                      # number of large groups in the output file
     time::Float64                       # time / scale factor of the simulation
     z::Float64                          # redshift of the simulation
-    tothalos::UInt32                    # total number of halos over all output files
-    totsubhalos::UInt32                 # total number of subhalos over all output files
-    totfof::UInt32                      # total number of particles in the FoF
-    totgroups::UInt32                   # total number of large groups over all output files
+    tothalos::Int64                    # total number of halos over all output files
+    totsubhalos::Int64                 # total number of subhalos over all output files
+    totfof::Int64                      # total number of particles in the FoF
+    totgroups::Int64                   # total number of large groups over all output files
     num_files::Int32                    # number of files
     boxsize::Float64                    # total size of the simulation box
     omega_0::Float64                    # Omega matter
