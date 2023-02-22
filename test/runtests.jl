@@ -313,6 +313,13 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_mass_14
         subbase = "sub_002"
         subfile = "./sub_002.0"
 
+        @testset "converting header" begin
+            # Checking that highword conversion works for large numbers of halos (example taken from Magneticum Box2b)
+            h = SnapshotHeader(Int32[22, 15453, 64805080, 22, 0, 0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.7986652252549261, 0.25208907108833967, Int32(1), Int32(1), UInt32[0x0168391c, 0x01a81b1a, 0x8e18f082, 0x00000cf3, 0x00000000, 0x00000000], Int32(1), Int32(1024), 640000.0, 0.272, 0.728, 0.704, Int32(1), Int32(0), UInt32[0x00000000, 0x00000000, 0x00000004, 0x00000000, 0x00000000, 0x00000000], Int32(0), Int32(0), Int32(3), 0.0f0, Int32[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            h_subfind = GadgetIO.convert_header(h)
+            @test h_subfind.totfof == get_total_particles(h.nall[3], h.npartTotalHighWord[3])
+        end
+
         @testset "standard read" begin
             # check if standard reading works
             mtop = read_subfind("sub_002.0", "MTOP")
