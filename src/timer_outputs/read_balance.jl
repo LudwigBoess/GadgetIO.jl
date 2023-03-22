@@ -28,6 +28,9 @@ function parse_balance(filename::String)
     # find positions where unique steps are in total steps
     sel = get_index_list(unique_steps, steps)
 
+    # overwrite with unique steps
+    steps = steps[sel]
+
     # get time of step
     timing = [parse(Float64, split_lines[i][3][1:10]) for i in sel]
 
