@@ -12,6 +12,7 @@ makedocs(
             "Reading Snapshots" => "read_snapshots.md",
             "Reading Subfind"   => "read_subfind.md",
             "Writing Data"      => "write_data.md",
+            "Reading CPU files" => "read_cpu_files.md",
             "API reference"     => "api.md"
             ]
         )
