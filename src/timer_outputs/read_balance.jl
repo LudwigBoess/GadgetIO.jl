@@ -1,5 +1,6 @@
 using DelimitedFiles
 using Printf 
+using Statistics
 
 """
     parse_balance(filename)
