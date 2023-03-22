@@ -5,7 +5,7 @@ using Statistics
 """
     parse_balance(filename)
 
-Reads the `balance.txt` log file and returns a tuple of `(step_number, timing, active)`.
+Reads the `balance.txt` log file and returns a tuple of Arrays of `(step_number, timing, active)`.
 """
 function parse_balance(filename::String)
 
