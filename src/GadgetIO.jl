@@ -17,6 +17,7 @@ abstract type AbstractGadgetHeader end
 include(joinpath("read_snapshot", "utility", "domain_slices.jl"))
 include(joinpath("read_snapshot", "read_header.jl"))
 include(joinpath("read_snapshot", "read_info.jl"))
+include(joinpath("read_snapshot", "utility", "default_info_lines.jl"))
 include(joinpath("read_snapshot", "utility", "allocate.jl"))
 include(joinpath("read_snapshot", "utility", "snapshot_utilities.jl"))
 include(joinpath("read_snapshot", "utility", "block_position.jl"))

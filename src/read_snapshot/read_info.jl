@@ -79,7 +79,7 @@ function read_info(filename::String; verbose::Bool=false)
 
     end # while eof(f) != true
 
-    @warn "No info block present!"
+    @warn "No info block present! Falling back to default_info_lines!"
 
     return default_info_lines
 end
@@ -139,24 +139,17 @@ Returns a single `InfoLine` struct.
 """
 function check_info(filename::String, blockname::String)
     info = read_info(filename)
-    if info == 1
-        if blockname == "MASS"
+
+    for i ∈ 1:size(info,1)
+        if info[i].block_name == blockname
+            return info[i]
+        end # if block found
+    end # loop over info
+    if isa(info, Array)
+        if (blockname == "MASS")
             return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
         else
-            error("No Info block in snapshot! Supply InfoLine type!")
+            error("Block $blockname not present!")
         end
-    else # info != 1
-        for i ∈ 1:size(info,1)
-            if info[i].block_name == blockname
-                return info[i]
-            end # if block found
-        end # loop over info
-        if isa(info, Array)
-            if (blockname == "MASS")
-                return InfoLine("MASS", Float32, 1, [0, 0, 0, 0, 0, 0])
-            else
-                error("Block $blockname not present!")
-            end
-        end
-    end # info == 1
+    end
 end
