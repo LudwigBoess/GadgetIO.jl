@@ -48,8 +48,10 @@ include(joinpath("read_snapshot", "particles_in_halo", "read_particles_in_halo.j
 include(joinpath("read_snapshot", "distributed_files", "find_read_positions.jl"))
 include(joinpath("read_snapshot", "distributed_files", "read_distributed_files.jl"))
 
+include(joinpath("timer_outputs", "read_balance.jl"))
+
 # functions to write snapshots
-include(joinpath(dirname(@__FILE__), "write_snapshot", "write_snap.jl"))
+include(joinpath("write_snapshot", "write_snap.jl"))
 
 export AbstractGadgetHeader,
     SnapshotHeader, SubfindHeader,
@@ -108,8 +110,10 @@ export AbstractGadgetHeader,
     # write snapshot functions
     write_header,
     write_block,
-    write_info_block
+    write_info_block,
 
-
+    # timer files 
+    parse_balance,
+    print_performance
 
 end # module
