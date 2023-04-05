@@ -64,6 +64,10 @@ function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer
             # count up number of halos already read
             halos_read += h.npart[parttype+1]
 
+            if halos_read > maximum(idxs)
+                break 
+            end
+
         end
 
     end
