@@ -195,11 +195,15 @@ function read_positions_from_PH_keys(filebase::String,
     file_key = filebase * ".0.key"
     if !isfile(file_key)
         error("No .key file present! For brute-force read-in set `use_keys=false`")
+        flush(stdout)
+        flush(stderr)
     end
 
     if verbose
         @info ".key files found!"
         @info "Calculating peano-hilbert keys..."
+        flush(stdout)
+        flush(stderr)
         t1 = Dates.now()
     end
 
@@ -213,6 +217,8 @@ function read_positions_from_PH_keys(filebase::String,
         t2 = Dates.now()
         @info "$(size(keylist,1)) Peano-Hilbert keys found. Took: $(t2 - t1)"
         @info "Looking for relevant files..."
+        flush(stdout)
+        flush(stderr)
         t1 = Dates.now()
     end
 
@@ -225,6 +231,8 @@ function read_positions_from_PH_keys(filebase::String,
         @info "$N_files files found. Took: $(t2 - t1)"
 
         @info "Searching read positions..."
+        flush(stdout)
+        flush(stderr)
         println()
         t1 = Dates.now()
     end

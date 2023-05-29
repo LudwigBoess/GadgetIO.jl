@@ -119,6 +119,8 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
 
     if verbose
         @info "Reading number of particles in halo..."
+        flush(stdout)
+        flush(stderr)
         t1 = Dates.now()
     end
     
@@ -128,12 +130,16 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     if verbose
         t2 = Dates.now()
         @info "N_particles to read: $N_ids. Took: $(t2 - t1)"
+        flush(stdout)
+        flush(stderr)
     end
     # read offset in PID array
     offset = Int64(read_subfind(sub_file, off_block)[halo.id])
 
     if verbose
         @info "Reading IDs in halo..."
+        flush(stdout)
+        flush(stderr)
         t1 = Dates.now()
     end
     # read all IDs of the particles contained in a halo
@@ -142,6 +148,8 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     if verbose
         t2 = Dates.now()
         @info "IDs read. Took: $(t2 - t1)"
+        flush(stdout)
+        flush(stderr)
     end
 
     return halo_ids
@@ -218,6 +226,8 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
 
     if verbose
         @info "Reading IDs in halo..."
+        flush(stdout)
+        flush(stderr)
         t1 = Dates.now()
     end
 
@@ -229,6 +239,8 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
         @info "IDs read. Took: $(t2 - t1)"
 
         @info "Reading Data..."
+        flush(stdout)
+        flush(stderr)
         t1 = Dates.now()
     end
 
@@ -256,6 +268,8 @@ function read_particles_in_halo(snap_base::String, blocks::Array{String},
         @info "Data read. Took: $(t2 - t1)"
         println()
         @info "Done!"
+        flush(stdout)
+        flush(stderr)
     end
 
     return data
