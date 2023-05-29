@@ -24,6 +24,8 @@ function write_format2_block_header(f::IOStream, blockname::String)
     write_name =  Int8.(collect(blockname))
 
     @info "Writing block: $blockname"
+    flush(stdout)
+    flush(stderr)
 
     # write blocksite (8 bytes)
     write(f, UInt32(8))
@@ -91,6 +93,8 @@ function write_block(f::IOStream, data,
     write(f, data)
 
     @info "Writing block done."
+    flush(stdout)
+    flush(stderr)
 
     write(f, blocksize)
 end

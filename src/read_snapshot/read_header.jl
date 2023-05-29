@@ -193,7 +193,7 @@ function head_to_dict(filename::String)
                 swap = 1
                 snap_format = 1
             else
-                println("incorrect file format encountered when reading header of", filename)
+                println("incorrect file format encountered when reading header of ", filename)
             end
         end
 

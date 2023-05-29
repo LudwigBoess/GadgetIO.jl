@@ -35,6 +35,8 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
 
         if iszero(h.npart[parttype+1])
             @info "No particles of type $parttype in file $(file)!"
+            flush(stdout)
+            flush(stderr)
             continue
         end
 
@@ -61,6 +63,8 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
 
         if verbose
             @info "Calculating index list..."
+            flush(stdout)
+            flush(stderr)
             t1 = Dates.now()
         end
 
@@ -70,6 +74,8 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
             t2 = Dates.now()
             @info "Index list done. Took: $(t2 - t1)"
             @info "Reading $(length(index_list)) key segments..."
+            flush(stdout)
+            flush(stderr)
         end
 
         # sort the offset arrays for simplification step
@@ -84,6 +90,8 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
 
         if verbose
             @info "Reduced independent blocks from $(length(offset_key)) to $(count(use_block))"
+            flush(stdout)
+            flush(stderr)
         end
 
         # store the arrays for later reading

@@ -7,6 +7,8 @@ function read_halo_prop(sub_base, blockname::AbstractString, haloid::HaloID; ver
 
     if verbose
         @info "Reading property $blockname of halo $haloid"
+        flush(stdout)
+        flush(stderr)
     end
 
     # get full specified block for all halos in file
@@ -43,6 +45,8 @@ When nfiles is not passed, it is read automatically from the header.
 function read_halo_prop_and_id(sub_base, blockname::AbstractString, i_global::Integer; verbose::Bool=true)
     if verbose
         @info "Reading property $blockname of halo at index $i_global"
+        flush(stdout)
+        flush(stderr)
     end
 
     # blocks are type specific so we can use this to make our life easier
