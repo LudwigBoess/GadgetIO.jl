@@ -102,48 +102,70 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
         t1 = time_ns()
     end
 
-    for file ∈ files
+    # allocate storage arrays for every subfile to read
+    # -> needed for multithreading
+    num_files = length(files)
+    filenames = Vector{String}(undef, num_files)
+    headers = Vector{SnapshotHeader}(undef, num_files)
+    infos = Vector{Vector{InfoLine}}(undef, num_files)
+    block_positions = Vector{Dict{String, Integer}}(undef, num_files)
+    indices = Vector{Vector{Int64}}(undef, num_files)
+    n_to_reads = Vector{Vector{Int64}}(undef, num_files)
+    nreads = Vector{Int64}(undef, num_files)
 
-        # select current file
-        filename = select_file(snap_base, file )
-
+    # read data for multithreading
+    for i ∈ 1:length(files)
+        
+        # select filename of subfile
+        filename = select_file(snap_base, files[i])
+        filenames[i] = filename
         # read header block
-        h = read_header(filename)
-
+        headers[i] = read_header(filename)
         # read info block
-        snap_info = read_info(filename)
-
+        infos[i] = read_info(filename)
         # find the location of the blocks in the current file
-        file_block_positions = get_block_positions(filename)
+        block_positions[i] = get_block_positions(filename)
+        # store indices of where to start reading
+        indices[i] = read_positions[files[i]]["index"]
+        # store number of particles to read per index
+        n_to_reads[i] = read_positions[files[i]]["n_to_read"]
+        # store number of particles that have been read until now
+        nreads[i] = N_read
+        # count up total particles read until now
+        N_read += sum(read_positions[files[i]]["n_to_read"])
+    end
 
-        # open filestream
-        f = open(filename, "r")
 
-        # read the blocks
-        for block ∈ blocks
+    # to show read progress
+    p = Progress(num_files)
 
-            block_info = get_requested_info(snap_info, block)
+    # threaded IO over relevant subfiles
+    @threads for (filename, nread, n_to_read, index, block_position, info, h) ∈ collect(zip(filenames, nreads, n_to_reads, indices, block_positions, infos, headers))
+       
+        # threaded IO over blocks
+        @threads for block ∈ blocks
+
+            # open filestream
+            f = open(filename, "r")
+
+            block_info = get_requested_info(info, block)
 
             # store the relevant data in the `d[block]` array
-            read_block!(d[block], f, read_positions[file]["index"],
-                        N_read, read_positions[file]["n_to_read"],
-                        parttype=parttype, 
-                        block_position=file_block_positions[block],
-                        info=block_info, h=h)
+            read_block!(d[block], f, index,
+                nread, n_to_read,
+                parttype=parttype,
+                block_position=block_position[block],
+                info=block_info, h=h)
 
+            close(f)
         end
-
-        close(f)
-
-        # count the number of particles already read
-        N_read += sum(read_positions[file]["n_to_read"])
 
         if verbose
-            @info "Read $N_read / $(read_positions["N_part"]) particles"
-            flush(stdout)
-            flush(stderr)
+            next!(p)
         end
     end
+
+
 
     if verbose
         t2 = time_ns()
