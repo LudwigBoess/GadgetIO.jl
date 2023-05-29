@@ -93,14 +93,8 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
     key_entries = collect(keys(read_positions))
     files = key_entries[ key_entries .!= "N_part"]
 
+    # sort the files to always read particles in the same order
     sort!(files)
-
-    if verbose
-        @info "Reading $(size(files,1)) snapshots..."
-        flush(stdout)
-        flush(stderr)
-        t1 = time_ns()
-    end
 
     # allocate storage arrays for every subfile to read
     # -> needed for multithreading
@@ -135,6 +129,12 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
         N_read += sum(read_positions[files[i]]["n_to_read"])
     end
 
+    if verbose
+        @info "Reading $N_read particles accross $(length(files)) snapshots..."
+        flush(stdout)
+        flush(stderr)
+        t1 = time_ns()
+    end
 
     # to show read progress
     p = Progress(num_files)
@@ -162,10 +162,10 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
 
         if verbose
             next!(p)
+            flush(stdout)
+            flush(stderr)
         end
     end
-
-
 
     if verbose
         t2 = time_ns()
