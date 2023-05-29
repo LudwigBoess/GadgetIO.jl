@@ -59,6 +59,8 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
 
     if verbose
         @info "Allocating storage dictionary..."
+        flush(stdout)
+        flush(stderr)
         t1 = time_ns()
     end
 
@@ -80,6 +82,8 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
     if verbose
         t2 = time_ns()
         @info "  elapsed: $(output_time(t1,t2)) s"
+        flush(stdout)
+        flush(stderr)
     end
 
     # store the number of particles that have been read
@@ -93,6 +97,8 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
 
     if verbose
         @info "Reading $(size(files,1)) snapshots..."
+        flush(stdout)
+        flush(stderr)
         t1 = time_ns()
     end
 
@@ -134,12 +140,16 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
 
         if verbose
             @info "Read $N_read / $(read_positions["N_part"]) particles"
+            flush(stdout)
+            flush(stderr)
         end
     end
 
     if verbose
         t2 = time_ns()
         @info "  elapsed: $(output_time(t1,t2)) s"
+        flush(stdout)
+        flush(stderr)
     end
 
     if read_mass && no_mass_block

@@ -62,6 +62,8 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
         if verbose
             println()
             @info "Matching IDs..."
+            flush(stdout)
+            flush(stderr)
             t1 = Dates.now()
         end
 
@@ -71,6 +73,8 @@ function read_particles_by_id(snap_base::String, selected_ids::Array{<:Integer},
         if verbose
             t2 = Dates.now()
             @info "Found $(size(matched,1)) matches. Took: $(t2 - t1)"
+            flush(stdout)
+            flush(stderr)
         end
 
         # construct a new dict only containing the matching particles

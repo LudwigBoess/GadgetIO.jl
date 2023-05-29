@@ -80,6 +80,8 @@ function read_info(filename::String; verbose::Bool=false)
     end # while eof(f) != true
 
     @warn "No info block present! Falling back to default_info_lines!"
+    flush(stdout)
+    flush(stderr)
 
     return default_info_lines
 end
