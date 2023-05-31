@@ -2,12 +2,13 @@ name: Run CompatHelper
 
 on:
   schedule:
-    - cron: '00 0 * * *'
+    - cron: '00 * * * *'
   issues:
     types: [opened, reopened]
+  workflow_dispatch:
 
 jobs:
-  compathelper:
+  CompatHelper:
     name: "Run CompatHelper.jl"
     runs-on: ubuntu-latest
     steps:
