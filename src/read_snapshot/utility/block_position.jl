@@ -60,7 +60,7 @@ function check_block_position(filename::String, blockname::String)
 
     # check if the requested block is present
     if haskey(block_positions_dict, blockname)
-        return block_positions_dict[blockname], false
+        return block_positions_dict[blockname], blockname == "MASS"
     else
         if blockname != "MASS"
             # if the block is not present we need error handling!
