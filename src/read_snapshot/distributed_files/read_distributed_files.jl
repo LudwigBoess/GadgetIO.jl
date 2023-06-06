@@ -175,7 +175,9 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
     end
 
     if read_mass && no_mass_block
-        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, N_to_read)
+        # read header block
+        h = read_header(snap_base)
+        d["MASS"] = h.massarr[parttype+1] .* ones(Float32, read_positions["N_part"])
     end
 
     return d
