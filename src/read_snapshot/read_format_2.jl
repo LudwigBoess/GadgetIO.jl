@@ -141,7 +141,7 @@ function read_block(filename::String, blockname::String;
             # read block position, if not given
             block_position, mass_block = check_block_position(_filename, blockname)
 
-            if mass_block || !iszero(h.massarr[parttype+1])
+            if mass_block
                 assign_mass_from_header!(block, _filename, h, parttype) 
                 return block
             end
