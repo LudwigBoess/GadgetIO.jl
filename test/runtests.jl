@@ -98,6 +98,10 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
                 @test data["POS"] == pos
 
+                @test_throws ErrorException read_block(snap_base, "RHO", parttype=1)
+                @test_throws ErrorException read_block(snap_base, "RHO", parttype=-1)
+                @test_throws ErrorException read_block(snap_base, "XXXX", parttype=0)
+                @test_throws ErrorException read_block(snap_base, "XXXX", parttype=-1)
             end
 
             @testset "Read to Dict" begin
@@ -128,6 +132,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
                 mass_full = read_block(snap_file, "MASS", parttype=-1)
 
                 @test mass_full == mass
+                @test all(!iszero, mass)
 
 
                 h = read_header(snap_file)
@@ -150,6 +155,42 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
                 # distributed files
                 # ToDo!
+            end
+
+            @testset "full block mass from header" begin
+
+                snap_base = "snap_144"
+                snap_files = ["snap_144.$i" for i in 0:3]
+                h = read_header(snap_base)
+                n_all = sum(h.nall)
+
+                read_mass_from_header = try
+                    # check if code allows reading mass from the header
+                    read_block(snap_base, "MASS"; parttype=0)
+                    true
+                catch
+                    false
+                end
+
+                # if we allow reading the mass from the header, the read values also have to be consistent when
+                # reading across multiple subfiles
+                if read_mass_from_header
+                    mass = zeros(n_all)
+                    n_read = 0
+                    for parttype = 0:5
+                        n_to_read = h.nall[parttype+1]
+                        if !iszero(n_to_read)
+                            mass[n_read+1:n_read+n_to_read] = read_block(snap_base, "MASS"; parttype)
+                            n_read += n_to_read
+                        end
+                    end
+
+                    mass_full = read_block(snap_file, "MASS", parttype=-1)
+
+                    @test mass_full == mass
+                    @test all(!iszero, mass)
+                end
+
             end
 
         end
