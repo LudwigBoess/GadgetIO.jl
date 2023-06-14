@@ -147,9 +147,22 @@ function read_block(filename::String, blockname::String;
             # read block position, if not given
             block_position, mass_block = check_block_position(_filename, blockname)
 
-            if mass_block
-                assign_mass_from_header!(block, _filename, h, parttype) 
-                return block
+            if parttype == -1
+                # make sure the property exists for all particle types
+                for ptype = 0:5
+                    if !iszero(h.npart[ptype+1]) && iszero(info.is_present[ptype+1])
+                        error("Requested block $blockname not present for particle type $(ptype)!")
+                    end
+                end
+            elseif parttype != -1 && info.is_present[parttype+1] == 0
+                # TODO: special case mass block
+                # if mass_block
+                    # assign_mass_from_header!(block, _filename, h, parttype) 
+                    # return block
+                # else
+                    # if the block is not present we need error handling!
+                    error("Requested block $blockname not present for particle type $(parttype)!")
+                # end
             end
         end
 
