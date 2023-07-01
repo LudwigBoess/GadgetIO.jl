@@ -139,28 +139,21 @@ using Downloads
 
         # blocks 
         pos = read_block(snap_base * ".0", "POS", parttype=0)
+        mass = read_block(snap_base * ".0", "MASS", parttype=0)
+        pos = read_block(snap_base * ".0", "POS", parttype=1)
         mass = read_block(snap_base * ".0", "MASS", parttype=1)
 
-
         # particles in box
-        center = Float32[3978.9688, -95.40625, -8845.25]
-        rvir = 118.76352
+        center = Float32[0.5, 0.5, 0.5]
+        rvir = 0.3f0
         pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1)
-        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=true, parttype=1, verbose=true)
-        id = read_particles_in_volume(snap_base, "ID", center, rvir, use_keys=true, parttype=1, verbose=false)
+        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1, verbose=true)
 
         # particles in geometry
-        center = [3978.9688, -95.40625, -8845.25]
-        rvir = 118.76352
         cube = GadgetCube(center .- rvir, center .+ rvir)
         pos = read_particles_in_geometry(snap_base, "POS", cube, use_keys=false, parttype=1)
         sphere = GadgetSphere(center, rvir)
         data = read_particles_in_geometry(snap_base, "POS", sphere, use_keys=false, parttype=1)
-
-        # particles in halo
-        pos = read_particles_in_halo(snap_base, "POS", sub_base, HaloID(0, 4), use_keys=false)
-        ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
-        pos = read_particles_by_id(snap_base, ids, "POS")
 
         # read positions 
         ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1)
