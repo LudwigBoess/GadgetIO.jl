@@ -42,6 +42,13 @@ function read_block(filename::String, blockname::String;
                     h::Union{Nothing,SnapshotHeader}=nothing,
                     offset::Integer=0, n_to_read::Integer=-1)
 
+
+    # handle reading all particle types seperately to avoid clutter in this function
+    if parttype == -1
+        return read_all_parttypes(filename, blockname,
+            block_position=block_position, info=info, h=h)
+    end
+
     if isnothing(h)
         # read header - super fast and needed for flexibility
         h = read_header(filename)
@@ -60,32 +67,15 @@ function read_block(filename::String, blockname::String;
             # -> read local number of particles
 
             # if specific particle species needs to be read
-            if parttype != -1
-                n_to_read = h.npart[parttype+1]
-            else
-                n_to_read = sum(h.npart)
-
-                # we have calculated the number of particles to read now
-                n_read_io = true
-            end
+            n_to_read = h.npart[parttype+1]
+            # we have calculated the number of particles to read now
+            n_read_io = true
         else
             # if there are sub-files
             # -> read all entries
 
-            # if specific particle species needs to be read
-            if parttype != -1
-                n_to_read = get_total_particles(h, parttype)
-            else
-                n_to_read = 0
-                # sum up all particles
-                for ptype = 0:5
-                    n_to_read += get_total_particles(h, ptype)
-                end
-
-                # we have calculated the number of particles to read now
-                n_read_io = true
-            end
-
+            # calculate total number of particles to read
+            n_to_read = get_total_particles(h, parttype)
         end
     end
 
@@ -106,8 +96,10 @@ function read_block(filename::String, blockname::String;
         info = check_info(filename, blockname)
     end
 
+    # store if block position has been provided
     block_position_io = false
 
+    # check if block position has been provided
     if block_position != -1
         block_position_io = true
     end
@@ -147,30 +139,21 @@ function read_block(filename::String, blockname::String;
             # read block position, if not given
             block_position, mass_block = check_block_position(_filename, blockname)
 
-            if parttype == -1
-                # make sure the property exists for all particle types
-                for ptype = 0:5
-                    if !iszero(h.npart[ptype+1]) && iszero(info.is_present[ptype+1])
-                        error("Requested block $blockname not present for particle type $(ptype)!")
-                    end
-                end
-            elseif parttype != -1 && info.is_present[parttype+1] == 0
-                # TODO: special case mass block
-                # if mass_block
-                    # assign_mass_from_header!(block, _filename, h, parttype) 
-                    # return block
-                # else
-                    # if the block is not present we need error handling!
-                    error("Requested block $blockname not present for particle type $(parttype)!")
-                # end
+            # check if the block is even present for the requested particle
+            if !iszero(h.npart[parttype+1]) && (iszero(info.is_present[parttype+1]) && !mass_block)
+                error("Requested block $blockname not present for particle type $(parttype)!")
+            end
+
+            # if the mass block is not present for the current particle type it's stored in the header 
+            if !iszero(h.npart[parttype+1]) && mass_block && !iszero(h.massarr[parttype+1])
+                # assign mass from header
+                block .= h.massarr[parttype+1]
+                # we can exit the function now
+                return block
             end
         end
 
-        # set parttype to 0 to have no offset for reading
-        if parttype == -1
-            parttype = 0
-        end
-
+        # store info for current subfile
         ind = file + 1
         filenames[ind] = _filename
         headers[ind] = h
@@ -179,10 +162,11 @@ function read_block(filename::String, blockname::String;
         n_to_reads[ind] = n_to_read
         block_positions[ind] = block_position
 
+        # count up number of particles read including this subfile
         nread += n_to_read
     end
 
-
+    # threaded IO over all subfiles
     Threads.@threads for (_filename, nread, n_to_read, block_position, info, h) ∈ collect(zip(filenames, nreads, n_to_reads, block_positions, infos, headers))
         f = open(_filename, "r")
         read_block!(block, f, offset, nread, n_to_read;
@@ -277,3 +261,54 @@ function read_block!(a::AbstractArray, f::IOStream,
     a
 end
 
+
+"""
+    read_all_parttypes( filename::String, blockname::String;
+                        block_position::Integer=-1,
+                        info::Union{Nothing,InfoLine}=nothing,
+                        h::Union{Nothing,SnapshotHeader}=nothing)
+
+Reads the requested block for all particle types.
+"""
+function read_all_parttypes(filename::String, blockname::String;
+                            block_position::Integer=-1,
+                            info::Union{Nothing,InfoLine}=nothing,
+                            h::Union{Nothing,SnapshotHeader}=nothing)
+
+    # read the header if it's not provided
+    if isnothing(h)
+        h = read_header(filename)
+    end
+
+    # read the info line of not provided
+    if isnothing(info)
+        info = check_info(filename, blockname)
+    end
+
+    # sum up the total number of particles in the simulation
+    n_to_read = Vector{Int64}(undef, 6)
+    for parttype = 0:5
+        if isfile(filename)
+            n_to_read[parttype+1] = h.npart[parttype+1]
+        else
+            # calculate total number of particles to read
+            n_to_read[parttype+1] = get_total_particles(h, parttype)
+        end
+    end
+
+    # allocate storage here
+    block = allocate_data_array(info, sum(n_to_read))
+
+    # store number of particles that have been read so far
+    nread = 0
+    for parttype = 0:5
+        # only read the block if particles are actually present
+        if !iszero(n_to_read[parttype+1])
+            block[Int(nread + 1):Int(nread + n_to_read[parttype+1])] = read_block(filename, blockname, parttype=parttype,
+                                                            block_position=block_position, info=info, h=h)
+            nread += n_to_read[parttype+1]
+        end
+    end
+
+    return block
+end
