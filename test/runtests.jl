@@ -160,7 +160,6 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
             @testset "full block mass from header" begin
 
                 snap_base = "snap_144"
-                snap_files = ["snap_144.$i" for i in 0:3]
                 h = read_header(snap_base)
                 n_all = sum(h.nall)
 
@@ -185,7 +184,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
                         end
                     end
 
-                    mass_full = read_block(snap_file, "MASS", parttype=-1)
+                    mass_full = read_block(snap_base, "MASS", parttype=-1)
 
                     @test mass_full == mass
                     @test all(!iszero, mass)
