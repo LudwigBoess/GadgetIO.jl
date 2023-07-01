@@ -125,86 +125,65 @@ using Downloads
 
 @setup_workload begin
 
-    # download the snapshot data for precompilation
-    @info "downloading data..."
+    data_path = joinpath(@__DIR__, "..", "precompile_data")
+    sub_base = joinpath(data_path, "sub_002")
+    snap_base = joinpath(data_path, "snap_002")
+    key_file = joinpath(data_path, "snap_144.0.key")
+    key_index = joinpath(data_path, "snap_144.key.index")
 
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.0", "./sub_002.0")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.1", "./sub_002.1")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.2", "./sub_002.2")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/sub_002.3", "./sub_002.3")
-
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.0", "./snap_002.0")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.1", "./snap_002.1")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2", "./snap_002.2")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3", "./snap_002.3")
-
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.0.key", "./snap_002.0.key")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.1.key", "./snap_002.1.key")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.2.key", "./snap_002.2.key")
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.3.key", "./snap_002.3.key")
-
-    Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/snap_002.key.index", "./snap_002.key.index")
-
-
-    @info "done!"
+    low_bounds, high_bounds = [0, 4, 7, 10], [1, 5, 8, 16]
+    x0 = [-100.0, -100.0, -100.0]
+    x1 = [1_000.0, 1_000.0, 1_000.0]
 
     @compile_workload begin
         # all calls in this block will be precompiled, regardless of whether
         # they belong to your package or not (on Julia 1.8 and higher)
 
         # header and info 
-        h = read_header("snap_002")
-        info = read_info("snap_002.0")
+        h = read_header(snap_base)
+        info = read_info(snap_base * ".0")
 
         # blocks 
-        pos = read_block("snap_002.0", "POS", parttype=0)
-        mass = read_block("snap_002.0", "MASS", parttype=0)
-        mass_full = read_block("snap_002.0", "MASS", parttype=-1)
-
+        pos = read_block(snap_base * ".0", "POS", parttype=0)
+        mass = read_block(snap_base * ".0", "MASS", parttype=0)
+        pos = read_block(snap_base * ".0", "POS", parttype=1)
+        mass = read_block(snap_base * ".0", "MASS", parttype=1)
 
         # particles in box
-        center = Float32[3978.9688, -95.40625, -8845.25]
-        rvir = 118.76352
-        pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=false, parttype=1)
-        pos = read_particles_in_volume("snap_002", "POS", center, rvir, use_keys=true, parttype=1, verbose=true)
-        id = read_particles_in_volume("snap_002", "ID", center, rvir, use_keys=true, parttype=1, verbose=false)
+        center = Float32[0.5, 0.5, 0.5]
+        rvir = 0.3f0
+        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1)
+        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1, verbose=true)
 
         # particles in geometry
-        center = [3978.9688, -95.40625, -8845.25]
-        rvir = 118.76352
         cube = GadgetCube(center .- rvir, center .+ rvir)
-        pos = read_particles_in_geometry("snap_002", "POS", cube, use_keys=false, parttype=1)
+        pos = read_particles_in_geometry(snap_base, "POS", cube, use_keys=false, parttype=1)
         sphere = GadgetSphere(center, rvir)
-        data = read_particles_in_geometry("snap_002", "POS", sphere, use_keys=false, parttype=1)
-
-        # particles in halo
-        pos = read_particles_in_halo("snap_002", "POS", "sub_002", HaloID(0, 4), use_keys=false)
-        ids = UInt32[0x000028fc, 0x00002594, 0x00002963, 0x00002681, 0x00001af4, 0x00001ff1, 0x000022d7, 0x00002267, 0x000029c0, 0x0000277b]
-        pos = read_particles_by_id("snap_002", ids, "POS")
+        data = read_particles_in_geometry(snap_base, "POS", sphere, use_keys=false, parttype=1)
 
         # read positions 
         ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1)
-        read_positions = find_read_positions("snap_002", ff)
+        read_positions = find_read_positions(snap_base, ff)
 
         # subfind 
-        center, rvir, haloid = find_most_massive_halo("sub_002", 4)
-        mtop = read_subfind("sub_002", "MTOP")
-        mtop2, haloids = read_subfind("sub_002", "MTOP", return_haloid=true)
-    end
+        center, rvir, haloid = find_most_massive_halo(sub_base, 4)
+        mtop = read_subfind(sub_base, "MTOP")
+        mtop2, haloids = read_subfind(sub_base, "MTOP", return_haloid=true)
 
-    rm("sub_002.0")
-    rm("sub_002.1")
-    rm("sub_002.2")
-    rm("sub_002.3")
-    rm("snap_002.0")
-    rm("snap_002.1")
-    rm("snap_002.2")
-    rm("snap_002.3")
-    rm("snap_002.0.key")
-    rm("snap_002.1.key")
-    rm("snap_002.2.key")
-    rm("snap_002.3.key")
-    rm("snap_002.key.index")
+        # PH-keys 
+        low_list, high_list, file_list = GadgetIO.read_key_index(key_index)
+        h_key = GadgetIO.read_keyheader(key_file)
+
+        GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 0)
+        GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 1)
+        GadgetIO.peano_hilbert_key(h_key.bits, 0, 1, 1)
+
+        GadgetIO.get_index_bounds([4, 5, 8, 12, 15], low_bounds, high_bounds)
+
+        keylist = GadgetIO.get_keylist(h_key, x0, x1)
+
+        GadgetIO.get_int_pos(1000.5, h_key.domain_corners[1], h_key.domain_fac)
+    end
 
 end
 
