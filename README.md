@@ -5,7 +5,9 @@
 
 # GadgetIO.jl
 
-This package is a subproject of [GadJet.jl](https://github.com/LudwigBoess/GadJet.jl) and provides some basic IO functionality to work with the Smoothed-Particle Hydrodynamics code [Gadget](https://wwwmpa.mpa-garching.mpg.de/gadget/) by Volker Springel.
+This package provides some basic IO functionality to work with the Smoothed-Particle Hydrodynamics code [Gadget](https://wwwmpa.mpa-garching.mpg.de/gadget/) by Volker Springel.
+
+You can use it to read/write snapshot and subfind output and we also provide some functionality to read the log files.
 
 It is taylored for working with the development version of P-Gadget3, specifically OpenGadget3 developed by [Klaus Dolag](https://www.usm.uni-muenchen.de/~dolag/) and contributers. Development is focused on IO for Binary Format 2.
 A lot of the routines are based on IDL scripts by Klaus Dolag (not public).
@@ -17,27 +19,50 @@ Please see the [Documentation](https://ludwigboess.github.io/GadgetIO.jl/dev/) f
 Quickstart
 ==========
 
-Reading Data
+Reading Snapshot Data
 ------------
 
-If you want to read a simulation snapshot into memory with GadJet.jl, it's as easy as this:
+`GadgetIO.jl` is specialized to read `Gadget` snapshots of `Format 2`. The structure of a `Format 2` snapshot is as follows:
 
-```julia
-    data = read_snap(filename)
+```
+8              # size of the blockname block (Int32)
+BLOCKNAME      # Blockname (4*Char)
+8+SIZE_BLOCK   # number of bytes to skip if block should not be read
+8              # end of blockname block
+
+SIZE_BLOCK     # size of the current block in bytes
+{...}          # content of the block ordered by particle type
+SIZE_BLOCK     # end of the current block
 ```
 
-This will return a dictionary with the header information in `data["Header"]` and the blocks sorted by particle type.
+which repeats for every block.
 
-As an example, this is how you would access the positions of the gas particles:
+Gadget defines 6 particle types:
+- `0`: Gas particles
+- `1`: DM particles
+- `2`: Disk/boundary particles
+- `3`: Bulge/boundary particles
+- `4`: Star particles
+- `5`: Black Hole particles
 
-```julia
-    data["Parttype0"]["POS"]
+So if you want to read for example the poistions of gas particles you can do this by using:
+
+julia```
+filename = "path/to/your/snapshot"
+
+gas_pos = read_block(filename, "POS", parttype=0)
 ```
 
-If you only want to read a specific block for a single particle type (e.g. positions of gas particles) you can use the function with a specified blockname and particle type like so:
+Similar for DM particles:
+julia```
+filename = "path/to/your/snapshot"
 
-```julia
-    pos = read_snap(filename, "POS", 0)
+dm_pos = read_block(filename, "POS", parttype=1)
 ```
 
-This will return an array of the datatype of your simulation, usually Float32.
+We recommend running Gadget with the compiler flag `WRITE_INFO_BLOCK` to make IO easier, however you can also read most blocks out of the box due to fall-back `InfoLine`s.
+If you work on a development version of `Gadget` that contains output blocks that don't have fall-back `InfoLine`s you can also supply your own to the `read_block` function.
+
+You can also read subvolumes of simulations, either along the Peano-Hilbert curve or in a brute force way.
+Or you can read particles by custom filtering and store the memory-mapping to disk.
+See the [Documentation](https://ludwigboess.github.io/GadgetIO.jl/dev/) for details.
