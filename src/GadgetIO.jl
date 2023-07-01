@@ -128,6 +128,12 @@ using Downloads
     data_path = joinpath(@__DIR__, "..", "precompile_data")
     sub_base = joinpath(data_path, "sub_002")
     snap_base = joinpath(data_path, "snap_002")
+    key_file = joinpath(data_path, "snap_144.0.key")
+    key_index = joinpath(data_path, "snap_144.key.index")
+
+    low_bounds, high_bounds = [0, 4, 7, 10], [1, 5, 8, 16]
+    x0 = [-100.0, -100.0, -100.0]
+    x1 = [1_000.0, 1_000.0, 1_000.0]
 
     @compile_workload begin
         # all calls in this block will be precompiled, regardless of whether
@@ -163,6 +169,20 @@ using Downloads
         center, rvir, haloid = find_most_massive_halo(sub_base, 4)
         mtop = read_subfind(sub_base, "MTOP")
         mtop2, haloids = read_subfind(sub_base, "MTOP", return_haloid=true)
+
+        # PH-keys 
+        low_list, high_list, file_list = GadgetIO.read_key_index(key_index)
+        h_key = GadgetIO.read_keyheader(key_file)
+
+        GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 0)
+        GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 1)
+        GadgetIO.peano_hilbert_key(h_key.bits, 0, 1, 1)
+
+        GadgetIO.get_index_bounds([4, 5, 8, 12, 15], low_bounds, high_bounds)
+
+        keylist = GadgetIO.get_keylist(h_key, x0, x1)
+
+        GadgetIO.get_int_pos(1000.5, h_key.domain_corners[1], h_key.domain_fac)
     end
 
 end
