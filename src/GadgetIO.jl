@@ -152,21 +152,23 @@ using Downloads
         # particles in box
         center = Float32[0.5, 0.5, 0.5]
         rvir = 0.3f0
-        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1)
-        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1, verbose=true)
+        pos = read_particles_in_volume(snap_base, "POS", center, rvir, use_keys=false, parttype=1, verbose=false)
 
         # particles in geometry
         cube = GadgetCube(center .- rvir, center .+ rvir)
-        pos = read_particles_in_geometry(snap_base, "POS", cube, use_keys=false, parttype=1)
+        pos = read_particles_in_geometry(snap_base, "POS", cube, use_keys=false, parttype=1, verbose=false)
         sphere = GadgetSphere(center, rvir)
-        data = read_particles_in_geometry(snap_base, "POS", sphere, use_keys=false, parttype=1)
+        data = read_particles_in_geometry(snap_base, "POS", sphere, use_keys=false, parttype=1, verbose=false)
 
         # read positions 
         ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1)
-        read_positions = find_read_positions(snap_base, ff)
+        read_positions = find_read_positions(snap_base, ff; verbose=false)
+        data = read_blocks_filtered(snap_base, ["POS", "MASS"], verbose=false; read_positions)
+
+        # filter function 
+        data = read_blocks_filtered(snap_base, ["POS", "MASS"], filter_function=ff, verbose=false)
 
         # subfind 
-        center, rvir, haloid = find_most_massive_halo(sub_base, 4)
         mtop = read_subfind(sub_base, "MTOP")
         mtop2, haloids = read_subfind(sub_base, "MTOP", return_haloid=true)
 
