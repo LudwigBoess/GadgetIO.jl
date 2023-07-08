@@ -163,6 +163,10 @@ using Downloads
         # read positions 
         ff(filename) = filter_cube(filename, center .- rvir, center .+ rvir, parttype=1)
         read_positions = find_read_positions(snap_base, ff; verbose=false)
+        data = read_blocks_filtered(snap_base, ["POS", "MASS"], verbose=false; read_positions)
+
+        # filter function 
+        data = read_blocks_filtered(snap_base, ["POS", "MASS"], filter_function=ff, verbose=false)
 
         # subfind 
         mtop = read_subfind(sub_base, "MTOP")
