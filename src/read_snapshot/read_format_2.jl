@@ -124,14 +124,25 @@ function read_block(filename::String, blockname::String;
         _filename = select_file(filename, file)
         h = read_header(_filename)
 
-        # read info individually for the file if no info block was passed
-        if !was_info_given
-            info = check_info(_filename, blockname)
-        end
-
         # get number of particles to read from local file, if not given
         if (h.num_files > 1) && (!n_read_io)
             n_to_read = h.npart[parttype+1]
+        end
+
+        if iszero(n_to_read)
+            ind = file + 1
+            filenames[ind] = _filename
+            headers[ind] = h
+            infos[ind] = InfoLine(blockname, eltype(block), 0, zeros(Int32, 6))
+            nreads[ind] = nread
+            n_to_reads[ind] = n_to_read
+            block_positions[ind] = 0
+            continue
+        end
+
+        # read info individually for the file if no info block was passed
+        if !was_info_given
+            info = check_info(_filename, blockname)
         end
 
         # find block position, if not given
@@ -168,6 +179,10 @@ function read_block(filename::String, blockname::String;
 
     # threaded IO over all subfiles
     Threads.@threads for (_filename, nread, n_to_read, block_position, info, h) ∈ collect(zip(filenames, nreads, n_to_reads, block_positions, infos, headers))
+        if iszero(n_to_read)
+            continue
+        end
+
         f = open(_filename, "r")
         read_block!(block, f, offset, nread, n_to_read;
                     parttype, block_position, info, h)
