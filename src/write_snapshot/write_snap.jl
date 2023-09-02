@@ -59,15 +59,16 @@ function write_block(f::IOStream, data,
         dims = size(data,1)
     end
 
+    # compute size of block in bytes
     blocksize_test = N * sizeof(dtype) * dims
 
     # check for integer overflow
-    if blocksize_test <= typemax(UInt32)
-        blocksize = UInt32(blocksize_test)
-    else
-        # avoid integer overflow
-        blocksize = UInt32(blocksize_test - 4294967296)
+    while blocksize_test > typemax(UInt32)
+        blocksize_test -= 4294967296
     end
+
+    # save blocksize in UInt32
+    blocksize = UInt32(blocksize_test)
 
     if snap_format == 2
 
