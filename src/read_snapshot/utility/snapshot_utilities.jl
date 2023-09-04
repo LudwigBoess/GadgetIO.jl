@@ -12,17 +12,24 @@ function check_blocksize(f::IOStream, position_before::Integer, blocksize_before
     if blocksize_before == blocksize_after
         return blocksize_before
     else # compensate for integer overflow
-        blocksize_before_fix = blocksize_before + 4294967296
-        seek(f,position_before+blocksize_before_fix+12) 
-        blocksize_after_fix = read(f,UInt32) + 4294967296
-        
-        if blocksize_before_fix == blocksize_after_fix
-            return blocksize_before_fix
-        else
-            error("There is an issue with the snapshot:\n
+
+        # check for up-to 10x integer overflow - everything beyond that is ridiculous anyway
+        for N_check = 1:10
+            # sum up actual block size
+            blocksize_before_fix = blocksize_before + N_check*4294967296
+            seek(f,position_before+blocksize_before_fix+12)
+            # read potential blocksize at the end of the block
+            blocksize_after_fix = read(f,UInt32) + N_check*4294967296
+            
+            # check if blocksizes match
+            if blocksize_before_fix == blocksize_after_fix
+                return blocksize_before_fix
+            end
+        end
+
+        error("There is an issue with the snapshot:\n
                    Blocksize_before = $blocksize_before_fix\n
                    Blocksize_after  = $blocksize_after_fix")
-        end
     end
 end
 
