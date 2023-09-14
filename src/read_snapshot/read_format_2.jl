@@ -125,17 +125,19 @@ function read_block(filename::String, blockname::String;
         h = read_header(_filename)
 
         # get number of particles to read from local file, if not given
-        if (h.num_files > 1) && (!n_read_io)
-            n_to_read = h.npart[parttype+1]
+        n_to_read_file = h.npart[parttype+1]
+        if file == 0
+            n_to_read_file -= offset
         end
+        n_to_read_file = min(n_to_read_file, n_to_read - nread)
 
-        if iszero(n_to_read)
+        if iszero(n_to_read_file)
             ind = file + 1
             filenames[ind] = _filename
             headers[ind] = h
             infos[ind] = InfoLine(blockname, eltype(block), 0, zeros(Int32, 6))
             nreads[ind] = nread
-            n_to_reads[ind] = n_to_read
+            n_to_reads[ind] = n_to_read_file
             block_positions[ind] = 0
             continue
         end
@@ -170,11 +172,11 @@ function read_block(filename::String, blockname::String;
         headers[ind] = h
         infos[ind] = info
         nreads[ind] = nread
-        n_to_reads[ind] = n_to_read
+        n_to_reads[ind] = n_to_read_file
         block_positions[ind] = block_position
 
         # count up number of particles read including this subfile
-        nread += n_to_read
+        nread += n_to_read_file
     end
 
     # threaded IO over all subfiles
