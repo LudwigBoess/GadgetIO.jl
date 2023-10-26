@@ -438,6 +438,14 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
             @test read_subfind("sub_002", "MTOP", ids) == mtop_from_ids
             @test haloids_from_ids == haloids[ids.+1]
 
+            # test large offset by reading last couple of halos
+            ids_end = [length(haloids) - 1, length(haloids) - 3]
+            @test read_subfind("sub_002", "MTOP", ids_end) == mtop[ids_end.+1]
+
+            mtop_from_ids, haloids_from_ids = read_subfind("sub_002", "MTOP", ids_end; return_haloid=true)
+            @test read_subfind("sub_002", "MTOP", ids_end) == mtop_from_ids
+            @test haloids_from_ids == haloids[ids_end.+1]
+
             pos = read_subfind("sub_002", "SPOS")
             pos2, haloids = read_subfind("sub_002", "SPOS"; return_haloid=true)
             @test pos == pos2
