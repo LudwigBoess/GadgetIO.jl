@@ -118,6 +118,7 @@ function read_block(filename::String, block_id::Union{String, Integer};
 
     # we have not read any data yet
     nread = 0
+    offset_rest = offset # remaining offset (relevant when the offset is larger than a file is long)
 
     # loop over all sub-files
     # -> irrelevant if already a subfile
@@ -127,6 +128,7 @@ function read_block(filename::String, block_id::Union{String, Integer};
     nreads = Vector{Int64}(undef, num_files)
     n_to_reads = Vector{Int64}(undef, num_files)
     block_positions = Vector{Int64}(undef, num_files)
+    offs = Vector{Int64}(undef, num_files)
     for file ∈ 0:num_files-1
         
         # read local filename
@@ -135,8 +137,14 @@ function read_block(filename::String, block_id::Union{String, Integer};
 
         # get number of particles to read from local file, if not given
         n_to_read_file = h.npart[parttype+1]
-        if file == 0
-            n_to_read_file -= offset
+        if n_to_read_file > offset_rest
+            n_to_read_file -= offset_rest
+            off = offset_rest
+            offset_rest = 0
+        else
+            off = 0
+            offset_rest -= n_to_read_file
+            n_to_read_file = 0
         end
         n_to_read_file = min(n_to_read_file, n_to_read - nread)
 
@@ -148,6 +156,7 @@ function read_block(filename::String, block_id::Union{String, Integer};
             nreads[ind] = nread
             n_to_reads[ind] = n_to_read_file
             block_positions[ind] = 0
+            offs[ind] = 0
             continue
         end
 
@@ -183,19 +192,20 @@ function read_block(filename::String, block_id::Union{String, Integer};
         nreads[ind] = nread
         n_to_reads[ind] = n_to_read_file
         block_positions[ind] = block_position
+        offs[ind] = off
 
         # count up number of particles read including this subfile
         nread += n_to_read_file
     end
 
     # threaded IO over all subfiles
-    Threads.@threads for (_filename, nread, n_to_read, block_position, info, h) ∈ collect(zip(filenames, nreads, n_to_reads, block_positions, infos, headers))
+    Threads.@threads for (_filename, nread, n_to_read, block_position, off, info, h) ∈ collect(zip(filenames, nreads, n_to_reads, block_positions, offs, infos, headers))
         if iszero(n_to_read)
             continue
         end
 
         f = open(_filename, "r")
-        read_block!(block, f, offset, nread, n_to_read;
+        read_block!(block, f, off, nread, n_to_read;
                     parttype, block_position, info, h)
 
         close(f)
