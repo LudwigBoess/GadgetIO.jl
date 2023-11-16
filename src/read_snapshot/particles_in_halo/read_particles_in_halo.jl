@@ -1,11 +1,11 @@
 using Dates
 
 """
-    read_pids(sub_base::String, offset::Integer, N_ids::Integer)
+    read_pids(sub_base::String, offset::Signed, N_ids::Signed)
 
 Reads the `PID` block in the subfind output.
 """
-function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
+function read_pids(sub_base::String, N_ids::Signed, offset::Signed)
 
     # choose correct file
     sub_file = select_file(sub_base, 0)
@@ -61,7 +61,7 @@ function read_pids(sub_base::String, N_ids::Integer, offset::Integer)
 
                 f = open(sub_file)
 
-                read_block!(@view(ids[(ids_read+1):(ids_read+n_to_read)]), f, 
+                read_block!(ids, f, 
                             offset_remaining, ids_read, n_to_read,
                             info=pid_info, parttype=2;
                             block_position, h)
