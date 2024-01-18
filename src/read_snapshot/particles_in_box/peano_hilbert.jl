@@ -1,5 +1,5 @@
 """
-    get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real )
+    get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real, bits::Integer)
 
 Computes the integer position along the PH line.
 """
