@@ -3,8 +3,13 @@
 
 Computes the integer position along the PH line.
 """
-@inline function get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real )
-    return trunc(Int64, ( pos - domain_corner ) * domain_fac) 
+@inline function get_int_pos(pos::Real, domain_corner::Real, domain_fac::Real, bits::Integer )
+    val = (pos - domain_corner) * domain_fac 
+
+    # round down, but negative values have to be reduced by one and values beyond the box border increased by one (unclear why exactly, probably due to how the bits work out, but this was carefully tested to be sure that this version works)
+    val_int = floor(Int64, val) + ifelse(val ≥ 0, 0, -1) + ifelse(val ≥ 2^bits - 0.5, 1, 0) 
+
+    return val_int
 end
 
 """
@@ -157,8 +162,8 @@ function get_keylist(h_key::KeyHeader, x0::Array{T}, x1::Array{T}) where T
     nkeys = 1
 
     @inbounds for i = 1:3
-        ix0[i] = get_int_pos( x0[i], h_key.domain_corners[i], h_key.domain_fac )
-        ix1[i] = get_int_pos( x1[i], h_key.domain_corners[i], h_key.domain_fac )
+        ix0[i] = get_int_pos( x0[i], h_key.domain_corners[i], h_key.domain_fac, h_key.bits )
+        ix1[i] = get_int_pos( x1[i], h_key.domain_corners[i], h_key.domain_fac, h_key.bits )
         dix[i] = ix1[i] - ix0[i] + 1
         nkeys *= dix[i]
     end
