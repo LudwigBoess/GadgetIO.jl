@@ -184,7 +184,7 @@ using Downloads
 
         keylist = GadgetIO.get_keylist(h_key, x0, x1)
 
-        GadgetIO.get_int_pos(1000.5, h_key.domain_corners[1], h_key.domain_fac)
+        GadgetIO.get_int_pos(1000.5, h_key.domain_corners[1], h_key.domain_fac, h_key.bits)
     end
 
 end
