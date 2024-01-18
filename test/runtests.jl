@@ -560,7 +560,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
         @test GadgetIO.peano_hilbert_key(h_key.bits, 0, 0, 1) == 1
         @test GadgetIO.peano_hilbert_key(h_key.bits, 0, 1, 1) == 6
 
-        @test GadgetIO.get_int_pos(1000.5, h_key.domain_corners[1], h_key.domain_fac) == 1
+        @test GadgetIO.get_int_pos(1000.5, h_key.domain_corners[1], h_key.domain_fac, h_key.bits) == 1
 
         @testset "Get Index Bounds" begin
             low_bounds, high_bounds = [0, 4, 7, 10], [1, 5, 8, 16]
