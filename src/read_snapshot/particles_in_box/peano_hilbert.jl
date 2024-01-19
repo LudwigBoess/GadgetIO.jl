@@ -7,7 +7,7 @@ Computes the integer position along the PH line.
     val = (pos - domain_corner) * domain_fac 
 
     # round down, but negative values have to be reduced by one and values beyond the box border increased by one (unclear why exactly, probably due to how the bits work out, but this was carefully tested to be sure that this version works)
-    val_int = floor(Int64, val) + ifelse(val ≥ 0, 0, -1) + ifelse(val ≥ 2^bits - 0.5, 1, 0) 
+    val_int = floor(Int64, val) + ifelse(pos ≥ 0, 0, -1) + ifelse(val ≥ 2^bits - 0.5, 1, 0) 
 
     return val_int
 end
