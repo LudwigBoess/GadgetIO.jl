@@ -1,161 +1,205 @@
+"""
+    read_block_format1(filebase, blockname; kwargs...)
+
+Reads a block in a snapshot with given name. Defaults to reading gas particles. Block names are case sensitive.
+
+# Keyword Arguments
+- `parttype=0`: Which particle type to read (0-indexed)
+    - `0`: Gas (default)
+    - `1`: Dark Matter
+    - `2`: Boundary
+    - `3`: Bulge
+    - `4`: Stars 
+    - `5`: Black Holes
+    - `-1`: All particle types
+- `infolines::Union{Nothing,Vector{InfoLine}}=nothing`: `InfoLine`s for the given file in the correct order. Needs to be used if the order of blocks is non-standard.
+- `h::Union{Nothing,SnapshotHeader}=nothing`: `SnapshotHeader` for given file. Can be used to speed up IO.
+- `is_inifile=false`: whether the file is an initial condition file or not
+- `has_chem=false`: whether the simulation was run with chemistry (blocks `NE` and `NH`)
+- `has_bh=false`: whether the simulation was run with black holes (blocks `BHMA` and `BHMD`)
+
+# Default InfoLines
+- `POS`: positions
+- `VEL`: velocities
+- `ID`: particle ID
+- `MASS`: mass of particles
+- `U`: internal energy of gas particles - if gas particles are present
+- `RHO`: density - if gas particles are present
+- `NE`: number density of free electrons - if `has_chem=true`
+- `NH`: number density of neutral hydrogen - `has_chem=true`
+- `HSML`: smoothing length of gas particles - if gas particles are present
+- `SFR`: star formation rate - if `h.flag_sfr=1`
+- `AGE`: Expansion factor or time at which star was born - if `h.flag_sfr=1`
+- `BHMA`: true black hole mass (MASS contains the dynamical mass) - only if `has_bh=true`
+- `BHMD`: black hole accretion rate - only if `has_bh=true`
+- `DUMMY`: Unknown property for all particle types
+"""
+function read_block_format1(filebase, blockname; h::Union{Nothing,SnapshotHeader}=nothing, parttype=0, infolines::Union{Nothing,Vector{InfoLine}}=nothing, is_inifile=false, has_chem=false, has_bh=false)
+    if isnothing(h)
+        h = read_header(filebase)
+    end
+
+    if isnothing(infolines)
+        infolines = _get_default_infolines_format1(h, is_inifile, has_chem, has_bh)
+    end
+
+    infoind = findfirst(i -> i.block_name == blockname, infolines)
+    @assert !isnothing(infoind) "Block $blockname is not known for format 1."
+
+    infoline = infolines[infoind]
+
+    n_to_read = _n_to_read_format1(h.nall, h.massarr, infoline, blockname, parttype)
+    arr = allocate_data_array(infoline, n_to_read)
+
+    next_ind = 1
+    num_files = h.num_files
+
+    for file in 0:num_files-1
+        filename = select_file(filebase, file)
+
+        htmp = file == 0 ? h : read_header(filename)
+        n_to_read_tmp = _n_to_read_format1(htmp.npart, htmp.massarr, infoline, blockname, parttype)
+
+        f = open(filename)
+
+        # skip header
+        seek(f, 256 + 2 * 4)
+
+        for infoline in infolines
+            if blockname == infoline.block_name
+                # read array
+                if infoline.n_dim > 1
+                    _read_to_arr_format1!(f, @view(arr[1:infoline.n_dim, next_ind:next_ind+n_to_read_tmp-1]), infoline, parttype, htmp)
+                else
+                    _read_to_arr_format1!(f, @view(arr[next_ind:next_ind+n_to_read_tmp-1]), infoline, parttype, htmp)
+                end
+
+                break
+            end
+
+            _skip_block_format1(f, infoline, htmp)
+        end
+
+        close(f)
+
+        next_ind += n_to_read_tmp
+    end
+
+    return arr
+end
 
 
-# function snap_1_d(filename::String, data::Dict{Any,Any})
 
-#     f = open(filename)
+const default_info_line_dict_format1 = Dict("POS" => InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Positions (internal units)
+                                    "VEL" => InfoLine("VEL",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Velocities (internal units)
+                                    "ID" => InfoLine("ID",   UInt32,  1,  [1, 1, 1, 1, 1, 1]), # Particle ID
+                                    "MASS" => InfoLine("MASS", Float32, 1,  [1, 1, 1, 1, 1, 1]), # Mass of Particle (internal units)
+                                    "U" => InfoLine("U",    Float32, 1,  [1, 0, 0, 0, 0, 0]), # Internal Energy of gas particles (internal units)
+                                    "RHO" => InfoLine("RHO",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # Density (internal units)
+                                    "NE" => InfoLine("NE",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of free electrons
+                                    "NH" => InfoLine("NH",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of neutral hydrogen
+                                    "HSML" => InfoLine("HSML", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                                    "SFR" => InfoLine("SFR",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # star formation rate (internal units)
+                                    "AGE" => InfoLine("AGE",  Float32, 1,  [0, 0, 0, 0, 1, 0]), # Expansion factor at which star (or BH) is born
+                                    "BHMA" => InfoLine("BHMA", Float32, 1,  [0, 0, 0, 0, 0, 1]), # True blackhole mass (MASS contains the dynamical mass !!!)
+                                    "BHMD" => InfoLine("BHMD", Float32, 1,  [0, 0, 0, 0, 0, 1]), # blackhole accretion rate
+                                    "DUMMY" => InfoLine("DUMMY", Int32, 1,  [1, 1, 1, 1, 1, 1]), # TODO: unclear what is saved here
+                                   )
 
-#     seek(f, 264)
+function _n_to_read_format1(npart, massarr, infoline, blockname, parttype)
+    is_present = infoline.is_present
 
-#     N = sum(data["Header"]["npart"])
-#     skipsize = read(f, Int32)
-#     bit_size = skipsize/(3*N)
+    # all particles
+    if parttype == -1
+        if blockname == "MASS"
+            return Int(sum(npart[massarr .== 0]))
+        end
 
-#     if Int(bit_size) == 4
+        return Int(sum(npart[is_present .== 1]))
+    end
 
-#     elseif Int(bit_size) == 8
+    # just a given particle type
+    ind = parttype + 1
 
-#     else
-#         println("read error! neither 32 nor 64 bits data!")
-#         return -1
-#     end
+    if blockname == "MASS"
+        @assert iszero(massarr[ind]) "The block MASS is not available for particle type $parttype. Please use `h.massarr[$(ind)]` instead (with `h = read_header(filename)`."
+    end
 
-#     # read positions
-#     for i in 1:length(data["Header"]["PartTypes"])
+    @assert is_present[ind] == 1 "The block $blockname is not available for particle type $parttype."
 
-#         if data["Header"]["npart"][i] != 0
-
-#             data[data["Header"]["PartTypes"][i]] = Dict()
-#             N = Int64(data["Header"]["npart"][i])
-#             #dummy = read(f, Float32, (3,N))
-
-#             if Int(bit_size) == 4
-#                 data[data["Header"]["PartTypes"][i]]["POS"] = copy(transpose(read!(f, Array{Float32,2}(undef,(3,N)))))
-#             else
-#                 data[data["Header"]["PartTypes"][i]]["POS"] = copy(transpose(read!(f, Array{Float64,2}(undef,(3,N)))))
-#             end
-
-
-#         end
-
-#     end
-
-#     p = position(f)
-
-#     # skip identifiers
-#     seek(f, p+8)
-
-#     # read Velocities
-#     for i in 1:length(data["Header"]["PartTypes"])
-
-#         if data["Header"]["npart"][i] != 0
-
-#             N = Int64(data["Header"]["npart"][i])
-
-#             if Int(bit_size) == 4
-#                 data[data["Header"]["PartTypes"][i]]["VEL"] = copy(transpose(read!(f, Array{Float32,2}(undef,(3,N)))))
-#             else
-#                 data[data["Header"]["PartTypes"][i]]["VEL"] = copy(transpose(read!(f, Array{Float64,2}(undef,(3,N)))))
-#             end
-
-#         end
-
-#     end
-
-#     #dummy = 0
-#     #gc()
-
-#     p = position(f)
-
-#     # skip identifiers
-#     seek(f, p+8)
-
-#     # Read IDs
-#     for i in 1:length(data["Header"]["PartTypes"])
-
-#         if data["Header"]["npart"][i] != 0
-
-#             N = Int64(data["Header"]["npart"][i])
-#             data[data["Header"]["PartTypes"][i]]["ID"] = copy(transpose(read!(f, Array{UInt32,2}(undef,(1,N)))))
-
-#         end
-
-#     end
-
-#     p = position(f)
-
-#     # skip identifiers
-#     seek(f, p+8)
-
-#     # Read IDs
-#     for i in 1:length(data["Header"]["PartTypes"])
-
-#         if data["Header"]["npart"][i] != 0
-
-#             if data["Header"]["massarr"][i] == 0
-
-#                 N = Int64(data["Header"]["npart"][i])
-
-#                 if Int(bit_size) == 4
-#                     data[data["Header"]["PartTypes"][i]]["MASS"] = copy(transpose(read!(f, Array{Float32,2}(undef,(1,N)))))
-#                 else
-#                     data[data["Header"]["PartTypes"][i]]["MASS"] = copy(transpose(read!(f, Array{Float64,2}(undef,(1,N)))))
-#                 end
-
-#             else
-
-#                 N = Int64(data["Header"]["npart"][i])
-#                 data[data["Header"]["PartTypes"][i]]["MASS"] = zeros(N)
-#                 data[data["Header"]["PartTypes"][i]]["MASS"] .= data["Header"]["massarr"][i]
-
-#             end
-
-#         end
-
-#     end
-
-#     if data["Header"]["npart"][1] != 0
-
-#         # skip identifiers
-#         p = position(f)
-#         seek(f, p+8)
-
-#         N = Int64(data["Header"]["npart"][1])
-
-#         # read U
-#         if Int(bit_size) == 4
-#             data["PartType0"]["InternalEnergy"] = copy(transpose(read!(f, Array{Float32,2}(undef,(1,N)))))
-#         else
-#             data["PartType0"]["InternalEnergy"] = copy(transpose(read!(f, Array{Float64,2}(undef,(1,N)))))
-#         end
+    return Int(npart[ind])
+end
 
 
-#         # skip identifiers
-#         p = position(f)
-#         seek(f, p+8)
+function _get_default_infolines_format1(h, is_inifile, has_chem, has_bh)
+    @assert iszero(h.flag_doubleprecision) "GadgetIO is currently not able to read format 1 with double precision output. Please pass your own infolines as a keyword argument."
 
-#         # Read Density
-#         if Int(bit_size) == 4
-#             data["PartType0"]["Density"] = copy(transpose(read!(f, Array{Float32,2}(undef,(1,N)))))
-#         else
-#             data["PartType0"]["Density"] = copy(transpose(read!(f, Array{Float64,2}(undef,(1,N)))))
-#         end
+    d = default_info_line_dict_format1
+    infolines = [d["POS"], d["VEL"], d["ID"]]
 
-#         # skip identifiers
-#         p = position(f)
-#         seek(f, p+8)
+    if any(iszero, h.massarr)
+        push!(infolines, d["MASS"])
+    end
 
-#         # Read SmoothingLength
-#         if Int(bit_size) == 4
-#             data["PartType0"]["SmoothingLength"] = copy(transpose(read!(f, Array{Float32,2}(undef,(1,N)))))
-#         else
-#             data["PartType0"]["SmoothingLength"] = copy(transpose(read!(f, Array{Float64,2}(undef,(1,N)))))
-#         end
+    if h.nall[1] > 0
+        push!(infolines, d["U"])
 
-#     end
+        if !is_inifile
+            push!(infolines, d["RHO"])
 
-#     close(f)
+            if has_chem
+                push!(infolines, d["NE"])
+                push!(infolines, d["NH"])
+            end
 
-#     return data
+            push!(infolines, d["HSML"])
 
+            if h.flag_sfr == 1
+                push!(infolines, d["SFR"])
+            end
 
-# end
+            if h.flag_stellarage == 1
+                push!(infolines, d["AGE"])
+            end
+
+            if has_bh
+                push!(infolines, d["BHMA"])
+                push!(infolines, d["BHMD"])
+            end
+        end
+    end
+
+    push!(infolines, d["DUMMY"])
+
+    return infolines
+end
+
+function _skip_block_format1(f, infoline, h)
+    nbytes = read(f, UInt32)
+    skip(f, nbytes)
+    nbytes2 = read(f, UInt32)
+
+    nbytessum = _n_to_read_format1(h.npart, h.massarr, infoline, infoline.block_name, -1) * infoline.n_dim * sizeof(infoline.data_type)
+
+    @assert nbytes == nbytessum "It appears that the block $(infoline.block_name) is not what it was expected to be. It has $nbytes bytes instead of the expected $nbytessum."
+    @assert nbytes == nbytes2 "Something is wrong with how the block $(infoline.block_name) is saved. The two byte sizes are $nbytes and $nbytes2 bytes."
+end
+
+function _read_to_arr_format1!(f, arr, infoline, parttype, h)
+    # double check the correctness of this block
+    nbytes = read(f, UInt32)
+    nbytessum = _n_to_read_format1(h.npart, h.massarr, infoline, infoline.block_name, -1) * infoline.n_dim * sizeof(infoline.data_type)
+    @assert nbytes == nbytessum "It appears that the block $(infoline.block_name) is not what it was expected to be. It has $nbytes bytes instead of the expected $nbytessum."
+
+    # all particles
+    if parttype == -1
+        return read!(f, arr)
+    end
+
+    # just a given particle type
+    ind = parttype + 1
+    nskip = Int(sum(h.npart[findall(infoline.is_present[1:(ind-1)] .== 1)]))
+    skip(f, nskip * infoline.n_dim * sizeof(infoline.data_type))
+
+    return read!(f, arr)
+end

@@ -28,6 +28,17 @@ SIZE_BLOCK     # end of the current block
 
 which repeats for every block.
 
+It is also possible to read snapshots of `Format 1` in a simple manner using [`read_block_format1`](@ref). The structure of a `Format 1` snapshot is as follows:
+
+```
+SIZE_BLOCK     # size of the current block in bytes
+{...}          # content of the block ordered by particle type
+SIZE_BLOCK     # end of the current block
+```
+
+As it is the same as for `Format 2`, except without the blockname information, this means that the order of the blocks is expected to be standardized. However, this can be customized through the keyword arguments of [`read_block_format1`](@ref).
+
+
 ## Filename
 
 Before we get started, a short bit for clarification: In what follows we need to distinguish between `filename` and `filebase`.
