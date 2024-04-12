@@ -88,6 +88,26 @@ function read_block_format1(filebase, blockname; h::Union{Nothing,SnapshotHeader
     return arr
 end
 
+function read_block_format1(filebase, blocknames::Vector{<:AbstractString}; h::Union{Nothing,SnapshotHeader}=nothing, parttype=0, infolines::Union{Nothing,Vector{InfoLine}}=nothing, is_inifile=false, has_chem=false, has_bh=false)
+    @assert 0 ≤ parttype ≤ 5 "A particle type has to be passed between 0 and 5"
+
+    if isnothing(h)
+        h = read_header(filebase)
+    end
+
+    if isnothing(infolines)
+        infolines = _get_default_infolines_format1(h, is_inifile, has_chem, has_bh)
+    end
+
+    # prepare dictionary for particle storage
+    d = Dict{String, VecOrMat{T} where T}()
+
+    for blockname in blocknames
+        d[blockname] = read_block_format1(filebase, blockname; h, parttype, infolines, is_inifile, has_chem, has_bh)
+    end
+
+    return d
+end
 
 
 const default_info_line_dict_format1 = Dict("POS" => InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Positions (internal units)
