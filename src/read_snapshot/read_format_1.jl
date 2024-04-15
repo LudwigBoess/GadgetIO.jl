@@ -1,5 +1,6 @@
 """
-    read_block_format1(filebase, blockname; kwargs...)
+    read_block_format1(filebase, blockname::AbstractString; kwargs...)
+    read_block_format1(filebase, blocknames::AbstractVector{<:AbstractString}; kwargs...)
 
 Reads a block in a snapshot with given name. Defaults to reading gas particles. Block names are case sensitive.
 
@@ -12,7 +13,7 @@ Reads a block in a snapshot with given name. Defaults to reading gas particles. 
     - `4`: Stars 
     - `5`: Black Holes
     - `-1`: All particle types
-- `infolines::Union{Nothing,Vector{InfoLine}}=nothing`: `InfoLine`s for the given file in the correct order. Needs to be used if the order of blocks is non-standard.
+- `infolines::Union{Nothing,AbstractVector{InfoLine}}=nothing`: [`InfoLine`](@ref)s for the given file in the correct order. Needs to be used if the order of blocks is non-standard.
 - `h::Union{Nothing,SnapshotHeader}=nothing`: `SnapshotHeader` for given file. Can be used to speed up IO.
 - `is_inifile=false`: whether the file is an initial condition file or not
 - `has_chem=false`: whether the simulation was run with chemistry (blocks `NE` and `NH`)
@@ -34,7 +35,7 @@ Reads a block in a snapshot with given name. Defaults to reading gas particles. 
 - `BHMD`: black hole accretion rate - only if `has_bh=true`
 - `DUMMY`: Unknown property for all particle types
 """
-function read_block_format1(filebase, blockname; h::Union{Nothing,SnapshotHeader}=nothing, parttype=0, infolines::Union{Nothing,Vector{InfoLine}}=nothing, is_inifile=false, has_chem=false, has_bh=false)
+function read_block_format1(filebase, blockname::AbstractString; h::Union{Nothing,SnapshotHeader}=nothing, parttype=0, infolines::Union{Nothing,AbstractVector{InfoLine}}=nothing, is_inifile=false, has_chem=false, has_bh=false)
     if isnothing(h)
         h = read_header(filebase)
     end
@@ -88,7 +89,7 @@ function read_block_format1(filebase, blockname; h::Union{Nothing,SnapshotHeader
     return arr
 end
 
-function read_block_format1(filebase, blocknames::Vector{<:AbstractString}; h::Union{Nothing,SnapshotHeader}=nothing, parttype=0, infolines::Union{Nothing,Vector{InfoLine}}=nothing, is_inifile=false, has_chem=false, has_bh=false)
+function read_block_format1(filebase, blocknames::AbstractVector{<:AbstractString}; h::Union{Nothing,SnapshotHeader}=nothing, parttype=0, infolines::Union{Nothing,AbstractVector{InfoLine}}=nothing, is_inifile=false, has_chem=false, has_bh=false)
     @assert 0 ≤ parttype ≤ 5 "A particle type has to be passed between 0 and 5"
 
     if isnothing(h)
