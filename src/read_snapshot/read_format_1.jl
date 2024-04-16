@@ -53,7 +53,7 @@ function read_block_format1(filebase, blockname::AbstractString; h::Union{Nothin
     arr = allocate_data_array(infoline, n_to_read)
 
     next_ind = 1
-    num_files = h.num_files
+    num_files = max(1, h.num_files)
 
     for file in 0:num_files-1
         filename = select_file(filebase, file)
