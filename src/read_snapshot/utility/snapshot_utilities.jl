@@ -161,16 +161,28 @@ Checks if the requested files exists and returns the path.
 """
 function select_file(filebase::String, filenum::Integer)
 
-    if !isfile(filebase)
-        filename = filebase * ".$filenum"
-        if !isfile(filename)
-            error("File $filename not present!")
-        else
-            return filename
-        end
-    else
+    # check if file is present
+    if isfile(filebase)
         return filebase
-    end
+    else
+        # check if filebase is a hdf5 file
+        if isfile(filebase * ".hdf5")
+            return filebase * ".hdf5"
+        else
+            # check if subfile is present
+            filename = filebase * ".$filenum"
+            if isfile(filename)
+                return filename
+            else
+                # check if subfile is hdf5 file
+                if isfile(filename * ".hdf5")
+                    return filename * ".hdf5"
+                else
+                    error("File $filename not present!")
+                end
+            end # subfile            
+        end # filebase hdf5
+    end # filebase correct file
 end
 
 """ 
