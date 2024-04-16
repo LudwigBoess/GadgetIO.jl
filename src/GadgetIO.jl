@@ -1,6 +1,7 @@
 module GadgetIO
 
 using Printf
+using HDF5
 
 function output_time(t1, t2)
     return @sprintf("%0.3e", Float64((t2 - t1)) * 1.e-9)
