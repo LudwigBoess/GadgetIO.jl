@@ -111,22 +111,6 @@ function read_block_format1(filebase, blocknames::AbstractVector{<:AbstractStrin
 end
 
 
-const default_info_line_dict_format1 = Dict("POS" => InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Positions (internal units)
-                                    "VEL" => InfoLine("VEL",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Velocities (internal units)
-                                    "ID" => InfoLine("ID",   UInt32,  1,  [1, 1, 1, 1, 1, 1]), # Particle ID
-                                    "MASS" => InfoLine("MASS", Float32, 1,  [1, 1, 1, 1, 1, 1]), # Mass of Particle (internal units)
-                                    "U" => InfoLine("U",    Float32, 1,  [1, 0, 0, 0, 0, 0]), # Internal Energy of gas particles (internal units)
-                                    "RHO" => InfoLine("RHO",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # Density (internal units)
-                                    "NE" => InfoLine("NE",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of free electrons
-                                    "NH" => InfoLine("NH",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of neutral hydrogen
-                                    "HSML" => InfoLine("HSML", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
-                                    "SFR" => InfoLine("SFR",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # star formation rate (internal units)
-                                    "AGE" => InfoLine("AGE",  Float32, 1,  [0, 0, 0, 0, 1, 0]), # Expansion factor at which star (or BH) is born
-                                    "BHMA" => InfoLine("BHMA", Float32, 1,  [0, 0, 0, 0, 0, 1]), # True blackhole mass (MASS contains the dynamical mass !!!)
-                                    "BHMD" => InfoLine("BHMD", Float32, 1,  [0, 0, 0, 0, 0, 1]), # blackhole accretion rate
-                                    "DUMMY" => InfoLine("DUMMY", Int32, 1,  [1, 1, 1, 1, 1, 1]), # TODO: unclear what is saved here
-                                   )
-
 function _n_to_read_format1(npart, massarr, infoline, blockname, parttype)
     is_present = infoline.is_present
 
@@ -155,42 +139,40 @@ end
 function _get_default_infolines_format1(h, is_inifile, has_chem, has_bh)
     @assert iszero(h.flag_doubleprecision) "GadgetIO is currently not able to read format 1 with double precision output. Please pass your own infolines as a keyword argument."
 
-    d = default_info_line_dict_format1
-    infolines = [d["POS"], d["VEL"], d["ID"]]
+    d = default_info_lines
+    infolines = get_info.((d,), ["POS", "VEL", "ID"])
 
     if any(iszero, h.massarr)
-        push!(infolines, d["MASS"])
+        push!(infolines, get_info(d, "MASS"))
     end
 
     if h.nall[1] > 0
-        push!(infolines, d["U"])
+        push!(infolines, get_info(d, "U"))
 
         if !is_inifile
-            push!(infolines, d["RHO"])
+            push!(infolines, get_info(d, "RHO"))
 
             if has_chem
-                push!(infolines, d["NE"])
-                push!(infolines, d["NH"])
+                push!(infolines, get_info(d, "NE"))
+                push!(infolines, get_info(d, "NH"))
             end
 
-            push!(infolines, d["HSML"])
+            push!(infolines, get_info(d, "HSML"))
 
             if h.flag_sfr == 1
-                push!(infolines, d["SFR"])
+                push!(infolines, get_info(d, "SFR"))
             end
 
             if h.flag_stellarage == 1
-                push!(infolines, d["AGE"])
+                push!(infolines, get_info(d, "AGE"))
             end
 
             if has_bh
-                push!(infolines, d["BHMA"])
-                push!(infolines, d["BHMD"])
+                push!(infolines, get_info(d, "BHMA"))
+                push!(infolines, get_info(d, "BHMD"))
             end
         end
     end
-
-    push!(infolines, d["DUMMY"])
 
     return infolines
 end
