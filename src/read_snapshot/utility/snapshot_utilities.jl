@@ -126,6 +126,11 @@ Check if all requested blocks are present.
 """
 function check_blocks(filename::String, blocks::Array{String}, parttype::Integer)
 
+    # if hdf5 file use seperate function
+    if HDF5.ishdf5(filename)
+        return check_blocks_hdf5(filename, blocks, parttype)
+    end
+
     # check if requested blocks are present
     no_mass_block = false
     blocks_in_file = print_blocks(filename, verbose=false)
@@ -144,6 +149,34 @@ function check_blocks(filename::String, blocks::Array{String}, parttype::Integer
             if blockname == "MASS" && iszero(snap_info[getfield.(snap_info, :block_name) .== "MASS"][1].is_present[parttype+1])
                 no_mass_block = true
                 deleteat!(blocks, findfirst(blocks .== "MASS"))
+            end
+        end
+    end
+
+    return blocks, no_mass_block
+
+end
+
+"""
+    check_blocks(snap_base::String, blocks::Array{String})
+
+Check if all requested blocks are present.
+"""
+function check_blocks_hdf5(filename::String, blocks::Array{String}, parttype::Integer)
+
+    # check if requested blocks are present
+    no_mass_block = false
+
+    f = h5open(filename, "r")
+    blocks_in_file = keys(f["PartType0"])
+
+    for blockname ∈ blocks
+        if !block_present(filename, blockname, blocks_in_file)
+            if blockname == "Masses"
+                no_mass_block = true
+                deleteat!(blocks, findfirst(blocks .== "Masses"))
+            else
+                error("Block $blockname not present!")
             end
         end
     end

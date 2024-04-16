@@ -46,8 +46,13 @@ function find_read_positions( snap_base::String, filter_function::Function;
         t1 = time_ns()
     end
 
-    # read the header of the zero'th file 
-    h = read_header(select_file(snap_base, 0))
+    # get number of sub-snapshots (if any) 
+    snap_file = select_file(snap_base, 0)
+    if HDF5.ishdf5(snap_file)
+        num_files = h5readattr(snap_file, "Header")["NumFilesPerSnapshot"]
+    else
+        num_files = read_header(snap_file).num_files
+    end
 
     # number of particles that fulfill the filter criteria
     N_part = 0
@@ -55,10 +60,17 @@ function find_read_positions( snap_base::String, filter_function::Function;
     # storage dictionary
     d = Dict()
 
-    for sub_snap = 0:(h.num_files-1)
+    for sub_snap = 0:(num_files-1)
         snap_file   = select_file(snap_base, sub_snap)
         sel         = filter_function(snap_file)
         N_this_file = size(sel,1)
+
+        # read number of particles in file
+        if HDF5.ishdf5(snap_file)
+            npart = h5readattr(snap_file, "Header")["NumPart_ThisFile"]
+        else
+            npart = read_header(snap_file).npart
+        end
 
         # store read positions of particles are in the file
         if N_this_file > 0
@@ -68,14 +80,21 @@ function find_read_positions( snap_base::String, filter_function::Function;
         end
 
         if verbose
-            @info "sub-snap $sub_snap: $N_this_file particles"
+            @info "sub-snap $sub_snap: $N_this_file / $(npart[parttype+1]) particles"
         end
         N_part   += N_this_file
     end
 
     if verbose
         t2 = time_ns()
-        @info "Need to read $N_part particles"
+        snap_file   = select_file(snap_base, 0)
+        if HDF5.ishdf5(snap_file)
+            N_all = Int64(h5readattr(snap_file, "Header")["NumPart_Total"][parttype+1])
+        else
+            N_all = Int64(get_total_particles(h, parttype))
+        end
+        N_per = N_part / N_all * 100.0
+        @info "Need to read $N_part / $N_all particles -> $(@sprintf("%0.2f", N_per)) %"
         @info "  elapsed: $(output_time(t1,t2)) s"
     end
 
@@ -102,8 +121,13 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
         t1 = time_ns()
     end
 
-    # read the header of the zero'th file 
-    h = read_header(select_file(snap_base, 0))
+    # get number of sub-snapshots (if any) 
+    snap_file = select_file(snap_base, 0)
+    if HDF5.ishdf5(snap_file)
+        num_files = h5readattr(snap_file, "Header")["NumFilesPerSnapshot"]
+    else
+        num_files = read_header(snap_file).num_files
+    end
 
     # number of particles that fulfill the filter criteria
     N_part = 0
@@ -111,18 +135,26 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
     # storage dictionary
     d = Dict()
 
-    for sub_snap = 0:(h.num_files-1)
+    for sub_snap = 0:(num_files-1)
         snap_file = select_file(snap_base, sub_snap)
 
-        # read header
-        h_snap    = read_header(snap_file)
-
         # read the position block
-        pos       = read_block(snap_file, "POS"; parttype)
+        if HDF5.ishdf5(snap_file)
+            pos   = h5read(snap_file, "/PartType$parttype")["Coordinates"]
+        else
+            pos   = read_block(snap_file, "POS"; parttype)
+        end
 
         # find positions of particles that are contained in the geometry
         sel         = get_geometry_mask(geometry, pos)
         N_this_file = size(sel,1)
+
+        # read number of particles in file
+        if HDF5.ishdf5(snap_file)
+            npart = h5readattr(snap_file, "Header")["NumPart_ThisFile"]
+        else
+            npart = read_header(snap_file).npart
+        end
 
         # store read positions of particles are in the file
         if N_this_file > 0
@@ -132,14 +164,19 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
         end
 
         if verbose
-            @info "sub-snap $sub_snap: $N_this_file / $(h_snap.npart[parttype+1]) particles"
+            @info "sub-snap $sub_snap: $N_this_file / $(npart[parttype+1]) particles"
         end
         N_part   += N_this_file
     end
 
     if verbose
         t2 = time_ns()
-        N_all = Int64(get_total_particles(h, parttype))
+        snap_file   = select_file(snap_base, 0)
+        if HDF5.ishdf5(snap_file)
+            N_all = Int64(h5readattr(snap_file, "Header")["NumPart_Total"][parttype+1])
+        else
+            N_all = Int64(get_total_particles(h, parttype))
+        end
         N_per = N_part / N_all * 100.0
         @info "Need to read $N_part / $N_all particles -> $(@sprintf("%0.2f", N_per)) %"
         @info "  elapsed: $(output_time(t1,t2)) s"
