@@ -80,7 +80,7 @@ function find_read_positions( snap_base::String, filter_function::Function;
         end
 
         if verbose
-            @info "sub-snap $sub_snap: $N_this_file / $(npart[parttype+1]) particles"
+            @info "sub-snap $sub_snap: $N_this_file particles"
         end
         N_part   += N_this_file
     end
@@ -88,13 +88,7 @@ function find_read_positions( snap_base::String, filter_function::Function;
     if verbose
         t2 = time_ns()
         snap_file   = select_file(snap_base, 0)
-        if HDF5.ishdf5(snap_file)
-            N_all = Int64(h5readattr(snap_file, "Header")["NumPart_Total"][parttype+1])
-        else
-            N_all = Int64(get_total_particles(h, parttype))
-        end
-        N_per = N_part / N_all * 100.0
-        @info "Need to read $N_part / $N_all particles -> $(@sprintf("%0.2f", N_per)) %"
+        @info "Need to read $N_part particles"
         @info "  elapsed: $(output_time(t1,t2)) s"
     end
 
