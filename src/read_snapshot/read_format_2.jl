@@ -319,8 +319,13 @@ function read_all_parttypes(filename::String, blockname::String;
     for parttype = 0:5
         # only read the block if particles are actually present
         if !iszero(n_to_read[parttype+1])
-            block[Int(nread + 1):Int(nread + n_to_read[parttype+1])] = read_block(filename, blockname, parttype=parttype,
-                                                            block_position=block_position, info=info, h=h)
+            if info.n_dim == 1
+                    block[Int(nread + 1):Int(nread + n_to_read[parttype+1])] = read_block(filename, blockname, parttype=parttype,
+                                                                    block_position=block_position, info=info, h=h)
+            else
+                    block[:, Int(nread + 1):Int(nread + n_to_read[parttype+1])] = read_block(filename, blockname, parttype=parttype,
+                                                                    block_position=block_position, info=info, h=h)
+            end
             nread += n_to_read[parttype+1]
         end
     end
