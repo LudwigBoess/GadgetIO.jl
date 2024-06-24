@@ -142,6 +142,16 @@ Returns a single `InfoLine` struct.
 function check_info(filename::String, blockname::String)
     info = read_info(filename)
 
+    return get_info(info, blockname)
+end
+
+"""
+    get_info(info::AbstractVector{InfoLine}, blockname::String)
+
+Helper function to obtain a given `InfoLine` from a list or construct it for a MASS block, if no INFO block is present.
+Returns a single `InfoLine` struct.
+"""
+function get_info(info::AbstractVector{InfoLine}, blockname::String)
     for i ∈ 1:size(info,1)
         if info[i].block_name == blockname
             return info[i]

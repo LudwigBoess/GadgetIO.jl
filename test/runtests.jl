@@ -153,6 +153,21 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
                 @test id_full == id
 
+
+                pos = zeros(Float32, 3, n_all)
+                n_read = 0
+                for parttype = 0:5
+                    n_to_read = h.npart[parttype+1]
+                    if !iszero(n_to_read)
+                        pos[:, n_read+1:n_read+n_to_read] = read_block(snap_file, "POS"; parttype)
+                        n_read += n_to_read
+                    end
+                end
+
+                pos_full = read_block(snap_file, "POS", parttype=-1)
+
+                @test pos_full == pos
+
                 # distributed files
                 # ToDo!
             end
