@@ -146,6 +146,16 @@ function check_info(filename::String, blockname::String)
 end
 
 """
+    check_info(filename::String, blocknum::Integer)
+
+Helper function to assign default `InfoLine` to the block number if none was given.
+"""
+function check_info(filename::String, blocknum::Integer)
+    # get the info from the default array
+    return default_info_lines[blocknum]
+end
+
+"""
     get_info(info::AbstractVector{InfoLine}, blockname::String)
 
 Helper function to obtain a given `InfoLine` from a list or construct it for a MASS block, if no INFO block is present.
