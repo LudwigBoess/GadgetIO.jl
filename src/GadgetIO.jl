@@ -22,8 +22,7 @@ include(joinpath("read_snapshot", "utility", "allocate.jl"))
 include(joinpath("read_snapshot", "utility", "snapshot_utilities.jl"))
 include(joinpath("read_snapshot", "utility", "block_position.jl"))
 include(joinpath("read_snapshot", "utility", "total_particles.jl"))
-include(joinpath("read_snapshot", "read_format_1.jl"))
-include(joinpath("read_snapshot", "read_format_2.jl"))
+include(joinpath("read_snapshot", "read_block.jl"))
 include(joinpath("read_snapshot", "read_snapshot.jl"))
 
 include(joinpath("read_subfind", "read_header.jl"))
@@ -63,7 +62,6 @@ export AbstractGadgetHeader,
     block_present,
     read_snap,
     read_block,      # similar to readnew.pro by Klaus Dolag
-    read_block_format1,      # similar to readold.pro by Klaus Dolag
     read_header,
 
     # large simulations
