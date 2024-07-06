@@ -62,7 +62,6 @@ export AbstractGadgetHeader,
     block_present,
     read_snap,
     read_block,      # similar to readnew.pro by Klaus Dolag
-    read_block_format1,      # similar to readold.pro by Klaus Dolag
     read_header,
 
     # large simulations
