@@ -100,8 +100,14 @@ const default_info_lines = [ InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), 
                              # BHMI
                              # BHMR
                              # VSIG
-                             # MACH
-                             # SHSP
+                             InfoLine("SHNR", Float32, 3,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("MACH", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SHSP", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SHCP", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SHRU", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SHFL", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SHVU", Float32, 3,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SHVD", Float32, 3,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
                              # SHRH
                              # SHPU
                              # SHPD
