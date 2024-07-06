@@ -169,6 +169,7 @@ function find_read_positions( snap_base::String, geometry::AbstractGadgetGeometr
         if HDF5.ishdf5(snap_file)
             N_all = Int64(h5readattr(snap_file, "Header")["NumPart_Total"][parttype+1])
         else
+            h = read_header(snap_file)
             N_all = Int64(get_total_particles(h, parttype))
         end
         N_per = N_part / N_all * 100.0

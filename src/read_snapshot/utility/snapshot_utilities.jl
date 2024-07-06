@@ -227,7 +227,7 @@ function check_blocks_hdf5(filename::String, blocks::Array{String}, parttype::In
     no_mass_block = false
 
     f = h5open(filename, "r")
-    blocks_in_file = keys(f["PartType0"])
+    blocks_in_file = keys(f["PartType$parttype"])
 
     for blockname ∈ blocks
         if !block_present(filename, blockname, blocks_in_file)
