@@ -1,4 +1,28 @@
 """
+    check_block_format(filename)
+
+Checks which binary format the file is in.
+"""
+function check_snapshot_format(filename)
+
+    # ToDo: HDF5!
+
+    f = open(filename)
+    blocksize = read(f, Int32)
+    close(f)
+
+    if blocksize == 8
+        # snapshot format 2
+        return 2
+    elseif blocksize == 256
+        # snapshot format 1
+        return 1
+    else
+        error("File is not in Gadget binary format!")
+    end
+end
+
+"""
     check_blocksize(f::IOStream, position_before::Integer, blocksize_before::Integer)
 
 Checks for integer overflow in the size of the block.
@@ -18,6 +42,41 @@ function check_blocksize(f::IOStream, position_before::Integer, blocksize_before
             # sum up actual block size
             blocksize_before_fix = blocksize_before + N_check*4294967296
             seek(f,position_before+blocksize_before_fix+12)
+            # read potential blocksize at the end of the block
+            blocksize_after_fix = read(f,UInt32) + N_check*4294967296
+            
+            # check if blocksizes match
+            if blocksize_before_fix == blocksize_after_fix
+                return blocksize_before_fix
+            end
+        end
+
+        error("There is an issue with the snapshot:\n
+                   Blocksize_before = $blocksize_before_fix\n
+                   Blocksize_after  = $blocksize_after_fix")
+    end
+end
+
+"""
+    check_blocksize_format1(f::IOStream, position_before::Integer, blocksize_before::Integer)
+
+Checks for integer overflow in the size of the block.
+"""
+function check_blocksize_format1(f::IOStream, position_before::Integer, blocksize_before::Integer)
+
+    seek(f,position_before+blocksize_before)
+    blocksize_after = read(f,UInt32)
+
+    # if the numbers are the same everything works as it should
+    if blocksize_before == blocksize_after
+        return blocksize_before
+    else # compensate for integer overflow
+
+        # check for up-to 10x integer overflow - everything beyond that is ridiculous anyway
+        for N_check = 1:10
+            # sum up actual block size
+            blocksize_before_fix = blocksize_before + N_check*4294967296
+            seek(f,position_before+blocksize_before_fix)
             # read potential blocksize at the end of the block
             blocksize_after_fix = read(f,UInt32) + N_check*4294967296
             

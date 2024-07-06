@@ -4,13 +4,23 @@
 Storage Array as a fallback if no `INFO` block is present.
 """
 const default_info_lines = [ InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Positions (internal units)
+                             InfoLine("VEL",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Velocities (internal units - not v_comoving but v_com*sqrt(a))
                              InfoLine("ID",   UInt32,  1,  [1, 1, 1, 1, 1, 1]), # Particle ID
                              InfoLine("MASS", Float32, 1,  [1, 1, 1, 1, 1, 1]), # Mass of Particle (internal units)
+                             InfoLine("U",    Float32, 1,  [1, 0, 0, 0, 0, 0]), # Internal Energy of gas particles (internal units)
+                             InfoLine("RHO",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # Density (internal units)
+                             InfoLine("NE",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of free electrons
+                             InfoLine("NH",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of neutral hydrogen
+                             InfoLine("HSML", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
+                             InfoLine("SFR",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # star formation rate (internal units)
+                             InfoLine("AGE",  Float32, 1,  [0, 0, 0, 0, 1, 0]), # Expansion factor at which star (or BH) is born
+                             InfoLine("BHMA", Float32, 1,  [0, 0, 0, 0, 0, 1]), # True blackhole mass (MASS contains the dynamical mass !!!)
+                             InfoLine("BHMD", Float32, 1,  [0, 0, 0, 0, 0, 1]), # blackhole accretion rate
+
                              InfoLine("POT",  Float32, 1,  [1, 1, 1, 1, 1, 1]), # Potential
                              InfoLine("TSTP", Float32, 1,  [1, 1, 1, 1, 1, 1]), # timestep
-                             InfoLine("VEL",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Velocities (internal units - not v_comoving but v_com*sqrt(a))
                              InfoLine("ACCE", Float32, 3,  [1, 1, 1, 1, 1, 1]), # acceleration
- 
+                              
                              InfoLine("BFLD", Float32, 3,  [1, 0, 0, 0, 0, 0]), # magnetic field
                              InfoLine("BFSM", Float32, 3,  [1, 0, 0, 0, 0, 0]), # Smoothed magnetic field
                              InfoLine("DBDT", Float32, 3,  [1, 0, 0, 0, 0, 0]), # Rate of change of magnetic field
@@ -21,11 +31,8 @@ const default_info_lines = [ InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), 
 
                              InfoLine("Zs",   Float32, 8,  [1, 0, 0, 0, 1, 0]), # or 11?  # Mass of metals
                              InfoLine("Z",    Float32, 1,  [1, 0, 0, 0, 1, 0]), # Metallicity
-                             InfoLine("AGE",  Float32, 1,  [0, 0, 0, 0, 1, 0]), # Expansion factor at which star (or BH) is born
                              InfoLine("iM",   Float32, 1,  [0, 0, 0, 0, 1, 0]), # initial mass of star particle
                              InfoLine("HSMS", Float32, 1,  [0, 0, 0, 0, 1, 0]), # Chemical spreading (e.g. Smoothing) length of stars
-                             InfoLine("BHMA", Float32, 1,  [0, 0, 0, 0, 0, 1]), # True blackhole mass (MASS contains the dynamical mass !!!)
-                             InfoLine("BHMD", Float32, 1,  [0, 0, 0, 0, 0, 1]), # blackhole accretion rate
 
                              InfoLine("TIPS", Float32, 9,  [1, 1, 1, 1, 1, 1]), # 3x3 configuration-space tidal tensor that is driving the GDE
                              InfoLine("DIPS", Float32, 36, [1, 1, 1, 1, 1, 1]), # full 6D phase-space distortion tensor from GDE integration
@@ -39,10 +46,6 @@ const default_info_lines = [ InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), 
                              InfoLine("SHIN", Float32, 3,  [1, 1, 1, 1, 1, 1]), 
                              InfoLine("SHOR", Float32, 9,  [1, 1, 1, 1, 1, 1]), # initial orientation of the CDM sheet where the particle started
                              InfoLine("INDE", Float32, 1,  [1, 1, 1, 1, 1, 1]), # initial stream density in physical units
-                             InfoLine("U",    Float32, 1,  [1, 0, 0, 0, 0, 0]), # Internal Energy of gas particles (internal units)
-                             InfoLine("RHO",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # Density (internal units)
-                             InfoLine("NE",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of free electrons
-                             InfoLine("NH",   Float32, 1,  [1, 0, 0, 0, 0, 0]), # Number density of neutral hydrogen
                              InfoLine("HII",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # ionized hydrogen abundance
                              InfoLine("HeI",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # neutral Helium
                              InfoLine("HeII", Float32, 1,  [1, 0, 0, 0, 0, 0]), # ionized Heluum
@@ -58,8 +61,6 @@ const default_info_lines = [ InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), 
                              #InfoLine("HSMB", Float32, 1,  [0, 0, 0, 0, 0, 1]),
                              #InfoLine("HSBP", Float32, 1,  [0, 0, 1, 1, 0, 0]),
                              # 
-                             InfoLine("HSML", Float32, 1,  [1, 0, 0, 0, 0, 0]), # Smoothing length of gas particles
-                             InfoLine("SFR",  Float32, 1,  [1, 0, 0, 0, 0, 0]), # star formation rate (internal units)
                              InfoLine("ACRS", Float32, 1,  [0, 0, 0, 0, 1, 0]), # accreation length for star particles
                              InfoLine("BHPC", Float32, 1,  [0, 0, 0, 0, 0, 1]), # progenitor count blackholes
                              InfoLine("ACRB", Float32, 1,  [0, 0, 0, 0, 0, 1]), # Black hole sphere of influence (e.g. smoothing) of Black Holes

@@ -28,6 +28,17 @@ SIZE_BLOCK     # end of the current block
 
 which repeats for every block.
 
+It is also possible to read snapshots of `Format 1`. The structure of a `Format 1` snapshot is as follows:
+
+```
+SIZE_BLOCK     # size of the current block in bytes
+{...}          # content of the block ordered by particle type
+SIZE_BLOCK     # end of the current block
+```
+
+As it is the same as for `Format 2`, except without the blockname information, this means that the order of the blocks is expected to be standardized.
+
+
 ## Filename
 
 Before we get started, a short bit for clarification: In what follows we need to distinguish between `filename` and `filebase`.
@@ -71,16 +82,25 @@ read_block
 
 This will return an array of the datatype of your simulation, usually `Float32`.
 
-If the snapshot has no info block this will fail unfortunately.
+If the snapshot has no info block there are a number of default `InfoLine`s.
 
-You can still read the specific block by supplying a hand-constructed [`InfoLine`](@ref) struct and passing that to the function [`read_block`](@ref):
+In case the snapshot has no info block and the block you want to read is not covered by the default `InfoLine`s you can still read the specific block by supplying a hand-constructed [`InfoLine`](@ref) struct and passing that to the function [`read_block`](@ref):
 
 ```julia
 pos_info = InfoLine("POS", Float32, 3, [1,1,1,1,1,1])
 pos      = read_block(filename, "POS", info=pos_info, parttype=0)
 ```
 
-I will collect some example `InfoLine` structs in a later release to be able to read some common blocks even without an `INFO` block.
+For `Format 1` you need to pass it a block number, instead of name and an `InfoLine` if the block order/datatype differs from the default:
+
+```julia
+# default behaviour to read DM particles
+pos = read_block(filename, 1, parttype=1)
+
+# custom block, not typical for Format 1
+bfld_info = InfoLine("BFLD", Float64, 3, [1,0,0,0,0,0])
+bfld      = read_block(filename, 8, info=bfld_info, parttype=0)
+```
 
 Since `v0.5` [`read_snap`](@ref) and [`read_block`](@ref) also work if you pass them a `file_base`.
 
@@ -260,3 +280,4 @@ data["POS"]  # array of positions
 data["RHO"]  # array of densities
 (...)
 ```
+

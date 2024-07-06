@@ -63,7 +63,7 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
         snap_file = "snap_sedov"
 
-        @testset "Read blocks" begin
+        @testset "Format 2" begin
 
             @testset "Error handling" begin
                 #@test_nowarn read_snap(snap_file)
@@ -153,6 +153,21 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
                 @test id_full == id
 
+
+                pos = zeros(Float32, 3, n_all)
+                n_read = 0
+                for parttype = 0:5
+                    n_to_read = h.npart[parttype+1]
+                    if !iszero(n_to_read)
+                        pos[:, n_read+1:n_read+n_to_read] = read_block(snap_file, "POS"; parttype)
+                        n_read += n_to_read
+                    end
+                end
+
+                pos_full = read_block(snap_file, "POS", parttype=-1)
+
+                @test pos_full == pos
+
                 # distributed files
                 # ToDo!
             end
@@ -194,6 +209,21 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
         end
 
+        @testset "Format 1" begin
+            snap_file = "snap_sedov"
+            # read reference data in format 2
+            pos_format2 = read_block(snap_file, "POS", parttype=0)
+            # write format 1 block
+            h = read_header(snap_file)
+            f = open("dummy_snap_format1", "w")
+            write_header(f, h, snap_format=1)
+            write_block(f, pos_format2, "POS", snap_format=1)
+            close(f)
+            # read format 1 block
+            pos_format1 = read_block("dummy_snap_format1", 1, parttype=0)
+            # check if the data is the same
+            @test pos_format1 == pos_format2
+        end
 
         @testset "Read particles in box" begin
 
@@ -695,6 +725,7 @@ rm("sub_002.0")
 rm("sub_002.1")
 rm("sub_002.2")
 rm("sub_002.3")
+rm("dummy_snap_format1")
 
 rm("snap_002.0")
 rm("snap_002.1")
