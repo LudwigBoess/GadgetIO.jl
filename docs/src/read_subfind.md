@@ -61,7 +61,6 @@ This will return an array of [`HaloID`](@ref)s which contain the fields
 | `id::Int64`                          | position in the block                                                                  |
 
 
-This can be used either with [Reading halo property by HaloID](@ref) 
 
 ## Saving/Loading HaloIDs
 

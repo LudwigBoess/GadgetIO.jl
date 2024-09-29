@@ -1,8 +1,4 @@
-"""
-    default_info_lines
-
-Storage Array as a fallback if no `INFO` block is present.
-"""
+# Storage Array as a fallback if no `INFO` block is present.
 const default_info_lines = [ InfoLine("POS",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Positions (internal units)
                              InfoLine("VEL",  Float32, 3,  [1, 1, 1, 1, 1, 1]), # Velocities (internal units - not v_comoving but v_com*sqrt(a))
                              InfoLine("ID",   UInt32,  1,  [1, 1, 1, 1, 1, 1]), # Particle ID

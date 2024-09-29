@@ -12,9 +12,7 @@ Computes the integer position along the PH line.
     return val_int
 end
 
-"""
-    Lookup tables for peano hilbert keys
-"""
+# Lookup tables for peano hilbert keys
 const rottable3 = [36  28  25  27  10  10  25  27;
                           29  11  24  24  37  11  26  26;
                            8   8  25  27  30  38  25  27;
