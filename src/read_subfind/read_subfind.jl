@@ -44,14 +44,15 @@ mvir, haloids = read_subfind(filebase, "MVIR", [0, 1, 2, 3]; return_haloid=true)
 """
 function read_subfind(filename::String, blockname::String, ids::AbstractVector{<:Integer}; 
                         info::Union{Nothing,InfoLine}=nothing,
-                        offset::Integer=0, n_to_read::Integer=-1,           
                         return_haloid::Bool=false)
-    # shift to 1-indexed
-    ind_ids = ids .+ 1
-    
     # read the block data
-    block = read_subfind(filename, blockname; info, offset, n_to_read)
+    id_min, id_max = extrema(ids)
+    n_to_read = id_max - id_min + 1
+    block = read_subfind(filename, blockname; info, offset=id_min, n_to_read)
 
+    # shift to 1-indexed
+    ind_ids = ids .+ 1 .- id_min
+    
     if ndims(block) == 1
         block = block[ind_ids]
     else
