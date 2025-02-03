@@ -44,7 +44,24 @@ mvir, haloids = read_subfind(filebase, "MVIR", [0, 1, 2, 3]; return_haloid=true)
 """
 function read_subfind(filename::String, blockname::String, ids::AbstractVector{<:Integer}; 
                         info::Union{Nothing,InfoLine}=nothing,
-                        return_haloid::Bool=false)
+                        return_haloid::Bool=false,
+                        verbose=true)
+
+    if issorted(ids)
+        haloids = global_idxs_to_halo_id(filename, ids)
+        read_positions = halo_ids_to_read_positions(haloids)
+        parttype = subfind_block_parttype(filename, blockname)
+        block = read_blocks_filtered(filename, [blockname]; read_positions, parttype, verbose)[blockname]
+
+        if return_haloid
+            return block, haloids
+        else
+            return block
+        end
+    end
+
+    # if not sorted
+
     # read the block data
     id_min, id_max = extrema(ids)
     n_to_read = id_max - id_min + 1
@@ -66,7 +83,6 @@ function read_subfind(filename::String, blockname::String, ids::AbstractVector{<
     else
         return block
     end
-
 end
 
 """
