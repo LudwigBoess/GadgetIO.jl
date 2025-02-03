@@ -51,6 +51,9 @@ include(joinpath("timer_outputs", "read_balance.jl"))
 # functions to write snapshots
 include(joinpath("write_snapshot", "write_snap.jl"))
 
+# calculations
+include(joinpath("calculations", "compute_crit_radius_mass.jl"))
+
 export AbstractGadgetHeader,
     SnapshotHeader, SubfindHeader,
     InfoLine,       # types
@@ -112,7 +115,10 @@ export AbstractGadgetHeader,
 
     # timer files 
     parse_balance,
-    print_performance
+    print_performance,
+
+    # calculations 
+    compute_Rcrit_Mcrit
 
 
 """
