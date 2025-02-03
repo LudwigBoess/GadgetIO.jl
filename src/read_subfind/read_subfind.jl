@@ -48,9 +48,9 @@ function read_subfind(filename::String, blockname::String, ids::AbstractVector{<
                         verbose=true)
 
     if issorted(ids)
-        haloids = global_idxs_to_halo_id(filename, ids)
-        read_positions = halo_ids_to_read_positions(haloids)
         parttype = subfind_block_parttype(filename, blockname)
+        haloids = global_idxs_to_halo_id(filename, ids; parttype)
+        read_positions = halo_ids_to_read_positions(haloids)
         block = read_blocks_filtered(filename, [blockname]; read_positions, parttype, verbose)[blockname]
 
         if return_haloid
