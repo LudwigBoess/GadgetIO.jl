@@ -133,20 +133,26 @@ function read_block(filename::String, block_id::Union{String, Integer};
         
         # read local filename
         _filename = select_file(filename, file)
-        h = read_header(_filename)
 
-        # get number of particles to read from local file, if not given
-        n_to_read_file = h.npart[parttype+1]
-        if n_to_read_file > offset_rest
-            n_to_read_file -= offset_rest
-            off = offset_rest
-            offset_rest = 0
+        if n_to_read > nread
+            h = read_header(_filename)
+
+            # get number of particles to read from local file, if not given
+            n_to_read_file = h.npart[parttype+1]
+            if n_to_read_file > offset_rest
+                n_to_read_file -= offset_rest
+                off = offset_rest
+                offset_rest = 0
+            else
+                off = 0
+                offset_rest -= n_to_read_file
+                n_to_read_file = 0
+            end
+            n_to_read_file = min(n_to_read_file, n_to_read - nread)
         else
-            off = 0
-            offset_rest -= n_to_read_file
+            # do not read anything anymore
             n_to_read_file = 0
         end
-        n_to_read_file = min(n_to_read_file, n_to_read - nread)
 
         if iszero(n_to_read_file)
             ind = file + 1

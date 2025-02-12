@@ -1,5 +1,5 @@
 """
-    read_halo_prop(sub_base, haloid::HaloID, blockname::AbstractString; verbose::Bool=true)
+    read_halo_prop(sub_base, blockname::AbstractString, haloid::HaloID; verbose::Bool=true)
 
 Get halo property from block `blockname` by halo id. Returns an array or scalar depending on the block type.
 """
@@ -25,7 +25,7 @@ function read_halo_prop(sub_base, blockname::AbstractString, haloid::HaloID; ver
 end
 
 """
-    read_halo_prop(sub_base, i_global::Integer, blockname::AbstractString; verbose::Bool=true)
+    read_halo_prop(sub_base, blockname::AbstractString, i_global::Integer; verbose::Bool=true)
 
 Get halo property from block `blockname` by global halo index `i_global` (zero-based index).
 """

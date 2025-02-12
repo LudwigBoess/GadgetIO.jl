@@ -1,11 +1,11 @@
 using Dates
 
 """
-    read_pids(sub_base::String, offset::Signed, N_ids::Signed)
+    read_pids(sub_base::String, N_ids::Signed, offset::Signed)
 
 Reads the `PID` block in the subfind output.
 """
-function read_pids(sub_base::String, N_ids::Signed, offset::Signed)
+function read_pids(sub_base::String, N_ids::Signed, offset::Signed; expected_file=-1, expected_file_tolerance=(-2, 100), offset_type=nothing)
 
     # choose correct file
     sub_file = select_file(sub_base, 0)
@@ -17,8 +17,19 @@ function read_pids(sub_base::String, N_ids::Signed, offset::Signed)
     info = read_info(sub_file)
     pid_info = info[getfield.(info, :block_name) .== "PID"][1]
     
+    nfof = sub_header.nfof
+
+
+    # If we are not located within the expected file +- the tolerances,
+    # assume that overflow has to be accounted for.
+    # This can occur for simulations with more than ~4.3 million particles when the PID offsets are
+    # saved as UInt32.
+    if nfof - offset >= N_ids && expected_file != -1 && expected_file + expected_file_tolerance[1] > 0
+        offset += Int64(typemax(offset_type)) + 1
+    end
+
     # if there are fewer IDs in the file than in the halo they are distributed over multiple files
-    if (sub_header.nfof - offset) < N_ids
+    if (nfof - offset) < N_ids
         
         # allocate array for IDs
         ids = Array{pid_info.data_type}(undef, N_ids)
@@ -31,7 +42,6 @@ function read_pids(sub_base::String, N_ids::Signed, offset::Signed)
 
         # loop over sub files until all IDs are read
         while ids_read < N_ids
-
             sub_file = select_file(sub_base, files_read)
 
             if !isfile(sub_file)
@@ -43,16 +53,27 @@ function read_pids(sub_base::String, N_ids::Signed, offset::Signed)
             sub_header = convert_header(h)
 
             # if the offset is larger than the number of IDs in this file
-            if offset_remaining >= sub_header.nfof
+            # nfof = files_read == 0 ? nfof : check_blocksize_format2(sub_file, "PID") ÷ sizeof(pid_info.data_type)
+            nfof = sub_header.nfof
+            if offset_remaining >= nfof
                 # read next file
                 files_read += 1
                 # subtract IDs in this file from offset
-                offset_remaining -= sub_header.nfof
+                offset_remaining -= nfof
                 continue
             else
+                # If we are not located within the expected file +- the tolerances,
+                # assume that overflow has to be accounted for.
+                # This can occur for simulations with more than ~4.3 million particles when the PID offsets are
+                # saved as UInt32.
+                if expected_file != -1 && !(expected_file + expected_file_tolerance[1] <= files_read <= expected_file + expected_file_tolerance[2])
+                    offset_remaining += Int64(typemax(offset_type)) + 1
+                    continue
+                end
+
                 # number of particles remaining to be read
-                if ( sub_header.nfof - offset_remaining < N_ids - ids_read )
-                    n_to_read = sub_header.nfof - offset_remaining
+                if ( nfof - offset_remaining < N_ids - ids_read )
+                    n_to_read = nfof - offset_remaining
                 else
                     n_to_read = N_ids - ids_read
                 end
@@ -72,7 +93,7 @@ function read_pids(sub_base::String, N_ids::Signed, offset::Signed)
                 ids_read += n_to_read
 
                 if offset_remaining > 0
-                    offset_remaining -= n_to_read
+                    offset_remaining -= nfof
                 end 
                 
                 if offset_remaining <= 0
@@ -125,7 +146,7 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
     end
     
     # read number of IDs in the halo
-    N_ids = Int64(read_subfind(sub_file, len_block)[halo.id])
+    N_ids = Int64(read_halo_prop(sub_base, len_block, halo; verbose))
 
     if verbose
         t2 = Dates.now()
@@ -133,8 +154,9 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
         flush(stdout)
         flush(stderr)
     end
-    # read offset in PID array
-    offset = Int64(read_subfind(sub_file, off_block)[halo.id])
+    # read offset in PID array (do not convert yet to Int64 to obtain offset type)
+    offset = read_halo_prop(sub_base, off_block, halo; verbose)
+    offset_type = typeof(offset)
 
     if verbose
         @info "Reading IDs in halo..."
@@ -142,8 +164,11 @@ function read_ids_in_halo( sub_base::String, halo::HaloID;
         flush(stderr)
         t1 = Dates.now()
     end
+
     # read all IDs of the particles contained in a halo
-    halo_ids = read_pids(sub_base, N_ids, offset)
+    # Also include information about the expected file number as there can be offset overflows when the offsets
+    # are saved as UInt32.
+    halo_ids = read_pids(sub_base, N_ids, Int64(offset); expected_file=halo.file, offset_type)
 
     if verbose
         t2 = Dates.now()
