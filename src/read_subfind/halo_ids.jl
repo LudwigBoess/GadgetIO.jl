@@ -22,17 +22,20 @@ Converts global halo indices to `HaloID`s.
 function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer};
     parttype::Integer=0)
 
-    # only works for sorted arrays
-    @assert issorted(idxs) "Global IDs have to be sorted!"
-
     # idxs are 0-indexed
     idx_local = idxs .+ 1
+    idx_local_max = maximum(idx_local)
 
     # allocate vector for HaloIDs
     halo_ids = Vector{HaloID}(undef, length(idx_local))
 
     # if subfind output is only one file you can write the indices directly
     if isfile(sub_base)
+        h = read_header(sub_base)
+        if h.npart[parttype+1] < idx_local_max
+            error("A total of $(count(>(h.npart[parttype+1]), idx_local)) global indices do not exist!")
+        end
+
         halo_ids .= HaloID.(0, idx_local)
 
         # if there are multiple subfiles we need to arrange the indices
@@ -51,9 +54,9 @@ function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer
             sel = findall(halos_read .< idx_local .<= halos_read + h.npart[parttype+1])
 
             # write into HaloIDs
-            for entry ∈ idx_local[sel]
+            for s ∈ sel
                 # store HaloID
-                halo_ids[i] = HaloID(filenum, entry - halos_read)
+                halo_ids[s] = HaloID(filenum, idx_local[s] - halos_read)
                 # count up entries
                 i += 1
             end
@@ -61,14 +64,14 @@ function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer
             # count up number of halos already read
             halos_read += h.npart[parttype+1]
 
-            if halos_read > last(idx_local)
+            if halos_read > idx_local_max
                 break 
             end
 
         end
 
         if i != length(halo_ids) + 1
-            error("The last $(length(halo_ids) + 1 - i) global indices do not exist!")
+            error("A total of $(length(halo_ids) + 1 - i) global indices do not exist!")
         end
     end
 
