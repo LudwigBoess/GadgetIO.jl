@@ -492,6 +492,11 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
             pos_from_ids, haloids_from_ids = read_subfind("sub_002", "SPOS", ids; return_haloid=true)
             @test read_subfind("sub_002", "SPOS", ids) == pos_from_ids
             @test haloids_from_ids == haloids[ids.+1]
+            
+            @test_throws ErrorException read_subfind("sub_002", "MSUB", [0, length(haloids)])
+            @test_throws ErrorException GadgetIO.global_idxs_to_halo_id("sub_002", [length(haloids), 0]; parttype=1)
+            @test_throws ErrorException read_subfind("sub_002.0", "MSUB", 0:5)
+            @test_throws ErrorException GadgetIO.global_idxs_to_halo_id("sub_002.0", [5, 0]; parttype=1)
 
             # load reference data
             msub_from_ids, haloids_from_ids = read_subfind("sub_002", "MSUB", ids; return_haloid=true)
