@@ -22,12 +22,11 @@ Converts global halo indices to `HaloID`s.
 function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer};
     parttype::Integer=0)
 
+    # only works for sorted arrays
+    @assert issorted(idxs) "Global IDs have to be sorted!"
+
     # idxs are 0-indexed
     idx_local = idxs .+ 1
-
-    # only works for sorted arrays
-    sorted = sortperm(idx_local)
-    sort!(idx_local)
 
     # allocate vector for HaloIDs
     halo_ids = Vector{HaloID}(undef, length(idx_local))
@@ -68,9 +67,12 @@ function global_idxs_to_halo_id(sub_base::String, idxs::AbstractVector{<:Integer
 
         end
 
+        if i != length(halo_ids) + 1
+            error("The last $(length(halo_ids) + 1 - i) global indices do not exist!")
+        end
     end
 
-    halo_ids[sorted]
+    return halo_ids
 end
 
 
