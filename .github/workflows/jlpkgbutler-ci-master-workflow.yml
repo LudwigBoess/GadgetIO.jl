@@ -1,18 +1,16 @@
-name: Run CI on main
+name: Run CI on master
 
 on:
   push:
     branches:
-      - main
       - master
-  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ['1.7', '1.8', '1.9', '1.10']
+        julia-version: ['lts', '1', 'nightly']
         julia-arch: [x64, x86]
         os: [ubuntu-latest, windows-latest, macOS-latest]
         exclude:
@@ -20,21 +18,23 @@ jobs:
             julia-arch: x86
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.julia-arch }}
-      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-buildpkg@latest
         env:
           PYTHON: ""
-      - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-runtest@latest
         env:
           PYTHON: ""
       - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v1
         with:
-          files: ./lcov.info
+          file: ./lcov.info
           flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
                     
