@@ -1,2 +1,9 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+GadgetIO = "826b50da-1eb7-48f3-bd4b-d2350582c309"
+
+[compat]
+Documenter = "1"
+
+[sources]
+GadgetIO = {path = ".."}
