@@ -1,4 +1,4 @@
-using GadgetIO, Test, DelimitedFiles, Downloads
+using GadgetIO, Test, DelimitedFiles, Downloads, Aqua
 
 function filter_dummy(filename::String)
     mtop = read_subfind(filename, "MTOP")
@@ -721,6 +721,10 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
             @test_nowarn print_performance("balance.txt")
         end
 
+    end
+
+    @testset "Aqua.jl (code quality)" begin
+        Aqua.test_all(GadgetIO)
     end
 
 end
