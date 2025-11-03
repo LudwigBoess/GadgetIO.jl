@@ -191,9 +191,6 @@ function read_positions_from_PH_keys(filebase::String,
                                     corner_upperright::Array{<:Real};
                                     parttype::Integer, verbose::Bool)
 
-    # read info blocks once here
-    key_info  = read_info(filebase * ".0.key")
-
     # check if key files are present
     file_key = filebase * ".0.key"
     if !isfile(file_key)
@@ -201,6 +198,9 @@ function read_positions_from_PH_keys(filebase::String,
         flush(stdout)
         flush(stderr)
     end
+
+    # read info blocks once here
+    key_info  = read_info(file_key)
 
     if verbose
         @info ".key files found!"
