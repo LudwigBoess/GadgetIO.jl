@@ -30,6 +30,27 @@ function filter_ids(snap_file::String, selected_ids::Vector{<:Integer}, parttype
 end
 
 """
+    get_first_containing_file(snap_base, parttype)
+
+Returns the filename of the first subfile of `sub_base` that contains the given particle type.
+"""
+function get_first_containing_file(snap_base, parttype)
+    h = read_header(snap_base)
+    if iszero(get_total_particles(h, parttype))
+        error("There are no particles of type $parttype available.")
+    end
+
+    for i in 0:(h.num_files-1)
+        filename = select_file(snap_base, i)
+        h = read_header(filename)
+
+        if h.npart[parttype + 1] > 0
+            return filename
+        end
+    end
+end
+
+"""
     read_blocks_filtered( snap_base::String, blocks::Array{String};
                                 filter_function::Union{Function, Nothing}=nothing, 
                                 read_positions::Union{Dict, Nothing}=nothing, 
@@ -64,8 +85,8 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
         t1 = time_ns()
     end
 
-    # select current file
-    filename = select_file(snap_base, 0 )
+    # seek for file that contains relevant particle data
+    filename = get_first_containing_file(snap_base, parttype)
 
     # read info block
     snap_info = read_info(filename)

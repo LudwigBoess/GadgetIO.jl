@@ -34,11 +34,17 @@ function read_positions_from_keys_files(files::Vector{<:Integer}, filebase::Stri
         key_h.num_files = 1
 
         if iszero(h.npart[parttype+1])
-            @info "No particles of type $parttype in file $(file)!"
-            flush(stdout)
-            flush(stderr)
+            if verbose
+                @info "No particles of type $parttype in file $(file)!"
+                flush(stdout)
+                flush(stderr)
+            end
+
             continue
         end
+
+        # read the key_info here because not each key subfile contains the same available particles
+        key_info  = read_info(filename_keyfile)
 
         # Vector of field names (KEY, NKEY, OKEY)
         fields = getfield.(key_info, :block_name)
