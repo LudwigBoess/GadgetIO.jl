@@ -140,26 +140,49 @@ function head_to_struct(filename)
         skip_line = read(f, Int32)
     end
 
-    h.npart = read!(f, Array{Int32,1}(undef,6))
-    h.massarr = read!(f, Array{Float64,1}(undef,6))
-    h.time = read(f, Float64)
-    h.z = read(f, Float64)
-    h.flag_sfr = read(f, Int32)
-    h.flag_feedback = read(f, Int32)
-    h.nall = read!(f, Array{UInt32,1}(undef,6))
-    h.flag_cooling = read(f, Int32)
-    h.num_files = read(f, Int32)
-    h.boxsize = read(f, Float64)
-    h.omega_0 = read(f, Float64)
-    h.omega_l = read(f, Float64)
-    h.h0 = read(f, Float64)
-    h.flag_stellarage = read(f, Int32)
-    h.flag_metals = read(f, Int32)
-    h.npartTotalHighWord = read!(f, Array{UInt32,1}(undef,6))
-    h.flag_entropy_instead_u = read(f, Int32)
-    h.flag_doubleprecision = read(f, Int32)
-    h.flag_ic_info = read(f, Int32)
-    h.lpt_scalingfactor = read(f, Float32)
+    if !swap 
+        h.npart = read!(f, Array{Int32,1}(undef,6))
+        h.massarr = read!(f, Array{Float64,1}(undef,6))
+        h.time = read(f, Float64)
+        h.z = read(f, Float64)
+        h.flag_sfr = read(f, Int32)
+        h.flag_feedback = read(f, Int32)
+        h.nall = read!(f, Array{UInt32,1}(undef,6))
+        h.flag_cooling = read(f, Int32)
+        h.num_files = read(f, Int32)
+        h.boxsize = read(f, Float64)
+        h.omega_0 = read(f, Float64)
+        h.omega_l = read(f, Float64)
+        h.h0 = read(f, Float64)
+        h.flag_stellarage = read(f, Int32)
+        h.flag_metals = read(f, Int32)
+        h.npartTotalHighWord = read!(f, Array{UInt32,1}(undef,6))
+        h.flag_entropy_instead_u = read(f, Int32)
+        h.flag_doubleprecision = read(f, Int32)
+        h.flag_ic_info = read(f, Int32)
+        h.lpt_scalingfactor = read(f, Float32)
+    elseif swap 
+        h.npart = bswap.(read!(f, Array{Int32,1}(undef,6)))
+        h.massarr = bswap.(read!(f, Array{Float64,1}(undef,6)))
+        h.time = bswap(read(f, Float64))
+        h.z = bswap(read(f, Float64))
+        h.flag_sfr = bswap(read(f, Int32))
+        h.flag_feedback = bswap(read(f, Int32))
+        h.nall = bswap.(read!(f, Array{UInt32,1}(undef,6)))
+        h.flag_cooling = bswap(read(f, Int32))
+        h.num_files = bswap(read(f, Int32))
+        h.boxsize = bswap(read(f, Float64))
+        h.omega_0 = bswap(read(f, Float64))
+        h.omega_l = bswap(read(f, Float64))
+        h.h0 = bswap(read(f, Float64))
+        h.flag_stellarage = bswap(read(f, Int32))
+        h.flag_metals = bswap(read(f, Int32))
+        h.npartTotalHighWord = bswap.(read!(f, Array{UInt32,1}(undef,6)))
+        h.flag_entropy_instead_u = bswap(read(f, Int32))
+        h.flag_doubleprecision = bswap(read(f, Int32))
+        h.flag_ic_info = bswap(read(f, Int32))
+        h.lpt_scalingfactor = bswap(read(f, Float32))
+    end 
 
     close(f)
 
@@ -178,18 +201,18 @@ function head_to_dict(filename::String)
         f = open(filename)
         blocksize = read(f, Int32)
 
-        if blocksize[1] == 8
+        if blocksize == 8
             swap = 0
             snap_format = 2
-        elseif blocksize[1] == 256
+        elseif blocksize == 256
             swap = 0
             snap_format = 1
         else
-            blocksize[1] = bswap(blocksize[1])
-            if blocksize[1] == 8
+            blocksize = bswap(blocksize)
+            if blocksize == 8
                 swap = 1
                 snap_format = 2
-            elseif blocksize[1] == 256
+            elseif blocksize == 256
                 swap = 1
                 snap_format = 1
             else
@@ -201,30 +224,54 @@ function head_to_dict(filename::String)
             seek(f, 16)
             skip_line = read(f, Int32)
         end
-
+        
         header["snap_format"] = snap_format
         header["PartTypes"] = ["PartType0", "PartType1", "PartType2",
-                               "PartType3", "PartType4", "PartType5"]
-        header["npart"] = read!(f, Array{Int32,1}(undef,6))
-        header["massarr"] = read!(f, Array{Float64,1}(undef,6))
-        header["time"] = read(f, Float64)
-        header["redshift"] = read(f, Float64)
-        header["flag_sfr"] = read(f, Int32)
-        header["flag_feedback"] = read(f, Int32)
-        header["nall"] = read!(f, Array{UInt32,1}(undef,6))
-        header["flag_cooling"] = read(f, Int32)
-        header["num_files"] = read(f, Int32)
-        header["boxsize"] = read(f, Float64)
-        header["omega_m"] = read(f, Float64)
-        header["omega_l"] = read(f, Float64)
-        header["hubble"] = read(f, Float64)
-        header["flag_stellarage"] = read(f, Int32)
-        header["flag_metals"] = read(f, Int32)
-        header["npartTotalHighWord"] = read!(f, Array{UInt32,1}(undef,6))
-        header["flag_entropy_instead_u"] = read(f, Int32)
-        header["flag_doubleprecision"] = read(f, Int32)
-        header["flag_ic_info"] = read(f, Int32)
-        header["lpt_scalingfactor"] = read(f, Float32)
+                                   "PartType3", "PartType4", "PartType5"]
+
+        if !(swap==1) 
+            header["npart"] = read!(f, Array{Int32,1}(undef,6))
+            header["massarr"] = read!(f, Array{Float64,1}(undef,6))
+            header["time"] = read(f, Float64)
+            header["redshift"] = read(f, Float64)
+            header["flag_sfr"] = read(f, Int32)
+            header["flag_feedback"] = read(f, Int32)
+            header["nall"] = read!(f, Array{UInt32,1}(undef,6))
+            header["flag_cooling"] = read(f, Int32)
+            header["num_files"] = read(f, Int32)
+            header["boxsize"] = read(f, Float64)
+            header["omega_m"] = read(f, Float64)
+            header["omega_l"] = read(f, Float64)
+            header["hubble"] = read(f, Float64)
+            header["flag_stellarage"] = read(f, Int32)
+            header["flag_metals"] = read(f, Int32)
+            header["npartTotalHighWord"] = read!(f, Array{UInt32,1}(undef,6))
+            header["flag_entropy_instead_u"] = read(f, Int32)
+            header["flag_doubleprecision"] = read(f, Int32)
+            header["flag_ic_info"] = read(f, Int32)
+            header["lpt_scalingfactor"] = read(f, Float32)
+        elseif swap==1
+            header["npart"] = bswap.(read!(f, Array{Int32,1}(undef,6)))
+            header["massarr"] = bswap.(read!(f, Array{Float64,1}(undef,6)))
+            header["time"] = bswap(read(f, Float64))
+            header["redshift"] = bswap(read(f, Float64))
+            header["flag_sfr"] = bswap(read(f, Int32))
+            header["flag_feedback"] = bswap(read(f, Int32))
+            header["nall"] = bswap.(read!(f, Array{UInt32,1}(undef,6)))
+            header["flag_cooling"] = bswap(read(f, Int32))
+            header["num_files"] = bswap(read(f, Int32))
+            header["boxsize"] = bswap(read(f, Float64))
+            header["omega_m"] = bswap(read(f, Float64))
+            header["omega_l"] = bswap(read(f, Float64))
+            header["hubble"] = bswap(read(f, Float64))
+            header["flag_stellarage"] = bswap(read(f, Int32))
+            header["flag_metals"] = bswap(read(f, Int32))
+            header["npartTotalHighWord"] = bswap.(read!(f, Array{UInt32,1}(undef,6)))
+            header["flag_entropy_instead_u"] = bswap(read(f, Int32))
+            header["flag_doubleprecision"] = bswap(read(f, Int32))
+            header["flag_ic_info"] = bswap(read(f, Int32))
+            header["lpt_scalingfactor"] = bswap(read(f, Float32))
+        end 
 
         close(f)
 
