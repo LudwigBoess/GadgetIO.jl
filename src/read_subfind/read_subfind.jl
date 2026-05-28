@@ -7,19 +7,23 @@ To read e.g. the virial radius of halos use
 R_vir = read_subfind(filename, "RVIR")
 ```
 """
-function read_subfind(filename::String, blockname::String; 
+function read_subfind(filename::String, blockname::String;
                       info::Union{Nothing,InfoLine}=nothing,
-                      offset::Integer=0, n_to_read::Integer=-1,           
+                      h::Union{Nothing,SnapshotHeader}=nothing,
+                      parttype::Union{Nothing,Integer}=nothing,
+                      offset::Integer=0, n_to_read::Integer=-1,
                       return_haloid::Bool=false)
-    
+
 
     # blocks are type specific so we can use this to make our life easier
-    parttype = subfind_block_parttype(filename, blockname)
+    if isnothing(parttype)
+        parttype = subfind_block_parttype(filename, blockname, info)
+    end
 
-    block = read_block(filename, blockname; parttype, info, offset, n_to_read)
+    block = read_block(filename, blockname; parttype, info, h, offset, n_to_read)
 
     if return_haloid
-        return block, global_idxs_to_halo_id(filename, offset, n_to_read; 
+        return block, global_idxs_to_halo_id(filename, offset, n_to_read;
                                              parttype)
     else
         return block
@@ -93,12 +97,8 @@ Get the particle type for which a subfind block is relevant.
 function subfind_block_parttype(filename, blockname, info=nothing)
 
     if isnothing(info)
-        # read the info block
         info = check_info(filename, blockname)
     end
-
-    # read the info block
-    info = check_info(filename, blockname)
 
     # blocks are type specific so we can use this to make our life easier
     return findfirst(==(1), info.is_present) - 1

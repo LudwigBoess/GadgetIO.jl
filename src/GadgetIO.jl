@@ -51,6 +51,14 @@ include(joinpath("timer_outputs", "read_balance.jl"))
 # functions to write snapshots
 include(joinpath("write_snapshot", "write_snap.jl"))
 
+# merger trees (port of Springel/Lemson L-BaseTree + L-HaloTrees)
+include(joinpath("merger_trees", "structs.jl"))
+include(joinpath("merger_trees", "io.jl"))
+include(joinpath("merger_trees", "batched_subfind.jl"))
+include(joinpath("merger_trees", "build_basetree.jl"))
+include(joinpath("merger_trees", "build_halotree.jl"))
+include(joinpath("merger_trees", "walk_tree.jl"))
+
 export AbstractGadgetHeader,
     SnapshotHeader, SubfindHeader,
     InfoLine,       # types
@@ -109,9 +117,42 @@ export AbstractGadgetHeader,
     write_block,
     write_info_block,
 
-    # timer files 
+    # timer files
     parse_balance,
-    print_performance
+    print_performance,
+
+    # merger trees
+    MergerTreeHalo,
+    MergerTree,
+    MergerTreeFile,
+    SubDesc,
+    SubhaloCatalogue,
+    SubfindMeta,
+    LinkTable,
+    NO_HALO,
+    treeidx,
+    read_subfind_blocks,
+    read_merger_tree_file,
+    read_merger_trees,
+    write_merger_tree_file,
+    read_sub_desc,
+    write_sub_desc,
+    load_subhalo_catalogue,
+    load_subfind_meta,
+    determine_descendants,
+    count_progenitors,
+    decide_upon_descendant!,
+    build_basetree,
+    assemble_global_halos,
+    set_progenitor_pointers!,
+    generate_trees,
+    build_halotree,
+    progenitors,
+    num_progenitors,
+    is_mmp,
+    coprogenitor_id,
+    root_index,
+    walk_main_branch
 
 
 """

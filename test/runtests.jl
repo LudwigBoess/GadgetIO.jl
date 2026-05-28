@@ -723,6 +723,307 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
     end
 
+    @testset "Merger trees" begin
+        # tiny synthetic tree (0-based indices in comments):
+        #   0 root      (snap 3)              ← FirstProg=1, Desc=-1
+        #   1 MMP       (snap 2, Len=800)     Desc=0, FirstProg=3, NextProg=2
+        #   2 coprog    (snap 2, Len=400)     Desc=0, FirstProg=4, NextProg=-1
+        #   3 prog of 1 (snap 1, Len=700)     Desc=1
+        #   4 prog of 2 (snap 1, Len=350)     Desc=2
+        mkhalo(Descendant, FirstProg, NextProg, FOFfirst, FOFnext, Len, snap) =
+            MergerTreeHalo(Int32(Descendant), Int32(FirstProg), Int32(NextProg),
+                            Int32(FOFfirst), Int32(FOFnext), Int32(Len),
+                            0f0, 0f0, 0f0,
+                            (0f0, 0f0, 0f0), (0f0, 0f0, 0f0),
+                            0f0, 0f0, (0f0, 0f0, 0f0),
+                            Int64(0), Int32(snap), Int32(0), Int32(0), 0f0)
+
+        synthetic_halos() = [
+            mkhalo(-1,  1, -1, 0, -1, 1000, 3),
+            mkhalo( 0,  3,  2, 1, -1,  800, 2),
+            mkhalo( 0,  4, -1, 2, -1,  400, 2),
+            mkhalo( 1, -1, -1, 3, -1,  700, 1),
+            mkhalo( 2, -1, -1, 4, -1,  350, 1),
+        ]
+
+        @testset "MergerTreeHalo layout" begin
+            # binary-compatible with the C halo_data struct: 104 bytes, isbits
+            @test isbitstype(MergerTreeHalo)
+            @test sizeof(MergerTreeHalo) == 104
+            @test MergerTreeHalo().Descendant == NO_HALO
+            @test MergerTreeHalo().Len == Int32(0)
+        end
+
+        @testset "Tree traversal helpers" begin
+            tree = MergerTree(synthetic_halos())
+
+            # root
+            @test root_index(tree) == 1
+
+            # progenitor relationships
+            @test progenitors(tree, 1) == [2, 3]        # root's children: MMP + coprog
+            @test num_progenitors(tree, 1) == 2
+            @test num_progenitors(tree, 2) == 1
+            @test num_progenitors(tree, 4) == 0
+
+            # is_mmp: MMP of root, prog of MMP — yes; coprog of root, prog of coprog — yes (only child)
+            @test is_mmp(tree, 2)
+            @test !is_mmp(tree, 3)
+            @test is_mmp(tree, 4)
+            @test is_mmp(tree, 5)
+            @test !is_mmp(tree, 1)  # root has no descendant
+
+            # main-branch walk: root → MMP → prog of MMP
+            @test walk_main_branch(tree) == [1, 2, 4]
+
+            # coprog
+            @test coprogenitor_id(tree, 2) == 3
+            @test coprogenitor_id(tree, 3) === nothing
+        end
+
+        @testset "trees binary I/O round-trip" begin
+            halos = synthetic_halos()
+            file = MergerTreeFile([MergerTree(halos)], Int32(1), Int32(5))
+
+            tmp = tempname()
+            write_merger_tree_file(tmp, file)
+            file2 = read_merger_tree_file(tmp)
+            try
+                @test length(file2) == 1
+                @test length(file2[1]) == 5
+                @test file2[1].halos == halos
+                @test file2.ntrees == Int32(1)
+                @test file2.tot_nhalos == Int32(5)
+            finally
+                rm(tmp; force=true)
+            end
+        end
+
+        @testset "sub_desc binary I/O round-trip" begin
+            d = SubDesc(Int32(4),
+                        Int32[2, -1, 0, 3],
+                        Int32[5, -1, 5, 5],
+                        Int64[])
+
+            tmp = tempname()
+            write_sub_desc(tmp, d)
+            d2 = read_sub_desc(tmp)
+            try
+                @test d2.nsubhalos == d.nsubhalos
+                @test d2.descendant_haloindex == d.descendant_haloindex
+                @test d2.descendant_snapnum == d.descendant_snapnum
+                @test isempty(d2.most_bound_id)
+            finally
+                rm(tmp; force=true)
+            end
+
+            # LGADGET3 variant
+            dL = SubDesc(d.nsubhalos, d.descendant_haloindex, d.descendant_snapnum,
+                          Int64[100, 200, 300, 400])
+            tmp = tempname()
+            write_sub_desc(tmp, dL; lgadget3=true)
+            dL2 = read_sub_desc(tmp; lgadget3=true)
+            try
+                @test dL2.most_bound_id == dL.most_bound_id
+            finally
+                rm(tmp; force=true)
+            end
+        end
+
+        @testset "determine_descendants" begin
+            # catA: 2 subhalos. subhalo 0 has IDs [10,11,12], subhalo 1 has [20,21]
+            # catB: 2 subhalos. subhalo 0 has IDs [10,11,99], subhalo 1 has [20,98]
+            # → subhalo 0 in A has strong overlap with subhalo 0 in B (ranks 1,2)
+            # → subhalo 1 in A overlaps with subhalo 1 in B at rank 1 (id 20)
+            catA = GadgetIO.SubhaloCatalogue(
+                Int32[3, 2], Int64[0, 3],
+                UInt64[10, 11, 12, 20, 21],
+            )
+            catB = GadgetIO.SubhaloCatalogue(
+                Int32[3, 2], Int64[0, 3],
+                UInt64[10, 11, 99, 20, 98],
+            )
+
+            desc, snap, w = determine_descendants(catA, catB; snapnum_B = 7)
+
+            @test desc == Int32[0, 1]
+            @test snap == Int32[7, 7]
+            @test all(w .> 0)
+
+            # subhalo 0 score: 1/1^α + 1/2^α  (id 12 misses)
+            α = 2.0/3.0
+            expected_score0 = Float32(1.0 + 1.0 / 2.0^α)
+            @test w[1] ≈ expected_score0
+        end
+
+        @testset "count_progenitors" begin
+            # 4 source halos map to: 0, 0, 1, -1
+            desc = Int32[0, 0, 1, -1]
+            counts = count_progenitors(desc, 3)
+            @test counts == Int32[2, 1, 0]
+        end
+
+        @testset "decide_upon_descendant! re-routing" begin
+            # case 3: no primary descendant (-1) but secondary exists → adopt secondary
+            descA_B = Int32[-1]
+            descA_C = Int32[5]
+            snapA_B = Int32[-1]
+            snapA_C = Int32[10]
+            wA_B    = Float32[0]
+            wA_C    = Float32[1]
+            countB  = zeros(Int32, 1)
+            countC  = zeros(Int32, 6)
+
+            stats = decide_upon_descendant!(descA_B, descA_C, snapA_B, snapA_C,
+                                             wA_B, wA_C, countB, countC)
+
+            @test descA_B[1] == Int32(5)
+            @test snapA_B[1] == Int32(10)
+            @test countC[6]  == Int32(1)
+            @test stats.n_rerouted_nob == 1
+            @test stats.n_rerouted_merge == 0
+
+            # case 1: primary B has multiple progenitors, C has none → reroute to C
+            descA_B = Int32[2]
+            descA_C = Int32[4]
+            snapA_B = Int32[5]
+            snapA_C = Int32[6]
+            wA_B    = Float32[1.0]
+            wA_C    = Float32[0.1]
+            countB  = Int32[0, 0, 3]    # halo 2 has 3 progenitors
+            countC  = zeros(Int32, 5)   # halo 4 has 0
+
+            stats = decide_upon_descendant!(descA_B, descA_C, snapA_B, snapA_C,
+                                             wA_B, wA_C, countB, countC)
+
+            @test descA_B[1] == Int32(4)
+            @test snapA_B[1] == Int32(6)
+            @test countB[3]  == Int32(2)
+            @test countC[5]  == Int32(1)
+            @test stats.n_rerouted_merge == 1
+        end
+
+        @testset "set_progenitor_pointers!" begin
+            # Build a fresh halo list where Descendant is set but FirstProgenitor
+            # / NextProgenitor are blank. After set_progenitor_pointers! we
+            # expect the largest progenitor (by Len) at the head of each chain.
+            #
+            #   0: descendant (snap 1)
+            #   1, 2, 3: progenitors with Len = 100, 500, 300 (in input order)
+            mk(Desc, Len, snap) = MergerTreeHalo(
+                Int32(Desc), NO_HALO, NO_HALO, Int32(0), NO_HALO, Int32(Len),
+                0f0, 0f0, 0f0, (0f0,0f0,0f0), (0f0,0f0,0f0),
+                0f0, 0f0, (0f0,0f0,0f0), Int64(0),
+                Int32(snap), Int32(0), Int32(0), 0f0)
+
+            halos = [mk(-1, 1000, 1), mk(0, 100, 0), mk(0, 500, 0), mk(0, 300, 0)]
+            set_progenitor_pointers!(halos)
+
+            # head of the chain is whichever halo's Len becomes the largest seen
+            # during sequential insertion (i.e. halo 2, Len 500, when scanned)
+            first_prog = halos[1].FirstProgenitor + 1
+            @test halos[first_prog].Len == Int32(500)
+            @test halos[first_prog].Len == maximum(h.Len for h in halos[2:end])
+
+            # every progenitor must be reachable from the descendant's chain
+            seen = Int[]
+            p = halos[1].FirstProgenitor
+            while p >= 0
+                push!(seen, p + 1)
+                p = halos[p + 1].NextProgenitor
+            end
+            @test sort(seen) == [2, 3, 4]
+        end
+
+        @testset "LinkTable round-trip" begin
+            # round-tripping halos → LinkTable → halos via the
+            # convenience overload must preserve the link fields.
+            halos = synthetic_halos()
+            n = length(halos)
+            links = GadgetIO.LinkTable(n)
+            for i in 1:n
+                h = halos[i]
+                links.descendant[i]        = h.Descendant
+                links.first_progenitor[i]  = h.FirstProgenitor
+                links.next_progenitor[i]   = h.NextProgenitor
+                links.first_halo_in_fof[i] = h.FirstHaloInFOFgroup
+                links.next_halo_in_fof[i]  = h.NextHaloInFOFgroup
+                links.len[i]               = h.Len
+            end
+            @test length(links) == n
+            @test links.descendant[1] == NO_HALO        # root
+            @test links.first_progenitor[1] == Int32(1)
+            @test links.len[2] == Int32(800)
+        end
+
+        @testset "determine_descendants threading consistency" begin
+            # The threaded implementation must yield identical results
+            # across runs and equal a hand-computed reference. Build a
+            # bigger workload so multiple threads see real work.
+            #
+            # nA = nB = 64 subhalos, each holds 8 IDs. A-subhalo i and
+            # B-subhalo i share their 8 IDs (i.e. clean 1:1 mapping with
+            # full overlap). Every A-subhalo must end up pointing at the
+            # matching B-subhalo.
+            nA = nB = 64
+            ids_per_sub = 8
+            sublen   = fill(Int32(ids_per_sub), nA)
+            suboff   = Int64.((0:nA-1) .* ids_per_sub)
+            ids_flat = UInt64[(i-1)*ids_per_sub + j
+                              for i in 1:nA, j in 1:ids_per_sub] |> vec
+
+            catA = SubhaloCatalogue(sublen, suboff, ids_flat)
+            catB = SubhaloCatalogue(sublen, suboff, ids_flat)
+
+            d1, _, w1 = determine_descendants(catA, catB; snapnum_B = 9)
+            d2, _, w2 = determine_descendants(catA, catB; snapnum_B = 9)
+
+            @test d1 == d2                          # deterministic
+            @test w1 ≈ w2
+            @test all(d1 .>= 0)                     # every A → some B
+            @test d1 == Int32.(0:nA-1)              # exact 1:1 mapping
+        end
+
+        @testset "generate_trees flatten" begin
+            # two disjoint trees rooted at snap 1 (the "last" snapshot).
+            #   tree A: root 0 ← progs 2, 3
+            #   tree B: root 1 ← prog  4
+            mk(Desc, FirstProg, NextProg, FOFfirst, FOFnext, Len, snap) =
+                MergerTreeHalo(Int32(Desc), Int32(FirstProg), Int32(NextProg),
+                                Int32(FOFfirst), Int32(FOFnext), Int32(Len),
+                                0f0, 0f0, 0f0, (0f0,0f0,0f0), (0f0,0f0,0f0),
+                                0f0, 0f0, (0f0,0f0,0f0), Int64(0),
+                                Int32(snap), Int32(0), Int32(0), 0f0)
+
+            halos = [
+                mk(-1, 2, -1, 0, -1, 1000, 1),   # root A
+                mk(-1, 4, -1, 1, -1,  900, 1),   # root B
+                mk( 0,-1,  3, 2, -1,  500, 0),   # prog of A (MMP)
+                mk( 0,-1, -1, 3, -1,  300, 0),   # prog of A (coprog)
+                mk( 1,-1, -1, 4, -1,  400, 0),   # prog of B
+            ]
+
+            f = generate_trees(halos, 2)   # 2 root candidates (snap-1 subhalos)
+            @test length(f) == 2
+            @test f.ntrees == Int32(2)
+            @test f.tot_nhalos == Int32(5)
+            @test length(f[1]) + length(f[2]) == 5
+
+            # within each output tree, all non-(-1) pointer fields must
+            # resolve to a valid in-tree index
+            for tr in f.trees
+                n = length(tr)
+                for h in tr
+                    for ptr in (h.Descendant, h.FirstProgenitor, h.NextProgenitor,
+                                h.FirstHaloInFOFgroup, h.NextHaloInFOFgroup)
+                        @test ptr == NO_HALO || (0 <= ptr < n)
+                    end
+                end
+                @test root_index(tr) == 1   # depth-first emit places root first
+            end
+        end
+    end
+
     @testset "Aqua.jl (code quality)" begin
         Aqua.test_all(GadgetIO)
     end

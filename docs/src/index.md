@@ -15,6 +15,7 @@ Pages = [ "index.md",
           "file_infos.md",
           "read_snapshots.md", 
           "read_subfind.md",
+          "merger_trees.md",
           "write_data.md",
           "api.md" 
         ]
