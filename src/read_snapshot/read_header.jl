@@ -279,6 +279,11 @@ function head_to_dict(filename::String)
 
 end
 
+import Base.copy 
+function copy(h::SnapshotHeader)
+    return SnapshotHeader(copy(h.npart), copy(h.massarr), copy(h.time), copy(h.z), copy(h.flag_sfr), copy(h.flag_feedback), copy(h.nall), copy(h.flag_cooling), copy(h.num_files), copy(h.boxsize), copy(h.omega_0), copy(h.omega_l), copy(h.h0), copy(h.flag_stellarage), copy(h.flag_metals), copy(h.npartTotalHighWord), copy(h.flag_entropy_instead_u), copy(h.flag_doubleprecision), copy(h.flag_ic_info), copy(h.lpt_scalingfactor), copy(h.fill) )
+end 
+
 
 """
     read_header(filename::String)

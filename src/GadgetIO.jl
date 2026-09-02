@@ -63,6 +63,7 @@ export AbstractGadgetHeader,
     read_snap,
     read_block,      # similar to readnew.pro by Klaus Dolag
     read_header,
+    copy,            # for copying header 
 
     # large simulations
     read_particles_in_box,
@@ -139,6 +140,7 @@ using Downloads
 
         # header and info 
         h = read_header(snap_base)
+        hnew = copy(h)
         info = read_info(snap_base * ".0")
 
         # blocks 
