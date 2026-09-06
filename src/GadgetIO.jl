@@ -63,6 +63,7 @@ export AbstractGadgetHeader,
     read_snap,
     read_block,      # similar to readnew.pro by Klaus Dolag
     read_header,
+    copy,            # for copying header 
 
     # large simulations
     read_particles_in_box,

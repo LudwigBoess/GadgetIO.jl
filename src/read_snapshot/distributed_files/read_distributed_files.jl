@@ -167,6 +167,7 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
         @threads for block ∈ blocks
 
             # open filestream
+            snapshot_format, swap = check_snapshot_format(filename)
             f = open(filename, "r")
 
             block_info = get_requested_info(info, block)
@@ -176,7 +177,7 @@ function read_blocks_filtered(snap_base::String, blocks::Array{String};
                 nread, n_to_read,
                 parttype=parttype,
                 block_position=block_position[block],
-                info=block_info, h=h)
+                info=block_info, h=h, swap=swap)
 
             close(f)
         end
