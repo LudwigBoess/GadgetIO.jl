@@ -141,9 +141,9 @@ function head_to_struct(filename)
     end
 
     if swap 
-        g(x) = bswap(x)
+        g = x -> bswap(x)
     elseif !swap
-        g(x) = x 
+        g = x -> x  
     end
 
     h.npart = g.(read!(f, Array{Int32,1}(undef,6)))
@@ -213,9 +213,9 @@ function head_to_dict(filename::String)
                                    "PartType3", "PartType4", "PartType5"]
 
         if swap 
-            g(x) = bswap(x)
+            g = x -> bswap(x)
         elseif !swap
-            g(x) = x 
+            g = x -> x  
         end
 
         header["npart"] = g.(read!(f, Array{Int32,1}(undef,6)))
