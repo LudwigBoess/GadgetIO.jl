@@ -140,7 +140,6 @@ using Downloads
 
         # header and info 
         h = read_header(snap_base)
-        hnew = copy(h)
         info = read_info(snap_base * ".0")
 
         # blocks 
