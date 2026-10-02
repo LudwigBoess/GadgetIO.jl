@@ -46,6 +46,9 @@ include(joinpath("read_snapshot", "particles_in_halo", "read_particles_in_halo.j
 include(joinpath("read_snapshot", "distributed_files", "find_read_positions.jl"))
 include(joinpath("read_snapshot", "distributed_files", "read_distributed_files.jl"))
 
+# halo finding
+include(joinpath("utility", "fof.jl"))
+
 include(joinpath("timer_outputs", "read_balance.jl"))
 
 # functions to write snapshots
@@ -104,6 +107,9 @@ export AbstractGadgetHeader,
     global_idxs_to_halo_id,
     halo_ids_to_read_positions,
 
+    # halo finding
+    find_main_halo,
+
     # write snapshot functions
     write_header,
     write_block,
@@ -146,6 +152,10 @@ using Downloads
         mass = read_block(snap_base * ".0", "MASS", parttype=0)
         pos = read_block(snap_base * ".0", "POS", parttype=1)
         mass = read_block(snap_base * ".0", "MASS", parttype=1)
+
+        # FoF groups
+        fof_members, fof_mass = GadgetIO.most_massive_fof_group(pos, mass, 50.0)
+        fof_center = GadgetIO.shrinking_sphere_center(pos[:, fof_members], mass[fof_members])
 
         # particles in box
         center = Float32[0.5, 0.5, 0.5]
