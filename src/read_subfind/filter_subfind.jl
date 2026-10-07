@@ -60,7 +60,7 @@ end
     filter_subfind(sub_base::String, filter_function::Function, files=nothing)
 
 Filters all entries in a subfind file that fulfill the 'filter_funcion' requirements and
-returns a `Vector` of [HaloID](@ref)s.
+returns a `Vector` of [`HaloID`](@ref)s.
 
 # Examples
 ```julia
