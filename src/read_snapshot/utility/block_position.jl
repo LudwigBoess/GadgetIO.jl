@@ -17,7 +17,7 @@ block_positions[1]
 function get_block_positions(filename::String)
 
     # get snapshot format
-    snap_format = check_snapshot_format(filename)
+    snap_format, swap = check_snapshot_format(filename)
 
     if snap_format == 1
         return get_block_positions_format1(filename)
@@ -40,10 +40,15 @@ function get_block_positions_format2(filename::String)
 
     f = open(filename)
     blocksize = read(f, Int32)
+    swap = false
 
     # only works for snap format 2
     if blocksize != 8
-        error("Block search not possible - use snap_format 2!")
+        blocksize = bswap(blocksize)
+        swap = true
+        if blocksize != 8
+            error("Block search not possible - use snap_format 2!")
+        end 
     end
 
     # allocate data dict
@@ -59,8 +64,11 @@ function get_block_positions_format2(filename::String)
         seek(f,p+8)
 
         skipsize = read(f, UInt32)
+        if swap
+            skipsize = bswap(skipsize)
+        end 
 
-        skipsize = check_blocksize(f, p, skipsize)
+        skipsize = check_blocksize(f, p, skipsize, swap = swap)
 
         # store blockname and position in Dict
         d[blockname] = p+12
@@ -92,9 +100,14 @@ function get_block_positions_format1(filename::String)
 
     # read the size of the data block -> should always be 264!
     blocksize = read(f, Int32)
+    swap = false
 
     if blocksize != 256
-        error("Reading a block by number only works for Format 1!")
+        blocksize = bswap(blocksize)
+        swap = true
+        if blocksize != 256
+            error("Reading a block by number only works for Format 1!")
+        end 
     end
 
     # allocate data dict
@@ -110,12 +123,15 @@ function get_block_positions_format1(filename::String)
 
         # read the size of the data block -> should always be 264!
         blocksize = read(f, UInt32)
+        if swap
+            blocksize = bswap(blocksize)
+        end 
 
         # beginning of data in block
         p = position(f)
 
         # check for integer overflow in large blocks
-        blocksize = check_blocksize_format1(f, p, blocksize)
+        blocksize = check_blocksize_format1(f, p, blocksize, swap = swap)
 
         # store blockname and position in Dict
         d[i_block] = p
