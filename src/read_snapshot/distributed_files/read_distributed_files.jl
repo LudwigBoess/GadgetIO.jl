@@ -7,8 +7,13 @@ using Base.Threads
 
 Reads positions from `snap_file` and returns the indices of particles contained in a box defined by `corner_lowerleft` and `corner_upperright`.
 """
-function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real}, 
+function filter_positions(snap_file::String, corner_lowerleft::Array{<:Real}, corner_upperright::Array{<:Real},
                           parttype::Integer)
+
+    # skip sub-files that contain no particles of this type
+    if read_header(snap_file).npart[parttype + 1] == 0
+        return Int[]
+    end
 
     pos = read_snap(snap_file, "POS", parttype)
     sel = findall( @views ( ( corner_lowerleft[1] .<= pos[1,:] .< corner_upperright[1] ) .&
@@ -23,6 +28,13 @@ end
 Reads IDs from `snap_file` and returns the indices of particles matching the `selected_ids`
 """
 function filter_ids(snap_file::String, selected_ids::Vector{<:Integer}, parttype::Integer)
+
+    # skip sub-files that contain no particles of this type (otherwise read_block
+    # throws "Particle Type N not present"). Distributed snapshots routinely
+    # order particles by type, so the first sub-files can lack a given type.
+    if read_header(snap_file).npart[parttype + 1] == 0
+        return Int[]
+    end
 
     IDs = read_block(snap_file, "ID"; parttype)
 

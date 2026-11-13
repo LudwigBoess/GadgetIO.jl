@@ -58,6 +58,8 @@ include(joinpath("merger_trees", "batched_subfind.jl"))
 include(joinpath("merger_trees", "build_basetree.jl"))
 include(joinpath("merger_trees", "build_halotree.jl"))
 include(joinpath("merger_trees", "walk_tree.jl"))
+include(joinpath("merger_trees", "consistent_trees.jl"))
+include(joinpath("merger_trees", "particle_tracking.jl"))
 
 export AbstractGadgetHeader,
     SnapshotHeader, SubfindHeader,
@@ -152,7 +154,30 @@ export AbstractGadgetHeader,
     is_mmp,
     coprogenitor_id,
     root_index,
-    walk_main_branch
+    walk_main_branch,
+    
+    # consistent-trees (Behroozi et al.) reader
+    read_consistent_trees,
+    read_consistent_trees_dir,
+    read_most_massive_tree,
+    scale_factor_map,
+    parse_ct_header,
+    ct_col,
+
+    # consistent-trees forests
+    MergerForest,
+    CTTreeLocation,
+    build_merger_forest,
+    read_forests_list,
+    read_tree_locations,
+
+    # particle-ID tracking / re-linking (robust to finder & tree failures)
+    shrinking_sphere_center,
+    tag_innermost_ids,
+    track_ids,
+    track_id_groups,
+    link_by_shared_ids,
+    merger_trees_from_descendants
 
 
 """
