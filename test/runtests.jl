@@ -940,6 +940,491 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
 
     end
 
+    @testset "Merger trees" begin
+        # tiny synthetic tree (0-based indices in comments):
+        #   0 root      (snap 3)              ← FirstProg=1, Desc=-1
+        #   1 MMP       (snap 2, Len=800)     Desc=0, FirstProg=3, NextProg=2
+        #   2 coprog    (snap 2, Len=400)     Desc=0, FirstProg=4, NextProg=-1
+        #   3 prog of 1 (snap 1, Len=700)     Desc=1
+        #   4 prog of 2 (snap 1, Len=350)     Desc=2
+        mkhalo(Descendant, FirstProg, NextProg, FOFfirst, FOFnext, Len, snap) =
+            MergerTreeHalo(Int32(Descendant), Int32(FirstProg), Int32(NextProg),
+                            Int32(FOFfirst), Int32(FOFnext), Int32(Len),
+                            0f0, 0f0, 0f0,
+                            (0f0, 0f0, 0f0), (0f0, 0f0, 0f0),
+                            0f0, 0f0, (0f0, 0f0, 0f0),
+                            Int64(0), Int32(snap), Int32(0), Int32(0), 0f0)
+
+        synthetic_halos() = [
+            mkhalo(-1,  1, -1, 0, -1, 1000, 3),
+            mkhalo( 0,  3,  2, 1, -1,  800, 2),
+            mkhalo( 0,  4, -1, 2, -1,  400, 2),
+            mkhalo( 1, -1, -1, 3, -1,  700, 1),
+            mkhalo( 2, -1, -1, 4, -1,  350, 1),
+        ]
+
+        @testset "MergerTreeHalo layout" begin
+            # binary-compatible with the C halo_data struct: 104 bytes, isbits
+            @test isbitstype(MergerTreeHalo)
+            @test sizeof(MergerTreeHalo) == 104
+            @test MergerTreeHalo().Descendant == NO_HALO
+            @test MergerTreeHalo().Len == Int32(0)
+        end
+
+        @testset "Tree traversal helpers" begin
+            tree = MergerTree(synthetic_halos())
+
+            # root
+            @test root_index(tree) == 1
+
+            # progenitor relationships
+            @test progenitors(tree, 1) == [2, 3]        # root's children: MMP + coprog
+            @test num_progenitors(tree, 1) == 2
+            @test num_progenitors(tree, 2) == 1
+            @test num_progenitors(tree, 4) == 0
+
+            # is_mmp: MMP of root, prog of MMP — yes; coprog of root, prog of coprog — yes (only child)
+            @test is_mmp(tree, 2)
+            @test !is_mmp(tree, 3)
+            @test is_mmp(tree, 4)
+            @test is_mmp(tree, 5)
+            @test !is_mmp(tree, 1)  # root has no descendant
+
+            # main-branch walk: root → MMP → prog of MMP
+            @test walk_main_branch(tree) == [1, 2, 4]
+
+            # coprog
+            @test coprogenitor_id(tree, 2) == 3
+            @test coprogenitor_id(tree, 3) === nothing
+        end
+
+        @testset "trees binary I/O round-trip" begin
+            halos = synthetic_halos()
+            file = MergerTreeFile([MergerTree(halos)], Int32(1), Int32(5))
+
+            tmp = tempname()
+            write_merger_tree_file(tmp, file)
+            file2 = read_merger_tree_file(tmp)
+            try
+                @test length(file2) == 1
+                @test length(file2[1]) == 5
+                @test file2[1].halos == halos
+                @test file2.ntrees == Int32(1)
+                @test file2.tot_nhalos == Int32(5)
+            finally
+                rm(tmp; force=true)
+            end
+        end
+
+        @testset "sub_desc binary I/O round-trip" begin
+            d = SubDesc(Int32(4),
+                        Int32[2, -1, 0, 3],
+                        Int32[5, -1, 5, 5],
+                        Int64[])
+
+            tmp = tempname()
+            write_sub_desc(tmp, d)
+            d2 = read_sub_desc(tmp)
+            try
+                @test d2.nsubhalos == d.nsubhalos
+                @test d2.descendant_haloindex == d.descendant_haloindex
+                @test d2.descendant_snapnum == d.descendant_snapnum
+                @test isempty(d2.most_bound_id)
+            finally
+                rm(tmp; force=true)
+            end
+
+            # LGADGET3 variant
+            dL = SubDesc(d.nsubhalos, d.descendant_haloindex, d.descendant_snapnum,
+                          Int64[100, 200, 300, 400])
+            tmp = tempname()
+            write_sub_desc(tmp, dL; lgadget3=true)
+            dL2 = read_sub_desc(tmp; lgadget3=true)
+            try
+                @test dL2.most_bound_id == dL.most_bound_id
+            finally
+                rm(tmp; force=true)
+            end
+        end
+
+        @testset "determine_descendants" begin
+            # catA: 2 subhalos. subhalo 0 has IDs [10,11,12], subhalo 1 has [20,21]
+            # catB: 2 subhalos. subhalo 0 has IDs [10,11,99], subhalo 1 has [20,98]
+            # → subhalo 0 in A has strong overlap with subhalo 0 in B (ranks 1,2)
+            # → subhalo 1 in A overlaps with subhalo 1 in B at rank 1 (id 20)
+            catA = GadgetIO.SubhaloCatalogue(
+                Int32[3, 2], Int64[0, 3],
+                UInt64[10, 11, 12, 20, 21],
+            )
+            catB = GadgetIO.SubhaloCatalogue(
+                Int32[3, 2], Int64[0, 3],
+                UInt64[10, 11, 99, 20, 98],
+            )
+
+            desc, snap, w = determine_descendants(catA, catB; snapnum_B = 7)
+
+            @test desc == Int32[0, 1]
+            @test snap == Int32[7, 7]
+            @test all(w .> 0)
+
+            # subhalo 0 score: 1/1^α + 1/2^α  (id 12 misses)
+            α = 2.0/3.0
+            expected_score0 = Float32(1.0 + 1.0 / 2.0^α)
+            @test w[1] ≈ expected_score0
+        end
+
+        @testset "count_progenitors" begin
+            # 4 source halos map to: 0, 0, 1, -1
+            desc = Int32[0, 0, 1, -1]
+            counts = count_progenitors(desc, 3)
+            @test counts == Int32[2, 1, 0]
+        end
+
+        @testset "decide_upon_descendant! re-routing" begin
+            # case 3: no primary descendant (-1) but secondary exists → adopt secondary
+            descA_B = Int32[-1]
+            descA_C = Int32[5]
+            snapA_B = Int32[-1]
+            snapA_C = Int32[10]
+            wA_B    = Float32[0]
+            wA_C    = Float32[1]
+            countB  = zeros(Int32, 1)
+            countC  = zeros(Int32, 6)
+
+            stats = decide_upon_descendant!(descA_B, descA_C, snapA_B, snapA_C,
+                                             wA_B, wA_C, countB, countC)
+
+            @test descA_B[1] == Int32(5)
+            @test snapA_B[1] == Int32(10)
+            @test countC[6]  == Int32(1)
+            @test stats.n_rerouted_nob == 1
+            @test stats.n_rerouted_merge == 0
+
+            # case 1: primary B has multiple progenitors, C has none → reroute to C
+            descA_B = Int32[2]
+            descA_C = Int32[4]
+            snapA_B = Int32[5]
+            snapA_C = Int32[6]
+            wA_B    = Float32[1.0]
+            wA_C    = Float32[0.1]
+            countB  = Int32[0, 0, 3]    # halo 2 has 3 progenitors
+            countC  = zeros(Int32, 5)   # halo 4 has 0
+
+            stats = decide_upon_descendant!(descA_B, descA_C, snapA_B, snapA_C,
+                                             wA_B, wA_C, countB, countC)
+
+            @test descA_B[1] == Int32(4)
+            @test snapA_B[1] == Int32(6)
+            @test countB[3]  == Int32(2)
+            @test countC[5]  == Int32(1)
+            @test stats.n_rerouted_merge == 1
+        end
+
+        @testset "set_progenitor_pointers!" begin
+            # Build a fresh halo list where Descendant is set but FirstProgenitor
+            # / NextProgenitor are blank. After set_progenitor_pointers! we
+            # expect the largest progenitor (by Len) at the head of each chain.
+            #
+            #   0: descendant (snap 1)
+            #   1, 2, 3: progenitors with Len = 100, 500, 300 (in input order)
+            mk(Desc, Len, snap) = MergerTreeHalo(
+                Int32(Desc), NO_HALO, NO_HALO, Int32(0), NO_HALO, Int32(Len),
+                0f0, 0f0, 0f0, (0f0,0f0,0f0), (0f0,0f0,0f0),
+                0f0, 0f0, (0f0,0f0,0f0), Int64(0),
+                Int32(snap), Int32(0), Int32(0), 0f0)
+
+            halos = [mk(-1, 1000, 1), mk(0, 100, 0), mk(0, 500, 0), mk(0, 300, 0)]
+            set_progenitor_pointers!(halos)
+
+            # head of the chain is whichever halo's Len becomes the largest seen
+            # during sequential insertion (i.e. halo 2, Len 500, when scanned)
+            first_prog = halos[1].FirstProgenitor + 1
+            @test halos[first_prog].Len == Int32(500)
+            @test halos[first_prog].Len == maximum(h.Len for h in halos[2:end])
+
+            # every progenitor must be reachable from the descendant's chain
+            seen = Int[]
+            p = halos[1].FirstProgenitor
+            while p >= 0
+                push!(seen, p + 1)
+                p = halos[p + 1].NextProgenitor
+            end
+            @test sort(seen) == [2, 3, 4]
+        end
+
+        @testset "LinkTable round-trip" begin
+            # round-tripping halos → LinkTable → halos via the
+            # convenience overload must preserve the link fields.
+            halos = synthetic_halos()
+            n = length(halos)
+            links = GadgetIO.LinkTable(n)
+            for i in 1:n
+                h = halos[i]
+                links.descendant[i]        = h.Descendant
+                links.first_progenitor[i]  = h.FirstProgenitor
+                links.next_progenitor[i]   = h.NextProgenitor
+                links.first_halo_in_fof[i] = h.FirstHaloInFOFgroup
+                links.next_halo_in_fof[i]  = h.NextHaloInFOFgroup
+                links.len[i]               = h.Len
+            end
+            @test length(links) == n
+            @test links.descendant[1] == NO_HALO        # root
+            @test links.first_progenitor[1] == Int32(1)
+            @test links.len[2] == Int32(800)
+        end
+
+        @testset "determine_descendants threading consistency" begin
+            # The threaded implementation must yield identical results
+            # across runs and equal a hand-computed reference. Build a
+            # bigger workload so multiple threads see real work.
+            #
+            # nA = nB = 64 subhalos, each holds 8 IDs. A-subhalo i and
+            # B-subhalo i share their 8 IDs (i.e. clean 1:1 mapping with
+            # full overlap). Every A-subhalo must end up pointing at the
+            # matching B-subhalo.
+            nA = nB = 64
+            ids_per_sub = 8
+            sublen   = fill(Int32(ids_per_sub), nA)
+            suboff   = Int64.((0:nA-1) .* ids_per_sub)
+            ids_flat = UInt64[(i-1)*ids_per_sub + j
+                              for i in 1:nA, j in 1:ids_per_sub] |> vec
+
+            catA = SubhaloCatalogue(sublen, suboff, ids_flat)
+            catB = SubhaloCatalogue(sublen, suboff, ids_flat)
+
+            d1, _, w1 = determine_descendants(catA, catB; snapnum_B = 9)
+            d2, _, w2 = determine_descendants(catA, catB; snapnum_B = 9)
+
+            @test d1 == d2                          # deterministic
+            @test w1 ≈ w2
+            @test all(d1 .>= 0)                     # every A → some B
+            @test d1 == Int32.(0:nA-1)              # exact 1:1 mapping
+        end
+
+        @testset "generate_trees flatten" begin
+            # two disjoint trees rooted at snap 1 (the "last" snapshot).
+            #   tree A: root 0 ← progs 2, 3
+            #   tree B: root 1 ← prog  4
+            mk(Desc, FirstProg, NextProg, FOFfirst, FOFnext, Len, snap) =
+                MergerTreeHalo(Int32(Desc), Int32(FirstProg), Int32(NextProg),
+                                Int32(FOFfirst), Int32(FOFnext), Int32(Len),
+                                0f0, 0f0, 0f0, (0f0,0f0,0f0), (0f0,0f0,0f0),
+                                0f0, 0f0, (0f0,0f0,0f0), Int64(0),
+                                Int32(snap), Int32(0), Int32(0), 0f0)
+
+            halos = [
+                mk(-1, 2, -1, 0, -1, 1000, 1),   # root A
+                mk(-1, 4, -1, 1, -1,  900, 1),   # root B
+                mk( 0,-1,  3, 2, -1,  500, 0),   # prog of A (MMP)
+                mk( 0,-1, -1, 3, -1,  300, 0),   # prog of A (coprog)
+                mk( 1,-1, -1, 4, -1,  400, 0),   # prog of B
+            ]
+
+            f = generate_trees(halos, 2)   # 2 root candidates (snap-1 subhalos)
+            @test length(f) == 2
+            @test f.ntrees == Int32(2)
+            @test f.tot_nhalos == Int32(5)
+            @test length(f[1]) + length(f[2]) == 5
+
+            # within each output tree, all non-(-1) pointer fields must
+            # resolve to a valid in-tree index
+            for tr in f.trees
+                n = length(tr)
+                for h in tr
+                    for ptr in (h.Descendant, h.FirstProgenitor, h.NextProgenitor,
+                                h.FirstHaloInFOFgroup, h.NextHaloInFOFgroup)
+                        @test ptr == NO_HALO || (0 <= ptr < n)
+                    end
+                end
+                @test root_index(tr) == 1   # depth-first emit places root first
+            end
+        end
+
+        @testset "consistent-trees reader" begin
+            # Synthetic tree_*.dat fixture mirroring the real consistent-trees
+            # layout: a column header line (#scale(0) id(1) ... + a few extra
+            # cols incl. M200b/M200c), the bare ntrees count line, then two
+            # trees, each introduced by `#tree <root_id>` and listed in
+            # depth-first order (root first, desc_id == -1).
+            #
+            # CT ids are arbitrary 64-bit; within each tree the row order is
+            # depth-first. Tree A has a main branch + one merging branch:
+            #   id 100 root      (snap 3, desc -1)
+            #   id 101 MMP       (snap 2, desc 100)   most massive prog of 100
+            #   id 103 prog      (snap 1, desc 101)
+            #   id 102 coprog    (snap 2, desc 100)   less massive prog of 100
+            #   id 104 prog      (snap 1, desc 102)
+            # Tree B is a trivial two-node main branch (id 200 ← 201).
+            #
+            # columns 0..36 then extras: Rs_Klypin(37) Mvir_all(38) M200b(39) M200c(40)
+            header = "#scale(0) id(1) desc_scale(2) desc_id(3) num_prog(4) " *
+                "pid(5) upid(6) desc_pid(7) phantom(8) sam_Mvir(9) Mvir(10) " *
+                "Rvir(11) rs(12) vrms(13) mmp?(14) scale_of_last_MM(15) vmax(16) " *
+                "x(17) y(18) z(19) vx(20) vy(21) vz(22) Jx(23) Jy(24) Jz(25) " *
+                "Spin(26) Breadth_first_ID(27) Depth_first_ID(28) Tree_root_ID(29) " *
+                "Orig_halo_ID(30) Snap_idx(31) Next_coprogenitor_depthfirst_ID(32) " *
+                "Last_progenitor_depthfirst_ID(33) Last_mainleaf_depthfirst_ID(34) " *
+                "Tidal_Force(35) Tidal_ID(36) Rs_Klypin(37) Mvir_all(38) M200b(39) M200c(40)"
+
+            # build one CT data row from a few salient values; everything else
+            # is filled with a benign default so the reader's column-by-name
+            # lookup is genuinely exercised.
+            pmass = 1.0e8
+            function ctrow(; scale, id, descid, numprog, upid, mvir, snap,
+                            orig, x, y, z, vmax, vrms, jx, jy, jz, rs,
+                            m200b, m200c)
+                vals = fill("0", 41)
+                vals[0+1]  = string(scale)
+                vals[1+1]  = string(id)
+                vals[3+1]  = string(descid)
+                vals[4+1]  = string(numprog)
+                vals[6+1]  = string(upid)
+                vals[10+1] = string(mvir)
+                vals[12+1] = string(rs)
+                vals[13+1] = string(vrms)
+                vals[16+1] = string(vmax)
+                vals[17+1] = string(x)
+                vals[18+1] = string(y)
+                vals[19+1] = string(z)
+                vals[23+1] = string(jx)
+                vals[24+1] = string(jy)
+                vals[25+1] = string(jz)
+                vals[30+1] = string(orig)
+                vals[31+1] = string(snap)
+                vals[39+1] = string(m200b)
+                vals[40+1] = string(m200c)
+                return join(vals, " ")
+            end
+
+            tmp = tempname() * ".dat"
+            open(tmp, "w") do io
+                println(io, header)
+                println(io, "#Omega_M = 0.3; Omega_L = 0.7; h0 = 0.7")
+                println(io, "#Full box size = 100.0 Mpc/h")
+                println(io, "2")                       # ntrees count line
+                println(io, "#tree 100")
+                println(io, ctrow(; scale=0.95, id=100, descid=-1, numprog=2, upid=-1,
+                                  mvir=1.0e12, snap=3, orig=7, x=1.0, y=2.0, z=3.0,
+                                  vmax=300, vrms=250, jx=1, jy=2, jz=3, rs=20.0,
+                                  m200b=1.1e12, m200c=0.9e12))
+                println(io, ctrow(; scale=0.6, id=101, descid=100, numprog=1, upid=-1,
+                                  mvir=8.0e11, snap=2, orig=8, x=1.1, y=2.1, z=3.1,
+                                  vmax=280, vrms=240, jx=1, jy=2, jz=3, rs=18.0,
+                                  m200b=8.5e11, m200c=7.5e11))
+                println(io, ctrow(; scale=0.3, id=103, descid=101, numprog=0, upid=-1,
+                                  mvir=7.0e11, snap=1, orig=9, x=1.2, y=2.2, z=3.2,
+                                  vmax=270, vrms=230, jx=1, jy=2, jz=3, rs=16.0,
+                                  m200b=7.2e11, m200c=6.5e11))
+                println(io, ctrow(; scale=0.6, id=102, descid=100, numprog=1, upid=-1,
+                                  mvir=4.0e11, snap=2, orig=10, x=1.3, y=2.3, z=3.3,
+                                  vmax=200, vrms=180, jx=1, jy=2, jz=3, rs=12.0,
+                                  m200b=4.2e11, m200c=3.6e11))
+                println(io, ctrow(; scale=0.3, id=104, descid=102, numprog=0, upid=-1,
+                                  mvir=3.5e11, snap=1, orig=11, x=1.4, y=2.4, z=3.4,
+                                  vmax=190, vrms=170, jx=1, jy=2, jz=3, rs=11.0,
+                                  m200b=3.6e11, m200c=3.0e11))
+                println(io, "#tree 200")
+                println(io, ctrow(; scale=0.95, id=200, descid=-1, numprog=1, upid=-1,
+                                  mvir=5.0e11, snap=3, orig=20, x=5.0, y=6.0, z=7.0,
+                                  vmax=210, vrms=190, jx=4, jy=5, jz=6, rs=14.0,
+                                  m200b=5.2e11, m200c=4.6e11))
+                println(io, ctrow(; scale=0.6, id=201, descid=200, numprog=0, upid=-1,
+                                  mvir=4.5e11, snap=2, orig=21, x=5.1, y=6.1, z=7.1,
+                                  vmax=205, vrms=185, jx=4, jy=5, jz=6, rs=13.0,
+                                  m200b=4.6e11, m200c=4.0e11))
+            end
+
+            try
+                @testset "header parsing" begin
+                    cols = parse_ct_header(header)
+                    @test cols["scale"] == 0
+                    @test cols["id"] == 1
+                    @test cols["desc_id"] == 3
+                    @test cols["mvir"] == 10
+                    @test cols["snap_idx"] == 31
+                    @test cols["m200b"] == 39
+                    @test cols["m200c"] == 40
+                    @test ct_col(cols, "Desc_ID", "descid") == 3
+                    @test ct_col(cols, "not_a_column") === nothing
+                end
+
+                trees = read_consistent_trees(tmp; particle_mass = pmass)
+
+                @test length(trees) == 2
+                @test length(trees[1]) == 5
+                @test length(trees[2]) == 2
+
+                tA = trees[1]
+
+                # root is the (unique) halo with Descendant == -1, placed first
+                @test root_index(tA) == 1
+                @test tA[1].Descendant == NO_HALO
+
+                # Descendant maps CT desc_id -> local 0-based index.
+                # depth-first order is [100, 101, 103, 102, 104] (rows 1..5),
+                # so 101->100 is desc=0, 103->101 is desc=1, 102->100 is desc=0,
+                # 104->102 is desc=3.
+                @test tA[2].Descendant == Int32(0)
+                @test tA[3].Descendant == Int32(1)
+                @test tA[4].Descendant == Int32(0)
+                @test tA[5].Descendant == Int32(3)
+
+                # FirstProgenitor/NextProgenitor built by set_progenitor_pointers!:
+                # root (idx 1) has two progs, MMP (more massive, id 101 at local 1)
+                # first, then coprog (id 102 at local 3).
+                @test progenitors(tA, 1) == [2, 4]        # MMP then coprog
+                @test num_progenitors(tA, 1) == 2
+                @test is_mmp(tA, 2)                        # id 101 is MMP of root
+                @test !is_mmp(tA, 4)                       # id 102 is the coprog
+                @test coprogenitor_id(tA, 2) == 4
+                @test coprogenitor_id(tA, 4) === nothing
+
+                # main branch: root 100 -> MMP 101 -> its prog 103
+                @test walk_main_branch(tA) == [1, 2, 3]
+
+                # SnapNum and masses populated
+                @test tA[1].SnapNum == Int32(3)
+                @test tA[2].SnapNum == Int32(2)
+                @test tA[3].SnapNum == Int32(1)
+                @test tA[1].M_TopHat ≈ 1.0f12         # Mvir
+                @test tA[1].M_Mean200 ≈ 1.1f12        # M200b
+                @test tA[1].M_Crit200 ≈ 0.9f12        # M200c
+                @test tA[1].Len == round(Int32, 1.0e12 / pmass)
+                @test tA[1].MostBoundID == Int64(100) # CT id
+                @test tA[1].SubhaloIndex == Int32(7)  # Orig_halo_ID
+                @test tA[1].Pos == (1.0f0, 2.0f0, 3.0f0)
+                @test tA[1].Vmax ≈ 300f0
+                @test tA[1].VelDisp ≈ 250f0
+                @test tA[1].SubhalfMass ≈ 20.0f0      # rs
+
+                # Tree B: trivial main branch
+                tB = trees[2]
+                @test root_index(tB) == 1
+                @test tB[1].Descendant == NO_HALO
+                @test walk_main_branch(tB) == [1, 2]
+                @test num_progenitors(tB, 1) == 1
+
+                # scale_factor_map: Snap_idx -> real scale factor
+                scaledict = scale_factor_map(tmp)
+                @test scaledict[3] ≈ 0.95
+                @test scaledict[2] ≈ 0.6
+                @test scaledict[1] ≈ 0.3
+
+                # directory reader picks up the same file
+                tdir = mktempdir()
+                cp(tmp, joinpath(tdir, "tree_0_0_0.dat"))
+                try
+                    dtrees = read_consistent_trees_dir(tdir; particle_mass = pmass)
+                    @test length(dtrees) == 2
+                finally
+                    rm(tdir; force=true, recursive=true)
+                end
+            finally
+                rm(tmp; force=true)
+            end
+        end
+    end
+
     @testset "Aqua.jl (code quality)" begin
         Aqua.test_all(GadgetIO)
     end

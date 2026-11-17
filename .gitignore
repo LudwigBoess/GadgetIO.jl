@@ -4,3 +4,4 @@ test/pos_sedov.dat
 test/runtests.jl
 docs/Manifest.toml
 /Manifest.toml
+test/Manifest.toml

@@ -15,9 +15,14 @@ Pages = [ "index.md",
           "file_infos.md",
           "read_snapshots.md", 
           "read_subfind.md",
+          "merger_trees.md",
           "find_main_halo.md",
           "write_data.md",
-          "api.md" 
+          "api.md",
+          "api_exported_functions.md",
+          "api_exported_types.md",
+          "api_private_functions.md",
+          "api_private_types.md"
         ]
 Depth = 3
 ```

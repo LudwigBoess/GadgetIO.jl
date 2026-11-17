@@ -1,36 +1,7 @@
 # API Reference
 
+The docstrings of all functions and types, split into
+[Exported Functions](@ref), [Exported Types](@ref), [Private Functions](@ref) and [Private Types](@ref).
+
 ```@index
-```
-
-## Exported Functions
-
-```@autodocs
-Modules = [GadgetIO]
-Private = false
-Order = [:function]
-```
-
-## Exported Types
-
-```@autodocs
-Modules = [GadgetIO]
-Private = false
-Order = [:type]
-```
-
-## Private Functions
-
-```@autodocs
-Modules = [GadgetIO]
-Public = false
-Order = [:function]
-```
-
-## Private Types
-
-```@autodocs
-Modules = [GadgetIO]
-Public = false
-Order = [:type]
 ```

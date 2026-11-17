@@ -11,10 +11,17 @@ makedocs(
             "File Infos"        => "file_infos.md",
             "Reading Snapshots" => "read_snapshots.md",
             "Reading Subfind"   => "read_subfind.md",
+            "Merger Trees"      => "merger_trees.md",
             "Main Halo Finder"  => "find_main_halo.md",
             "Writing Data"      => "write_data.md",
             "Reading CPU files" => "read_cpu_files.md",
-            "API reference"     => "api.md"
+            "API reference"     => [
+                "Index"              => "api.md",
+                "Exported Functions" => "api_exported_functions.md",
+                "Exported Types"     => "api_exported_types.md",
+                "Private Functions"  => "api_private_functions.md",
+                "Private Types"      => "api_private_types.md"
+                ]
             ]
         )
 
