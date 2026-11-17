@@ -1,4 +1,4 @@
-using GadgetIO, Test, DelimitedFiles, Downloads, Aqua
+using GadgetIO, Test, DelimitedFiles, Downloads, Aqua, Random
 
 function filter_dummy(filename::String)
     mtop = read_subfind(filename, "MTOP")
@@ -8,6 +8,70 @@ end
 function pass_all(snap_file)
     h = read_header(snap_file)
     return collect(1:h.npart[1])
+end
+
+"""
+Friends-of-friends labels from testing every particle pair.
+"""
+function fof_brute_force(pos, linking_length)
+    N = size(pos, 2)
+    parent = collect(1:N)
+    root(i) = parent[i] == i ? i : (parent[i] = root(parent[i]))
+    for i = 1:N, j = i+1:N
+        d2 = (Float64(pos[1, i]) - pos[1, j])^2 + (Float64(pos[2, i]) - pos[2, j])^2 + (Float64(pos[3, i]) - pos[3, j])^2
+        if d2 <= Float64(linking_length)^2
+            parent[root(j)] = root(i)
+        end
+    end
+    return root.(1:N)
+end
+
+"""
+True if the labels `a` and `b` divide the particles into the same groups.
+"""
+function same_partition(a, b)
+    ab = Dict{eltype(a),eltype(b)}()
+    ba = Dict{eltype(b),eltype(a)}()
+    for i ∈ eachindex(a, b)
+        get!(ab, a[i], b[i]) == b[i] || return false
+        get!(ba, b[i], a[i]) == a[i] || return false
+    end
+    return true
+end
+
+"""
+`N` positions of a Hernquist sphere with scale radius `a` around `center`, cut at `100a`.
+"""
+function hernquist_sphere(rng, N, a, center)
+    r = Float64[]
+    while length(r) < N
+        u = sqrt(rand(rng))
+        x = a * u / (1 - u)
+        x < 100a && push!(r, x)
+    end
+    d = randn(rng, 3, N)
+    return d ./ sqrt.(sum(abs2, d, dims=1)) .* r' .+ center
+end
+
+"""
+Distance between `x` and `y` in a periodic box of side `L`.
+"""
+periodic_distance(x, y, L) = sqrt(sum(abs2, @. mod(x - y + L / 2, L) - L / 2))
+
+"""
+Write a single-file snapshot with the blocks POS and MASS for particle types 0-3 and POT for type 1.
+"""
+function write_test_snapshot(filename, h, pos, mass, pot)
+    info = [InfoLine("POS", Float32, 3, [1, 1, 1, 1, 0, 0]),
+            InfoLine("MASS", Float32, 1, [1, 1, 1, 1, 0, 0]),
+            InfoLine("POT", Float32, 1, [0, 1, 0, 0, 0, 0])]
+    f = open(filename, "w")
+    write_header(f, h)
+    write_info_block(f, info)
+    write_block(f, pos, "POS")
+    write_block(f, mass, "MASS")
+    write_block(f, pot, "POT")
+    close(f)
 end
 
 
@@ -543,6 +607,159 @@ Downloads.download("http://www.usm.uni-muenchen.de/~lboess/GadgetIO/balance.txt"
             @test_logs (:warn, "The Vector of i_global is not sorted for requesting the properties from Subfind, the returned properties are returned as if they were sorted, however.") read_halo_prop("sub_002", ["GPOS", "MTOP"], [3,2], verbose=false)
         end
 
+    end
+
+    @testset "FoF halo finder" begin
+
+        rng = Xoshiro(42)
+
+        @testset "FoF groups" begin
+
+            # uniform points below, at and above the percolation threshold n l^3 ≈ 0.65
+            pos = rand(rng, Float32, 3, 2000)
+            for nl3 ∈ (0.3, 0.65, 1.0)
+                linking_length = cbrt(nl3 / 2000)
+                @test same_partition(GadgetIO.fof_labels(pos, linking_length), fof_brute_force(pos, linking_length))
+            end
+
+            # clumps of different density on a uniform background
+            pos = hcat([randn(rng, 3, 300) .* 0.005k .+ rand(rng, 3) for k = 1:8]..., rand(rng, 3, 500))
+            for linking_length ∈ (0.002, 0.01, 0.05)
+                @test same_partition(GadgetIO.fof_labels(pos, linking_length), fof_brute_force(pos, linking_length))
+            end
+
+            # isolated pairs are linked if and only if they are no further apart than the linking length
+            linking_length = 1.7
+            npairs = 8000
+            pos = zeros(3, 2npairs)
+            for k = 1:npairs
+                d = randn(rng, 3)
+                pos[:, 2k-1] = 10.0 .* [k % 20, (k ÷ 20) % 20, k ÷ 400]
+                pos[:, 2k] = pos[:, 2k-1] .+ d ./ sqrt(sum(abs2, d)) .* linking_length .* (0.98 + 0.04rand(rng))
+            end
+            label = GadgetIO.fof_labels(pos, linking_length)
+            @test all((label[2k-1] == label[2k]) == (sum(abs2, pos[:, 2k] .- pos[:, 2k-1]) <= linking_length^2) for k = 1:npairs)
+
+            # chains along the diagonal of the cells: one group below the linking length, single particles above
+            for spacing ∈ (0.99, 1.01)
+                pos = [1.0, 1.0, 1.0] ./ √3 .* (spacing .* (0:500))'
+                @test length(unique(GadgetIO.fof_labels(pos, 1.0))) == (spacing < 1 ? 1 : 501)
+            end
+
+            @test isempty(GadgetIO.fof_labels(zeros(3, 0), 1.0))
+            @test GadgetIO.fof_labels(rand(rng, 3, 1), 1.0) == [1]
+            @test length(unique(GadgetIO.fof_labels(0.1 .* rand(rng, 3, 100), 1.0))) == 1
+
+            # particles across the whole box, or along a line, and an invalid linking length
+            @test_throws ErrorException GadgetIO.fof_labels([0.0 1.0e6; 0.0 1.0e6; 0.0 0.0], 1.0e-2)
+            @test_throws ErrorException GadgetIO.fof_labels([0.0 0.0; 0.0 0.0; 0.0 1.0e12], 1.0)
+            @test_throws ErrorException GadgetIO.fof_labels(rand(rng, 3, 10), 0.0)
+        end
+
+        @testset "Subfind FoF groups" begin
+
+            # for linking lengths of 41.8 - 42.0 the groups are those of the on-the-fly FoF of
+            # the simulation, compared by the IDs of their type 1 particles
+            pos = read_block("snap_002", "POS", parttype=1)
+            id = read_block("snap_002", "ID", parttype=1)
+            label = GadgetIO.fof_labels(pos, 41.88)
+            label_of = Dict(zip(id, label))
+
+            glen = read_subfind("sub_002", "GLEN")
+            goff = read_subfind("sub_002", "GOFF")
+            pid = read_subfind("sub_002", "PID")
+            for g ∈ eachindex(glen)
+                ids = filter(in(keys(label_of)), pid[goff[g]+1:goff[g]+glen[g]])
+                @test Set(id[label.==label_of[ids[1]]]) == Set(ids)
+            end
+        end
+
+        @testset "Shrinking sphere" begin
+
+            # Hernquist sphere with an offset clump on a uniform background
+            center = [1234.5, -678.9, 42.0]
+            pos = hcat(hernquist_sphere(rng, 20_000, 1.0, center),
+                       hernquist_sphere(rng, 5_000, 0.5, center .+ [6.0, 0.0, 0.0]),
+                       center .+ 40.0 .* (rand(rng, 3, 4_000) .- 0.5))
+            @test sqrt(sum(abs2, GadgetIO.shrinking_sphere_center(pos, ones(size(pos, 2))) .- center)) < 0.05
+
+            # coincident particles end the iteration
+            @test GadgetIO.shrinking_sphere_center(repeat([1.0, 2.0, 3.0], 1, 500), ones(500)) ≈ [1.0, 2.0, 3.0]
+            @test_throws ErrorException GadgetIO.shrinking_sphere_center(zeros(3, 0), Float64[])
+        end
+
+        @testset "find_main_halo" begin
+
+            # the main halo is the most massive Subfind FoF group
+            gpos = Float64.(read_subfind("sub_002", "GPOS")[:, 1])
+            rtop = read_subfind("sub_002", "RTOP")[1]
+
+            center = find_main_halo("snap_002", linking_length=41.88, center=:shrinking_sphere, verbose=false)
+            @test sqrt(sum(abs2, center .- gpos)) < 0.25rtop
+
+            center = find_main_halo("snap_002", center=:shrinking_sphere, verbose=false)
+            @test sqrt(sum(abs2, center .- gpos)) < 0.25rtop
+
+            # default linking length from the mean density in the box, ρ_crit in kpc/h, 1e10 Msun/h, km/s
+            mass = read_block("snap_002", "MASS", parttype=1)
+            ρ_crit = 3 * 0.1^2 / (8π * 43018.7)
+            @test GadgetIO.fof_linking_length("snap_002", mass) ≈ 0.2 * cbrt(sum(Float64, mass) / length(mass) / ((0.24 - 0.04) * ρ_crit)) rtol = 1.0e-3
+
+            @test_throws ErrorException("Block POT not present, use center=:shrinking_sphere for snapshots without potential.") find_main_halo("snap_002", verbose=false)
+            @test_throws ErrorException find_main_halo("snap_002", center=:mean, verbose=false)
+        end
+
+        @testset "Periodic box and potential" begin
+
+            # single-file copy of snap_002 with positions on a grid of 1/32, so moving them across
+            # the border of the box is exact in Float32
+            h = read_header("snap_002")
+            h.npart .= h.nall
+            h.num_files = 1
+            L = h.boxsize
+
+            pos = reduce(hcat, [read_block("snap_002", "POS"; parttype) for parttype = 0:3])
+            mass = reduce(vcat, [read_block("snap_002", "MASS"; parttype) for parttype = 0:3])
+            pos = round.(32pos) ./ 32
+
+            # members of the main halo from the IDs of the most massive Subfind group
+            id = read_block("snap_002", "ID", parttype=1)
+            pid = read_subfind("sub_002", "PID")
+            main = findall(in(Set(pid[1:read_subfind("sub_002", "GLEN")[1]])), id)
+            pos1 = pos[:, get_total_particles(h, 0) .+ eachindex(id)]
+
+            # potential of type 1 with the minimum outside of the main halo
+            gpos = Float64.(read_subfind("sub_002", "GPOS")[:, 1])
+            pot = Float32.(vec(sum(abs2, pos1 .- gpos, dims=1)))
+            i_center = main[argmin(pot[main])]
+            pot[findfirst(i -> i ∉ main, eachindex(pot))] = -1.0f10
+
+            # move the main halo onto the border of the box
+            shift = [round(32 * (L / 2 - gpos[1])) / 32, 0.0, 0.0]
+            pos_shifted = Float32.(mod.(pos .+ shift .+ L / 2, L) .- L / 2)
+
+            mktempdir() do dir
+                snap = joinpath(dir, "snap")
+                snap_shifted = joinpath(dir, "snap_shifted")
+                write_test_snapshot(snap, h, pos, mass, pot)
+                write_test_snapshot(snap_shifted, h, pos_shifted, mass, pot)
+
+                # the centre is the member with the lowest potential, not the global minimum
+                center = find_main_halo(snap, linking_length=41.88, verbose=false)
+                @test center ≈ pos1[:, i_center]
+
+                center = find_main_halo(snap_shifted, linking_length=41.88, verbose=false)
+                @test periodic_distance(center, pos1[:, i_center] .+ shift, L) < 1.0e-3
+
+                # the halo is found in one piece across the border of the box
+                center_ref = find_main_halo(snap, linking_length=41.88, center=:shrinking_sphere, verbose=false)
+                center = find_main_halo(snap_shifted, linking_length=41.88, center=:shrinking_sphere, verbose=false)
+                @test periodic_distance(center, center_ref .+ shift, L) < 1.0e-3
+
+                @test GadgetIO.fof_linking_length(snap_shifted, read_block(snap_shifted, "MASS", parttype=1)) ≈
+                      GadgetIO.fof_linking_length(snap, read_block(snap, "MASS", parttype=1))
+            end
+        end
     end
 
     @testset "Snapshot utility" begin
