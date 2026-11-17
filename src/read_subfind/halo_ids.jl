@@ -145,7 +145,7 @@ end
 """
     read_positions_to_halo_ids(read_positions)
 
-Converts `read_positions` to a Vector of [HaloID](@ref)s.
+Converts `read_positions` to a Vector of [`HaloID`](@ref)s.
 """
 function read_positions_to_halo_ids(read_positions)
 
@@ -180,7 +180,7 @@ end
 """
     save_halo_ids(filename::String, halo_ids::Vector{HaloID})
 
-Writes a `Vector` of [HaloID](@ref)s to a files.
+Writes a `Vector` of [`HaloID`](@ref)s to a files.
 """
 function save_halo_ids(filename::String, halo_ids::Vector{HaloID})
 
@@ -195,7 +195,7 @@ end
 """
     save_halo_ids(filename::String)
 
-Loads a `Vector` of [HaloID](@ref)s from a file.
+Loads a `Vector` of [`HaloID`](@ref)s from a file.
 """
 function load_halo_ids(filename::String)
     # load the read positions

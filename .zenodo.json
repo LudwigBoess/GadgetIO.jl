@@ -5,7 +5,7 @@
     "language": "eng",
     "creators": [
         {
-            "affiliation": "Universitäts-Sternwarte, Fakultät für Physik, Ludwig-Maximilians-Universität München, Scheinerstr.1, 81679 München, Germany", 
+            "affiliation": "Department of Astronomy and Astrophysics, The University of Chicago, William Eckhart Research Center, 5640 S. Ellis Ave. Chicago, IL 60637, USA", 
             "name": "Ludwig M. Böss",
             "orcid": "https://orcid.org/0000-0003-4690-2774"
         },
@@ -13,6 +13,11 @@
             "affiliation": "Universitäts-Sternwarte, Fakultät für Physik, Ludwig-Maximilians-Universität München, Scheinerstr.1, 81679 München, Germany", 
             "name": "Lucas M. Valenzuela",
             "orcid": "https://orcid.org/0000-0002-7972-9675"
+        },
+        {
+            "affiliation": "Universitäts-Sternwarte, Fakultät für Physik, Ludwig-Maximilians-Universität München, Scheinerstr.1, 81679 München, Germany", 
+            "name": "Johannes Stoiber",
+            "orcid": "https://orcid.org/0009-0004-1502-0482"
         }
     ],
     "access_right": "open",

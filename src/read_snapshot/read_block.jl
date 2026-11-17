@@ -209,10 +209,10 @@ function read_block(filename::String, block_id::Union{String, Integer};
         if iszero(n_to_read)
             continue
         end
-
+        snapshot_format, swap = check_snapshot_format(_filename)
         f = open(_filename, "r")
         read_block!(block, f, off, nread, n_to_read;
-                    parttype, block_position, info, h)
+                    parttype, block_position, info, h, swap)
 
         close(f)
     end
@@ -228,7 +228,8 @@ end
                 parttype::Integer,
                 block_position::Integer,
                 info::InfoLine,
-                h::SnapshotHeader)
+                h::SnapshotHeader,
+                swap::Bool)
 
 Read part of a block from a given file stream into a pre-allocated array.
 """
@@ -238,7 +239,8 @@ function read_block!(a::AbstractArray, f::IOStream,
                     parttype::Integer,
                     block_position::Integer,
                     info::InfoLine,
-                    h::SnapshotHeader)
+                    h::SnapshotHeader,
+                    swap::Bool=false)
 
     # number of bits in data_type
     len = sizeof(info.data_type) * info.n_dim
@@ -260,8 +262,14 @@ function read_block!(a::AbstractArray, f::IOStream,
     # note the Int(...) are necessary to enable the reading into the SubArray returned by @view
     if info.n_dim == 1
         read!(f, @view(a[Int(nread+1):Int(nread+n_to_read)]))
+        if swap
+            a[Int(nread+1):Int(nread+n_to_read)] .= bswap.(@view(a[Int(nread+1):Int(nread+n_to_read)]))
+        end 
     else
         read!(f, @view(a[:, Int(nread+1):Int(nread+n_to_read)]))
+        if swap
+            a[:, Int(nread+1):Int(nread+n_to_read)] .= bswap.(@view(a[:, Int(nread+1):Int(nread+n_to_read)]))
+        end 
     end
 
     return a
@@ -275,7 +283,8 @@ end
                 parttype::Integer,
                 block_position::Integer,
                 info::InfoLine,
-                h::SnapshotHeader)
+                h::SnapshotHeader,
+                swap::Bool)
 
 Read part of a block from a given file stream into a pre-allocated array.
 """
@@ -285,7 +294,8 @@ function read_block!(a::AbstractArray, f::IOStream,
                     parttype::Integer,
                     block_position::Integer,
                     info::InfoLine,
-                    h::SnapshotHeader)
+                    h::SnapshotHeader,
+                    swap::Bool)
 
     # store local variables
     nread_local  = nread
@@ -294,7 +304,7 @@ function read_block!(a::AbstractArray, f::IOStream,
     for i = 1:length(offset)
 
         read_block!(a, f, offset[i], nread_local, n_to_read[i];
-                    parttype, block_position, info, h)
+                    parttype, block_position, info, h, swap)
 
         # store locally read particles
         nread_local  += n_to_read[i]

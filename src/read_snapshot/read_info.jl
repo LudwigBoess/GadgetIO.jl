@@ -33,12 +33,14 @@ If `verbose=true` the blocknames are also printed to console.
 """
 function read_info(filename::String; verbose::Bool=false)
 
-    if !isfile(filename)
-        filename = select_file(filename, 0)
-    end
+    filename = select_file(filename, 0)
+    snapshot_format, swap = check_snapshot_format(filename)
 
     f = open(filename)
     blocksize = read(f, Int32)
+    if swap 
+        blocksize = bswap(blocksize)
+    end 
 
     while eof(f) != true
 
@@ -50,8 +52,11 @@ function read_info(filename::String; verbose::Bool=false)
         seek(f,p+8)
 
         skipsize = read(f, UInt32)
+        if swap
+            skipsize = bswap(skipsize)
+        end 
 
-        skipsize = check_blocksize(f, p, skipsize)
+        skipsize = check_blocksize(f, p, skipsize, swap = swap)
 
         if blockname == "INFO"
             seek(f,p+12)
@@ -59,7 +64,7 @@ function read_info(filename::String; verbose::Bool=false)
             arr_info = Array{InfoLine,1}(undef,n_blocks)
 
             for i = 1:n_blocks
-                arr_info[i] = read_info_line(f)
+                arr_info[i] = read_info_line(f, swap)
             end # for
 
             close(f)
@@ -87,11 +92,11 @@ function read_info(filename::String; verbose::Bool=false)
 end
 
 """
-    read_info_line(f::IOStream)
+    read_info_line(f::IOStream, swap::Bool)
 
 Helper function to read the binary data into a `InfoLine` struct.
 """
-function read_info_line(f::IOStream)
+function read_info_line(f::IOStream, swap::Bool)
 
     block_name = read_bockname(f)
 
@@ -123,10 +128,17 @@ function read_info_line(f::IOStream)
 
     # array dimensions are stored as Int32
     n_dim = read(f,Int32)
+    if swap
+        n_dim = bswap(n_dim)
+    end 
 
     # read the information for which particles the block is relevant.
     # e.g. for gas particles: [ 1, 0, 0, 0, 0, 0 ]
     is_present = read!(f, Array{Int32,1}(undef,6))
+    if swap
+        is_present = bswap.(is_present)
+    end 
+
 
     # construct the info line struct and return it.
     return InfoLine(block_name, dt, n_dim, is_present)

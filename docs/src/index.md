@@ -16,6 +16,7 @@ Pages = [ "index.md",
           "read_snapshots.md", 
           "read_subfind.md",
           "merger_trees.md",
+          "find_main_halo.md",
           "write_data.md",
           "api.md" 
         ]
