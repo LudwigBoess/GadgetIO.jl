@@ -15,7 +15,13 @@ makedocs(
             "Main Halo Finder"  => "find_main_halo.md",
             "Writing Data"      => "write_data.md",
             "Reading CPU files" => "read_cpu_files.md",
-            "API reference"     => "api.md"
+            "API reference"     => [
+                "Index"              => "api.md",
+                "Exported Functions" => "api_exported_functions.md",
+                "Exported Types"     => "api_exported_types.md",
+                "Private Functions"  => "api_private_functions.md",
+                "Private Types"      => "api_private_types.md"
+                ]
             ]
         )
 
